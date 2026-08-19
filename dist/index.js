@@ -22,7 +22,7 @@ client.once('ready', async () => {
     console.log(`Logged in as ${client.user?.tag} (ID: ${client.user?.id})`);
     // Register commands
     await (0, index_js_2.registerCommands)(client);
-    console.log('🤖 MI BOM3O is online!');
+    console.log('MI BOM3O is online!');
 });
 client.on('messageCreate', async (message) => {
     // Handle XP for all messages first
