@@ -1,1 +1,0 @@
-{"version":3,"file":"klipy.d.ts","sourceRoot":"","sources":["../../src/services/klipy.ts"],"names":[],"mappings":"AAEA,MAAM,WAAW,aAAa;IAC5B,IAAI,EAAE,KAAK,CAAC;QACV,GAAG,EAAE,MAAM,CAAC;QACZ,KAAK,EAAE,MAAM,CAAC;KAEf,CAAC,CAAC;CACJ;AAED,wBAAsB,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,OAAO,CAAC,MAAM,GAAG,IAAI,CAAC,CA0BpE"}
