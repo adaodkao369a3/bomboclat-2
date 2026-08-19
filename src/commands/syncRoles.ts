@@ -12,7 +12,7 @@ export const syncRolesCommand: Command = {
     if (prefix !== ADMIN_PREFIX) return;
 
     // Check admin permissions
-    if (!isAdmin(message.member!)) {
+    if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');
       return;
     }
@@ -30,7 +30,7 @@ export const syncRolesCommand: Command = {
     let errorCount = 0;
 
     for (const member of message.guild.members.cache.values()) {
-      if (member.user.bot) continue;
+      if (!member.user || member.user.bot) continue;
 
       checkedCount++;
 

@@ -24,8 +24,11 @@ export const profileCommand: Command = {
     let target: GuildMember;
     if (args.length > 0 && message.mentions.members?.first()) {
       target = message.mentions.members.first()!;
-    } else {
+    } else if (message.member) {
       target = message.member as GuildMember;
+    } else {
+      await message.reply('❌ Unable to determine target user.');
+      return;
     }
 
     // Get user data

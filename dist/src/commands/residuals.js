@@ -13,13 +13,13 @@ exports.residualsCommand = {
         if (prefix !== index_js_1.ADMIN_PREFIX)
             return;
         // Check staff permissions
-        if (!(0, permissions_js_1.isStaff)(message.member)) {
+        if (!message.member || !(0, permissions_js_1.canManageResiduals)(message.member)) {
             await message.reply('❌ This command is restricted to staff.');
             return;
         }
         // Get target user
         const target = message.mentions.members?.first();
-        if (!target) {
+        if (!target || !target.user) {
             await message.reply('❌ Please mention a user. Usage: $residuals @user');
             return;
         }
@@ -118,6 +118,10 @@ exports.residualsCommand = {
                 await message.reply('❌ This command can only be used in text channels.');
                 return;
             }
+            if (!('createMessageCollector' in message.channel)) {
+                await message.reply('❌ This channel cannot collect messages.');
+                return;
+            }
             const collector = message.channel.createMessageCollector({
                 filter: (m) => m.author.id === message.author.id,
                 max: 1,
@@ -129,18 +133,35 @@ exports.residualsCommand = {
                     await m.reply('❌ Please enter a valid positive number.');
                     return;
                 }
+                if ((action === 'add_residuals' || action === 'remove_residuals') && amount === 0) {
+                    await m.reply('❌ Add and remove amounts must be greater than zero.');
+                    return;
+                }
                 try {
                     let newBalance = residualData.balance;
                     if (action === 'set_residuals') {
-                        newBalance = await residuals_js_1.ResidualsService.setResiduals(target.user.id, amount, message.author.id, `Manual set by ${message.author.displayName}`) || amount;
+                        const persistedBalance = await residuals_js_1.ResidualsService.setResiduals(target.user.id, amount, message.author.id, `Manual set by ${message.author.displayName}`);
+                        if (persistedBalance === null) {
+                            await m.reply('❌ Failed to set Residuals.');
+                            return;
+                        }
+                        newBalance = persistedBalance;
                     }
                     else if (action === 'add_residuals') {
-                        newBalance = await residuals_js_1.ResidualsService.awardResiduals(target.user.id, amount, 'staff', `Manual addition by ${message.author.displayName}`, message.author.id) || residualData.balance + amount;
+                        const persistedBalance = await residuals_js_1.ResidualsService.awardResiduals(target.user.id, amount, 'staff', `Manual addition by ${message.author.displayName}`, message.author.id);
+                        if (persistedBalance === null) {
+                            await m.reply('❌ Failed to add Residuals.');
+                            return;
+                        }
+                        newBalance = persistedBalance;
                     }
                     else if (action === 'remove_residuals') {
-                        newBalance = await residuals_js_1.ResidualsService.removeResiduals(target.user.id, amount, 'staff', `Manual removal by ${message.author.displayName}`, message.author.id) || residualData.balance - amount;
-                        if (newBalance < 0)
-                            newBalance = 0;
+                        const persistedBalance = await residuals_js_1.ResidualsService.removeResiduals(target.user.id, amount, 'staff', `Manual removal by ${message.author.displayName}`, message.author.id);
+                        if (persistedBalance === null) {
+                            await m.reply('❌ Insufficient Residuals or update failed.');
+                            return;
+                        }
+                        newBalance = persistedBalance;
                     }
                     await m.reply(`✅ Residuals updated successfully. New balance: ${newBalance?.toLocaleString() || 'Unknown'}`);
                     // Disable buttons

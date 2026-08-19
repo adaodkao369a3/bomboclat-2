@@ -31,12 +31,17 @@ async function connect() {
         connectionString: index_js_1.DATABASE_URL,
         max: 10,
     });
+    // This is idempotent schema initialization, not a versioned migration system.
     try {
         await pool.query(index_js_1.SCHEMA);
         console.log('✓ Database connected and schema initialized');
     }
     catch (error) {
         console.error('✗ Failed to initialize database schema:', error);
+        await pool.end().catch(endError => {
+            console.error('✗ Failed to close database pool after initialization error:', endError);
+        });
+        pool = null;
         throw error;
     }
 }
@@ -187,17 +192,22 @@ async function addResiduals(userId, amount, source, reason, adminUserId, descrip
     try {
         await client.query('BEGIN');
         // Get current balance
-        const userResult = await client.query('SELECT total_residuals_balance FROM users WHERE user_id = $1', [userId]);
+        const userResult = await client.query('SELECT total_residuals_balance, lifetime_residuals_earned, lifetime_residuals_spent FROM users WHERE user_id = $1 FOR UPDATE', [userId]);
         if (userResult.rows.length === 0) {
             await client.query('ROLLBACK');
             return null;
         }
         const balanceBefore = userResult.rows[0].total_residuals_balance;
         const balanceAfter = balanceBefore + amount;
+        if (balanceAfter < 0) {
+            await client.query('ROLLBACK');
+            return null;
+        }
         // Update user balance
         await client.query(`UPDATE users 
        SET total_residuals_balance = total_residuals_balance + $1,
-           lifetime_residuals_earned = lifetime_residuals_earned + $1,
+           lifetime_residuals_earned = lifetime_residuals_earned + GREATEST($1, 0),
+           lifetime_residuals_spent = lifetime_residuals_spent + GREATEST(-$1, 0),
            updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $2`, [amount, userId]);
         // Determine transaction type
@@ -300,7 +310,7 @@ async function getLeaderboard(limit = 5) {
        FROM users 
        ORDER BY current_xp DESC 
        LIMIT $1`, [limit]);
-        return result.rows.map((row) => ({
+        return result.rows.map(row => ({
             user_id: row.user_id,
             username: row.username,
             current_xp: row.current_xp,

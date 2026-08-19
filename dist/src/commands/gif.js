@@ -25,7 +25,8 @@ function createGIFCommand(name) {
                 cooldownTime = mentions.size === 2 ? index_js_1.GIF_CONFIG.TWO_TARGET_COOLDOWN_SECONDS : index_js_1.GIF_CONFIG.THREE_TARGET_COOLDOWN_SECONDS;
             }
             // Admin bypass
-            if (!(0, permissions_js_1.isAdmin)(message.member)) {
+            const isUserAdmin = message.member ? (0, permissions_js_1.isAdmin)(message.member) : false;
+            if (!isUserAdmin) {
                 const remaining = (0, cooldowns_js_1.getRemaining)(message.author.id);
                 if (remaining > 0) {
                     await message.reply(`⏳ Post nut clarity is here. Try again in ${remaining}s.`);

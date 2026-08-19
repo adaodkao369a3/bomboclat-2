@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AntiSpamValidator = void 0;
+exports.AntiSpamValidator = exports.PROGRESSION_ROLE_KEYS = void 0;
 exports.calculateMessageXP = calculateMessageXP;
 exports.calculateLevelFromXP = calculateLevelFromXP;
 exports.calculateXPForLevel = calculateXPForLevel;
 exports.calculatePromotionEligibility = calculatePromotionEligibility;
 exports.getRoleFromLevel = getRoleFromLevel;
+exports.getProgressionRolePlan = getProgressionRolePlan;
 exports.calculateXPToNextLevel = calculateXPToNextLevel;
 exports.calculateXPRemaining = calculateXPRemaining;
 exports.calculateProgressPercentage = calculateProgressPercentage;
@@ -13,13 +14,24 @@ exports.getNextProgressionThreshold = getNextProgressionThreshold;
 exports.addProgressionRole = addProgressionRole;
 exports.verifyRoleAssignment = verifyRoleAssignment;
 exports.rollbackRoles = rollbackRoles;
+exports.synchronizeProgressionRoles = synchronizeProgressionRoles;
 const index_js_1 = require("../config/index.js");
+exports.PROGRESSION_ROLE_KEYS = [
+    'audience',
+    'extra',
+    'featured_extra',
+    'supporting_cast',
+    'principal_cast',
+    'lead_cast',
+];
 function calculateMessageXP() {
     const min = index_js_1.XP_CONFIG.MESSAGE_XP_MIN;
     const max = index_js_1.XP_CONFIG.MESSAGE_XP_MAX;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function calculateLevelFromXP(totalXP) {
+    if (Number.isNaN(totalXP) || totalXP <= 0)
+        return 0;
     const requirements = index_js_1.XP_CONFIG.LEVEL_XP_REQUIREMENTS;
     let level = 0;
     for (let i = 0; i < requirements.length; i++) {
@@ -74,6 +86,14 @@ function getRoleFromLevel(level) {
         }
     }
     return highestRole;
+}
+function getProgressionRolePlan(level, assignedRoles) {
+    const targetRole = getRoleFromLevel(level);
+    const targetIndex = exports.PROGRESSION_ROLE_KEYS.indexOf(targetRole);
+    const expectedRoles = exports.PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
+    const missingRoles = expectedRoles.filter(role => !assignedRoles.has(role));
+    const outdatedRoles = exports.PROGRESSION_ROLE_KEYS.filter(role => assignedRoles.has(role) && !expectedRoles.includes(role));
+    return { targetRole, expectedRoles, missingRoles, outdatedRoles };
 }
 function calculateXPToNextLevel(_currentXP, currentLevel) {
     const nextLevelXP = calculateXPForLevel(currentLevel + 1);
@@ -151,6 +171,50 @@ async function rollbackRoles(member, roleNames) {
             }
         }
     }
+}
+async function synchronizeProgressionRoles(member, targetLevel) {
+    const assignedRoles = new Set();
+    for (const roleName of exports.PROGRESSION_ROLE_KEYS) {
+        const roleId = index_js_1.ROLES[roleName.toUpperCase()];
+        if (roleId && member.roles.cache.has(roleId)) {
+            assignedRoles.add(roleName);
+        }
+    }
+    const plan = getProgressionRolePlan(targetLevel, assignedRoles);
+    const addedRoles = [];
+    const removedRoles = [];
+    for (const roleName of plan.missingRoles) {
+        const success = await addProgressionRole(member, roleName);
+        if (!success || !(await verifyRoleAssignment(member, roleName))) {
+            await rollbackRoles(member, addedRoles);
+            return { success: false, addedRoles: [], removedRoles: [] };
+        }
+        addedRoles.push(roleName);
+    }
+    for (const roleName of plan.outdatedRoles) {
+        const roleId = index_js_1.ROLES[roleName.toUpperCase()];
+        const role = roleId ? member.guild?.roles.cache.get(roleId) : undefined;
+        if (!role) {
+            await rollbackRoles(member, addedRoles);
+            return { success: false, addedRoles: [], removedRoles: [] };
+        }
+        try {
+            await member.roles.remove(role, 'XP progression system: removing outdated role');
+            if (await verifyRoleAssignment(member, roleName)) {
+                throw new Error(`Role ${roleName} is still assigned after removal`);
+            }
+            removedRoles.push(roleName);
+        }
+        catch (error) {
+            console.error(`Failed to remove progression role ${roleName}:`, error);
+            await rollbackRoles(member, addedRoles);
+            for (const restoredRoleName of removedRoles) {
+                await addProgressionRole(member, restoredRoleName);
+            }
+            return { success: false, addedRoles: [], removedRoles: [] };
+        }
+    }
+    return { success: true, addedRoles, removedRoles };
 }
 class AntiSpamValidator {
     userMessageHistory = new Map();

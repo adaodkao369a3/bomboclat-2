@@ -26,7 +26,8 @@ function createGIFCommand(name: string): Command {
       }
 
       // Admin bypass
-      if (!isAdmin(message.member!)) {
+      const isUserAdmin = message.member ? isAdmin(message.member) : false;
+      if (!isUserAdmin) {
         const remaining = getRemaining(message.author.id);
         if (remaining > 0) {
           await message.reply(`⏳ Post nut clarity is here. Try again in ${remaining}s.`);

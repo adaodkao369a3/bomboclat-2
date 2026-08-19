@@ -22,20 +22,26 @@ async function generateImage(prompt, style = 'anime') {
     const fullPrompt = `${prompt}, ${stylePrompt}, landscape orientation, cinematic, high quality`;
     let lastError = null;
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        let timeoutId;
         try {
             console.log(`HF image: attempt ${attempt}/${MAX_RETRIES} (model=${DEFAULT_MODEL})`);
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_SECONDS * 1000);
+            timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_SECONDS * 1000);
             const response = await fetch(`https://api-inference.huggingface.co/models/${DEFAULT_MODEL}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${index_js_1.HF_API_TOKEN}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ inputs: fullPrompt }),
+                body: JSON.stringify({
+                    inputs: fullPrompt,
+                    parameters: {
+                        width: 1024,
+                        height: 576,
+                    },
+                }),
                 signal: controller.signal,
             });
-            clearTimeout(timeoutId);
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
                     console.error(`HF image: auth rejected (${response.status})`);
@@ -63,6 +69,10 @@ async function generateImage(prompt, style = 'anime') {
                 return null;
             }
             const buffer = Buffer.from(await response.arrayBuffer());
+            if (buffer.length === 0) {
+                console.error('HF image: API returned an empty image');
+                return null;
+            }
             console.log('HF image: generation complete');
             return buffer;
         }
@@ -76,13 +86,17 @@ async function generateImage(prompt, style = 'anime') {
                 }
             }
             else {
-                console.warn(`HF image: network error (attempt ${attempt}/${MAX_RETRIES}):`, error);
-                lastError = error;
+                lastError = error instanceof Error ? error : new Error('Unknown network error');
+                console.warn(`HF image: network error (attempt ${attempt}/${MAX_RETRIES}):`, lastError.message);
                 if (attempt < MAX_RETRIES) {
                     await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
                     continue;
                 }
             }
+        }
+        finally {
+            if (timeoutId)
+                clearTimeout(timeoutId);
         }
     }
     console.error(`HF image: failed after ${MAX_RETRIES} attempts:`, lastError);

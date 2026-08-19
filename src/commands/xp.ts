@@ -19,14 +19,14 @@ export const xpCommand: Command = {
     if (prefix !== ADMIN_PREFIX) return;
 
     // Check admin permissions
-    if (!isAdmin(message.member!)) {
+    if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');
       return;
     }
 
     // Get target user
     const target = message.mentions.members?.first();
-    if (!target) {
+    if (!target || !target.user) {
       await message.reply('❌ Please mention a user. Usage: $xp @user');
       return;
     }

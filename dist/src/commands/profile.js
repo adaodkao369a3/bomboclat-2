@@ -25,8 +25,12 @@ exports.profileCommand = {
         if (args.length > 0 && message.mentions.members?.first()) {
             target = message.mentions.members.first();
         }
-        else {
+        else if (message.member) {
             target = message.member;
+        }
+        else {
+            await message.reply('❌ Unable to determine target user.');
+            return;
         }
         // Get user data
         const userData = await (0, client_js_1.getUser)(target.user.id);

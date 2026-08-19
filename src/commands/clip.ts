@@ -13,7 +13,7 @@ export const clipCommand: Command = {
     if (prefix !== ADMIN_PREFIX) return;
 
     // Check admin permissions
-    if (!isAdmin(message.member!)) {
+    if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');
       return;
     }
@@ -50,11 +50,7 @@ export const clipCommand: Command = {
 
       // Generate image (Hugging Face)
       const imageBuffer = await generateImage(summary.summary, style);
-      if (!imageBuffer) {
-        await message.reply('❌ Artwork generation failed. Please try again later.');
-        return;
-      }
-
+      
       // Create embed
       const embed = new EmbedBuilder()
         .setTitle(summary.title)
@@ -67,10 +63,6 @@ export const clipCommand: Command = {
 
       embed.setFooter({ text: 'MI BOM3O Studios' });
 
-      // Create attachment
-      const attachment = new AttachmentBuilder(imageBuffer, { name: 'bombo_times.png' });
-      embed.setImage('attachment://bombo_times.png');
-
       // Send to Bombo Times channel
       const bomboTimesChannel = message.guild?.channels.cache.get(CHANNELS.BOMBO_TIMES);
       if (!bomboTimesChannel || !bomboTimesChannel.isTextBased()) {
@@ -78,8 +70,17 @@ export const clipCommand: Command = {
         return;
       }
 
-      await bomboTimesChannel.send({ embeds: [embed], files: [attachment] });
-      await message.reply('✅ Bombo Times clip published!');
+      if (imageBuffer) {
+        // Create attachment and send with image
+        const attachment = new AttachmentBuilder(imageBuffer, { name: 'bombo_times.png' });
+        embed.setImage('attachment://bombo_times.png');
+        await bomboTimesChannel.send({ embeds: [embed], files: [attachment] });
+        await message.reply('✅ Bombo Times clip published!');
+      } else {
+        // Send without image if generation failed
+        await bomboTimesChannel.send({ embeds: [embed] });
+        await message.reply('⚠️ Bombo Times clip published (without artwork due to image generation failure).');
+      }
 
     } catch (error) {
       console.error('Error generating clip:', error);

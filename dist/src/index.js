@@ -25,34 +25,40 @@ client.once('ready', async () => {
     console.log('🤖 MI BOM3O is online!');
 });
 client.on('messageCreate', async (message) => {
-    // Handle XP for all messages first
-    await (0, messageHandler_js_1.handleXPMessage)(message);
-    // Ignore bot messages for commands
-    if (message.author.bot)
-        return;
-    // Ignore DMs
-    if (!message.guild)
-        return;
-    // Get content
-    const content = message.content.trim();
-    // Check if it's a command
-    if (content.startsWith(index_js_1.PREFIX) || content.startsWith(index_js_1.ADMIN_PREFIX)) {
-        const usedPrefix = content.startsWith(index_js_1.PREFIX) ? index_js_1.PREFIX : index_js_1.ADMIN_PREFIX;
-        const args = content.slice(usedPrefix.length).trim().split(/\s+/);
-        const commandName = args.shift()?.toLowerCase();
-        if (!commandName)
+    try {
+        // Handle XP for all messages first
+        await (0, messageHandler_js_1.handleXPMessage)(message);
+        // Ignore bot messages for commands
+        if (message.author.bot)
             return;
-        // Find and execute command
-        const command = client.commands.get(commandName);
-        if (command) {
-            try {
-                await command.execute(message, args, usedPrefix);
-            }
-            catch (error) {
-                console.error(`Error executing command ${commandName}:`, error);
-                await message.reply('❌ An error occurred while executing this command.');
+        // Ignore DMs
+        if (!message.guild)
+            return;
+        // Get content
+        const content = message.content.trim();
+        // Check if it's a command
+        if (content.startsWith(index_js_1.PREFIX) || content.startsWith(index_js_1.ADMIN_PREFIX)) {
+            const usedPrefix = content.startsWith(index_js_1.PREFIX) ? index_js_1.PREFIX : index_js_1.ADMIN_PREFIX;
+            const args = content.slice(usedPrefix.length).trim().split(/\s+/);
+            const commandName = args.shift()?.toLowerCase();
+            if (!commandName)
+                return;
+            // Find and execute command
+            const command = client.commands.get(commandName);
+            if (command) {
+                try {
+                    await command.execute(message, args, usedPrefix);
+                }
+                catch (error) {
+                    console.error(`Error executing command ${commandName}:`, error);
+                    await message.reply('❌ An error occurred while executing this command.');
+                }
             }
         }
+    }
+    catch (error) {
+        console.error('Unhandled error in messageCreate handler:', error);
+        // Don't crash the bot on message handling errors
     }
 });
 async function main() {

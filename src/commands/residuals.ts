@@ -12,14 +12,14 @@ export const residualsCommand: Command = {
     if (prefix !== ADMIN_PREFIX) return;
 
     // Check staff permissions
-    if (!canManageResiduals(message.member!)) {
+    if (!message.member || !canManageResiduals(message.member)) {
       await message.reply('❌ This command is restricted to staff.');
       return;
     }
 
     // Get target user
     const target = message.mentions.members?.first();
-    if (!target) {
+    if (!target || !target.user) {
       await message.reply('❌ Please mention a user. Usage: $residuals @user');
       return;
     }

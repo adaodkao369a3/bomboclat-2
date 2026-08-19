@@ -11,7 +11,7 @@ exports.rulesCommand = {
         if (prefix !== index_js_1.ADMIN_PREFIX)
             return;
         // Check bot owner permissions (Director only)
-        if (!(0, permissions_js_1.isBotOwner)(message.member)) {
+        if (!message.member || !(0, permissions_js_1.isBotOwner)(message.member)) {
             await message.reply('❌ This command is restricted to the bot owner (Director).');
             return;
         }

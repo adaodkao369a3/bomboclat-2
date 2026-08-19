@@ -81,11 +81,15 @@ export async function handleXPMessage(message: Message): Promise<void> {
   await updatePromotionEligibility(message.author.id, eligibility);
 
   // Check for role promotions
-  if (message.guild) {
-    if (!message.member) return;
-    const newRole = await checkAndAwardProgressionRoles(message.member, newLevel, newXP);
-    if (newRole) {
-      await sendLevelUpNotification(message, newRole, newLevel, newXP);
+  if (message.guild && message.member) {
+    try {
+      const newRole = await checkAndAwardProgressionRoles(message.member, newLevel, newXP);
+      if (newRole) {
+        await sendLevelUpNotification(message, newRole, newLevel, newXP);
+      }
+    } catch (error) {
+      console.error('Error during role progression check:', error);
+      // Don't crash the bot on role sync errors
     }
   }
 }
@@ -95,6 +99,11 @@ async function checkAndAwardProgressionRoles(
   currentLevel: number,
   currentXP: number
 ): Promise<string | null> {
+  if (!member.user) {
+    console.error('Member user is undefined in checkAndAwardProgressionRoles');
+    return null;
+  }
+  
   const userData = await getUser(member.user.id);
   if (!userData) return null;
 

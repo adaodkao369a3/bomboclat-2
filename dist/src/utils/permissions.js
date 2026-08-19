@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isAdmin = isAdmin;
 exports.isStaff = isStaff;
+exports.canManageResiduals = canManageResiduals;
 exports.hasSupportingCast = hasSupportingCast;
 exports.isBotOwner = isBotOwner;
 exports.isProgressionRole = isProgressionRole;
@@ -18,6 +19,12 @@ function isStaff(member) {
         member.roles.cache.has(index_js_1.ROLES.EXECUTIVE_PRODUCER) ||
         member.roles.cache.has(index_js_1.ROLES.PRODUCER) ||
         member.roles.cache.has(index_js_1.ROLES.CASTING_DIRECTOR));
+}
+function canManageResiduals(member) {
+    return (member.roles.cache.has(index_js_1.ROLES.CASTING_DIRECTOR) ||
+        member.roles.cache.has(index_js_1.ROLES.PRODUCER) ||
+        member.roles.cache.has(index_js_1.ROLES.EXECUTIVE_PRODUCER) ||
+        member.roles.cache.has(index_js_1.ROLES.DIRECTOR));
 }
 function hasSupportingCast(member) {
     // Supporting Cast role or higher progression roles

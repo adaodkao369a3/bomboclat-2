@@ -1,5 +1,5 @@
-import { PoolClient } from 'pg';
-export interface User {
+import { PoolClient, type QueryResultRow } from 'pg';
+export interface User extends QueryResultRow {
     user_id: string;
     username: string;
     nickname: string | null;

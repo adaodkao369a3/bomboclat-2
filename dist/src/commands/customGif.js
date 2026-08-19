@@ -13,7 +13,7 @@ exports.customGifCommand = {
         if (prefix !== index_js_1.PREFIX)
             return;
         // Check permissions (Supporting Cast+ or admins)
-        if (!(0, permissions_js_1.hasSupportingCast)(message.member) && !(0, permissions_js_1.isAdmin)(message.member)) {
+        if (!message.member || (!(0, permissions_js_1.hasSupportingCast)(message.member) && !(0, permissions_js_1.isAdmin)(message.member))) {
             await message.reply('❌ This command requires Supporting Cast role or higher.');
             return;
         }
@@ -35,7 +35,8 @@ exports.customGifCommand = {
             cooldownTime = mentions.size === 2 ? index_js_1.GIF_CONFIG.TWO_TARGET_COOLDOWN_SECONDS : index_js_1.GIF_CONFIG.THREE_TARGET_COOLDOWN_SECONDS;
         }
         // Admin bypass
-        if (!(0, permissions_js_1.isAdmin)(message.member)) {
+        const isUserAdmin = message.member ? (0, permissions_js_1.isAdmin)(message.member) : false;
+        if (!isUserAdmin) {
             const remaining = (0, cooldowns_js_1.getRemaining)(message.author.id);
             if (remaining > 0) {
                 await message.reply(`⏳ Post nut clarity is here. Try again in ${remaining}s.`);

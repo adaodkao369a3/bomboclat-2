@@ -10,7 +10,7 @@ export const rulesCommand: Command = {
     if (prefix !== ADMIN_PREFIX) return;
 
     // Check bot owner permissions (Director only)
-    if (!isBotOwner(message.member!)) {
+    if (!message.member || !isBotOwner(message.member)) {
       await message.reply('❌ This command is restricted to the bot owner (Director).');
       return;
     }

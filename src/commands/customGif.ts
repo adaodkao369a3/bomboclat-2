@@ -12,7 +12,7 @@ export const customGifCommand: Command = {
     if (prefix !== PREFIX) return;
 
     // Check permissions (Supporting Cast+ or admins)
-    if (!hasSupportingCast(message.member!) && !isAdmin(message.member!)) {
+    if (!message.member || (!hasSupportingCast(message.member) && !isAdmin(message.member))) {
       await message.reply('❌ This command requires Supporting Cast role or higher.');
       return;
     }
@@ -38,7 +38,8 @@ export const customGifCommand: Command = {
     }
 
     // Admin bypass
-    if (!isAdmin(message.member!)) {
+    const isUserAdmin = message.member ? isAdmin(message.member) : false;
+    if (!isUserAdmin) {
       const remaining = getRemaining(message.author.id);
       if (remaining > 0) {
         await message.reply(`⏳ Post nut clarity is here. Try again in ${remaining}s.`);

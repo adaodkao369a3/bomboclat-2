@@ -11,7 +11,7 @@ exports.adminHelpCommand = {
         if (prefix !== index_js_1.ADMIN_PREFIX)
             return;
         // Check admin permissions
-        if (!(0, permissions_js_1.isAdmin)(message.member)) {
+        if (!message.member || !(0, permissions_js_1.isAdmin)(message.member)) {
             await message.reply('❌ This command is restricted to admins.');
             return;
         }

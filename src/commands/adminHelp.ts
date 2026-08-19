@@ -10,7 +10,7 @@ export const adminHelpCommand: Command = {
     if (prefix !== ADMIN_PREFIX) return;
 
     // Check admin permissions
-    if (!isAdmin(message.member!)) {
+    if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');
       return;
     }

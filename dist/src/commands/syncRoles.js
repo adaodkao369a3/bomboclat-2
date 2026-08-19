@@ -13,7 +13,7 @@ exports.syncRolesCommand = {
         if (prefix !== index_js_1.ADMIN_PREFIX)
             return;
         // Check admin permissions
-        if (!(0, permissions_js_1.isAdmin)(message.member)) {
+        if (!message.member || !(0, permissions_js_1.isAdmin)(message.member)) {
             await message.reply('❌ This command is restricted to admins.');
             return;
         }
@@ -26,71 +26,36 @@ exports.syncRolesCommand = {
         let changedCount = 0;
         let alreadyCorrectCount = 0;
         let errorCount = 0;
-        const roleKeys = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
         for (const member of message.guild.members.cache.values()) {
-            if (member.user.bot)
+            if (!member.user || member.user.bot)
                 continue;
             checkedCount++;
             try {
                 const userData = await (0, client_js_1.getUser)(member.user.id);
                 if (!userData)
                     continue;
-                const currentLevel = userData.current_level;
-                const expectedRole = (0, xp_js_1.getRoleFromLevel)(currentLevel);
+                const expectedLevel = (0, xp_js_1.calculateLevelFromXP)(userData.current_xp);
+                const expectedRole = (0, xp_js_1.getRoleFromLevel)(expectedLevel);
                 const currentRole = userData.current_progression_role;
-                // Get current Discord progression roles
-                const currentDiscordRoles = new Set();
-                for (const [roleName, roleId] of Object.entries(index_js_1.ROLES)) {
-                    if ((0, permissions_js_1.isProgressionRole)(roleId) && member.roles.cache.has(roleId)) {
-                        currentDiscordRoles.add(roleName.toLowerCase());
-                    }
+                const syncResult = await (0, xp_js_1.synchronizeProgressionRoles)(member, expectedLevel);
+                if (!syncResult.success)
+                    throw new Error('Failed to synchronize progression roles');
+                if (userData.current_level !== expectedLevel) {
+                    await (0, client_js_1.setUserLevel)(member.user.id, expectedLevel);
                 }
-                // Get expected stacked roles
-                const expectedIndex = roleKeys.indexOf(expectedRole);
-                const expectedStackedRoles = new Set(roleKeys.slice(0, expectedIndex + 1));
-                // Compare
-                if (currentDiscordRoles.size === expectedStackedRoles.size &&
-                    [...currentDiscordRoles].every(r => expectedStackedRoles.has(r))) {
-                    alreadyCorrectCount++;
-                    continue;
-                }
-                // Synchronize roles - remove outdated progression roles first
-                for (const [roleName, roleId] of Object.entries(index_js_1.ROLES)) {
-                    // Skip special roles (Hall of Fame) and staff roles - never touch these
-                    if ((0, permissions_js_1.isSpecialRole)(roleId) || (0, permissions_js_1.isStaffRole)(roleId)) {
-                        continue;
-                    }
-                    if ((0, permissions_js_1.isProgressionRole)(roleId) && member.roles.cache.has(roleId)) {
-                        const roleIndex = roleKeys.indexOf(roleName.toLowerCase());
-                        if (roleIndex > expectedIndex) {
-                            // Remove this role - it's higher than their current level
-                            const role = member.guild.roles.cache.get(roleId);
-                            if (role) {
-                                await member.roles.remove(role, 'Role synchronization: removing outdated progression role');
-                            }
-                        }
-                    }
-                }
-                // Add missing progression roles
-                const currentIndex = roleKeys.indexOf(currentRole);
-                const successfullyAddedRoles = [];
-                for (let i = currentIndex + 1; i <= expectedIndex; i++) {
-                    const roleName = roleKeys[i];
-                    const success = await (0, xp_js_1.addProgressionRole)(member, roleName);
-                    if (success && await (0, xp_js_1.verifyRoleAssignment)(member, roleName)) {
-                        successfullyAddedRoles.push(roleName);
-                    }
-                    else {
-                        // Rollback
-                        await (0, xp_js_1.rollbackRoles)(member, successfullyAddedRoles);
-                        throw new Error(`Failed to add role ${roleName}`);
-                    }
-                }
-                if (successfullyAddedRoles.length > 0) {
+                if (currentRole !== expectedRole) {
                     await (0, client_js_1.setUserProgressionRole)(member.user.id, expectedRole);
-                    const eligibility = 0; // Recalculate if needed
-                    await (0, client_js_1.updatePromotionEligibility)(member.user.id, eligibility);
+                }
+                await (0, client_js_1.updatePromotionEligibility)(member.user.id, (0, xp_js_1.calculatePromotionEligibility)(userData.current_xp, expectedLevel, expectedRole));
+                const changed = syncResult.addedRoles.length > 0 ||
+                    syncResult.removedRoles.length > 0 ||
+                    userData.current_level !== expectedLevel ||
+                    currentRole !== expectedRole;
+                if (changed) {
                     changedCount++;
+                }
+                else {
+                    alreadyCorrectCount++;
                 }
             }
             catch (error) {

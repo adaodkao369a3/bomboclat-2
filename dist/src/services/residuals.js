@@ -37,16 +37,16 @@ class ResidualsService {
 }
 exports.ResidualsService = ResidualsService;
 // Convenience functions
-async function awardResiduals(userId, amount, source, kwargs) {
-    return await ResidualsService.awardResiduals(userId, amount, source, kwargs?.reason, kwargs?.adminUserId, kwargs?.description);
+async function awardResiduals(userId, amount, source, options) {
+    return await ResidualsService.awardResiduals(userId, amount, source, options?.reason, options?.adminUserId, options?.description);
 }
-async function removeResiduals(userId, amount, source, kwargs) {
-    return await ResidualsService.removeResiduals(userId, amount, source, kwargs?.reason, kwargs?.adminUserId, kwargs?.description);
+async function removeResiduals(userId, amount, source, options) {
+    return await ResidualsService.removeResiduals(userId, amount, source, options?.reason, options?.adminUserId, options?.description);
 }
 async function getResidualsInfo(userId) {
     return await ResidualsService.getResiduals(userId);
 }
-async function getResidualHistory(userId, kwargs) {
-    return await ResidualsService.getResidualHistory(userId, kwargs?.limit || 20);
+async function getResidualHistory(userId, options) {
+    return await ResidualsService.getResidualHistory(userId, options?.limit ?? 20);
 }
 //# sourceMappingURL=residuals.js.map
