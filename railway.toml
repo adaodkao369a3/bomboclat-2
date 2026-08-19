@@ -1,9 +1,6 @@
 [build]
-builder = "NIXPACKS"
+builder = "railpack"
 buildCommand = "npm run build"
-
-[build.env]
-NPM_FLAGS = "--production=false"
 
 [deploy]
 startCommand = "npm start"
