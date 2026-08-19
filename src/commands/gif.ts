@@ -1,0 +1,67 @@
+import { EmbedBuilder } from 'discord.js';
+import { PREFIX, GIF_COMMANDS, GIF_CAPTIONS, GIF_CONFIG } from '../config/index.js';
+import { fetchGIF } from '../services/klipy.js';
+import { getRemaining, setCooldown } from '../utils/cooldowns.js';
+import { isAdmin } from '../utils/permissions.js';
+import { Command } from './index.js';
+
+function createGIFCommand(name: string): Command {
+  return {
+    name,
+    async execute(message, _args, prefix) {
+      // Only respond to user prefix
+      if (prefix !== PREFIX) return;
+
+      // Check target limit
+      const mentions = message.mentions.members;
+      if (mentions && mentions.size > GIF_CONFIG.MAX_TARGETS) {
+        await message.reply(`❌ Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
+        return;
+      }
+
+      // Calculate cooldown based on targets
+      let cooldownTime = GIF_CONFIG.NORMAL_COOLDOWN_SECONDS;
+      if (mentions && mentions.size >= 2) {
+        cooldownTime = mentions.size === 2 ? GIF_CONFIG.TWO_TARGET_COOLDOWN_SECONDS : GIF_CONFIG.THREE_TARGET_COOLDOWN_SECONDS;
+      }
+
+      // Admin bypass
+      if (!isAdmin(message.member!)) {
+        const remaining = getRemaining(message.author.id);
+        if (remaining > 0) {
+          await message.reply(`⏳ Post nut clarity is here. Try again in ${remaining}s.`);
+          return;
+        }
+        setCooldown(message.author.id, cooldownTime);
+      }
+
+      // Build targets string
+      let targets: string;
+      if (mentions && mentions.size > 0) {
+        targets = Array.from(mentions.values()).map(m => m.toString()).join(' ');
+      } else {
+        targets = message.author.toString();
+      }
+
+      // Fetch GIF
+      const gifUrl = await fetchGIF(GIF_COMMANDS[name as keyof typeof GIF_COMMANDS]);
+      if (!gifUrl) {
+        await message.reply('❌ No GIF found.');
+        return;
+      }
+
+      // Create embed
+      const caption = GIF_CAPTIONS[name as keyof typeof GIF_CAPTIONS];
+      const embed = new EmbedBuilder()
+        .setTitle(`✨ ${name.toUpperCase()} ✨`)
+        .setDescription(`${targets} ${caption}`)
+        .setColor(0x9b5de5)
+        .setImage(gifUrl)
+        .setFooter({ text: 'Powered by Klipy' });
+
+      await message.reply({ embeds: [embed] });
+    },
+  };
+}
+
+export const gifCommands: Command[] = Object.keys(GIF_COMMANDS).map(name => createGIFCommand(name));

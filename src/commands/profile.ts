@@ -1,0 +1,82 @@
+import { EmbedBuilder, GuildMember } from 'discord.js';
+import { PREFIX } from '../config/index.js';
+import { getUser } from '../database/client.js';
+import { getResidualsInfo } from '../services/residuals.js';
+import { calculateXPRemaining, calculateProgressPercentage, getNextProgressionThreshold } from '../services/xp.js';
+import { getRemaining, setCooldown } from '../utils/cooldowns.js';
+import { Command } from './index.js';
+
+export const profileCommand: Command = {
+  name: 'profile',
+  async execute(message, args, prefix) {
+    // Only respond to user prefix
+    if (prefix !== PREFIX) return;
+
+    // Cooldown check
+    const remaining = getRemaining(message.author.id);
+    if (remaining > 0) {
+      await message.reply(`⏱️ Please wait ${remaining} seconds before using .profile again.`);
+      return;
+    }
+    setCooldown(message.author.id, 15);
+
+    // Get target user
+    let target: GuildMember;
+    if (args.length > 0 && message.mentions.members?.first()) {
+      target = message.mentions.members.first()!;
+    } else {
+      target = message.member as GuildMember;
+    }
+
+    // Get user data
+    const userData = await getUser(target.user.id);
+    if (!userData) {
+      await message.reply('❌ User not found in database.');
+      return;
+    }
+
+    // Calculate XP progress using centralized functions
+    const currentXP = userData.current_xp;
+    const currentLevel = userData.current_level;
+    const xpRemaining = calculateXPRemaining(currentXP, currentLevel);
+    const xpProgress = calculateProgressPercentage(currentXP, currentLevel);
+    const currentRole = userData.current_progression_role;
+    const nextRoleThreshold = getNextProgressionThreshold(currentRole);
+
+    // Get residuals
+    const residualData = await getResidualsInfo(target.user.id);
+    const residualsBalance = residualData?.balance || 0;
+
+    // Create progress bar
+    const progressBars = Math.floor(xpProgress / 10);
+    const progressBar = '█'.repeat(progressBars) + '░'.repeat(10 - progressBars);
+
+    // Format role name
+    const roleDisplay = currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+    // Build embed fields
+    const fields = [
+      { name: 'Level', value: currentLevel.toString(), inline: true },
+      { name: 'Current XP', value: `\`${currentXP.toLocaleString()}\``, inline: true },
+      { name: 'XP Progress', value: `\`${progressBar} ${Math.floor(xpProgress)}%\`\n\`${xpRemaining.toLocaleString()} XP to Level ${currentLevel + 1}\``, inline: false },
+      { name: '◈ Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
+    ];
+
+    // Add promotion eligibility if not at max role
+    if (nextRoleThreshold > 0) {
+      const eligibility = userData.promotion_eligibility_percentage || 0;
+      fields.push({ name: 'Promotion Eligibility', value: `\`${Math.floor(eligibility)}%\` (Level ${nextRoleThreshold})`, inline: true });
+    }
+
+    // Create embed
+    const embed = new EmbedBuilder()
+      .setTitle('🎬 STUDIO PROFILE')
+      .setDescription(`**${target.displayName}**\n\`${roleDisplay}\``)
+      .setColor(0x7B61FF)
+      .setThumbnail(target.user.displayAvatarURL())
+      .addFields(fields)
+      .setFooter({ text: 'MI BOM3O Studios' });
+
+    await message.reply({ embeds: [embed] });
+  },
+};
