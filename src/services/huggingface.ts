@@ -33,7 +33,7 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
       timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_SECONDS * 1000);
 
       const response = await fetch(
-        `https://api-inference.huggingface.co/models/${DEFAULT_MODEL}`,
+        `https://router.huggingface.co/hf-inference/models/${DEFAULT_MODEL}`,
         {
           method: 'POST',
           headers: {
@@ -52,12 +52,21 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
       );
 
       if (!response.ok) {
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+          // Redact any potential tokens from error body
+          errorBody = errorBody.replace(/hf_[a-zA-Z0-9]{34}/g, 'hf_****');
+        } catch (e) {
+          errorBody = '(unable to read error body)';
+        }
+
         if (response.status === 401 || response.status === 403) {
-          console.error(`HF image: auth rejected (${response.status})`);
+          console.error(`HF image: auth rejected (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
           return null;
         }
         if (response.status === 429) {
-          console.warn(`HF image: rate limited (attempt ${attempt}/${MAX_RETRIES})`);
+          console.warn(`HF image: rate limited (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
           lastError = new Error(`Rate limited: ${response.status}`);
           if (attempt < MAX_RETRIES) {
             await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
@@ -66,7 +75,7 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
           return null;
         }
         if (response.status >= 500) {
-          console.warn(`HF image: server error ${response.status} (attempt ${attempt}/${MAX_RETRIES})`);
+          console.warn(`HF image: server error (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
           lastError = new Error(`Server error: ${response.status}`);
           if (attempt < MAX_RETRIES) {
             await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
@@ -74,7 +83,7 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
           }
           return null;
         }
-        console.error(`HF image: generation failed (${response.status})`);
+        console.error(`HF image: generation failed (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
         return null;
       }
 
@@ -88,7 +97,7 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
 
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn(`HF image: request timed out (attempt ${attempt}/${MAX_RETRIES})`);
+        console.warn(`HF image: request timed out (model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES})`);
         lastError = error;
         if (attempt < MAX_RETRIES) {
           await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
@@ -96,7 +105,13 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
         }
       } else {
         lastError = error instanceof Error ? error : new Error('Unknown network error');
-        console.warn(`HF image: network error (attempt ${attempt}/${MAX_RETRIES}):`, lastError.message);
+        // Check if it's a DNS/connection error - don't retry these
+        const errorMessage = lastError.message.toLowerCase();
+        if (errorMessage.includes('enotfound') || errorMessage.includes('getaddrinfo') || errorMessage.includes('econnrefused')) {
+          console.error(`HF image: DNS/connection error (model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${lastError.message}) - not retrying`);
+          return null;
+        }
+        console.warn(`HF image: network error (model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${lastError.message})`);
         if (attempt < MAX_RETRIES) {
           await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
           continue;
