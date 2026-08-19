@@ -1,5 +1,4 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
-import { PREFIX } from '../config/index.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
 import { calculateXPRemaining, calculateProgressPercentage, getNextProgressionThreshold } from '../services/xp.js';
@@ -8,9 +7,8 @@ import { Command } from './index.js';
 
 export const profileCommand: Command = {
   name: 'profile',
-  async execute(message, args, prefix) {
-    // Only respond to user prefix
-    if (prefix !== PREFIX) return;
+  allowedPrefix: '.',
+  async execute(message, args, _prefix) {
 
     // Cooldown check
     const remaining = getRemaining(message.author.id);

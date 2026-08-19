@@ -1,5 +1,4 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, Message } from 'discord.js';
-import { ADMIN_PREFIX } from '../config/index.js';
 import { getUser, setUserXP, setUserLevel, addUserXP } from '../database/client.js';
 import {
   calculateLevelFromXP,
@@ -14,9 +13,8 @@ import { Command } from './index.js';
 
 export const xpCommand: Command = {
   name: 'xp',
-  async execute(message, _args, prefix) {
-    // Only respond to admin prefix
-    if (prefix !== ADMIN_PREFIX) return;
+  allowedPrefix: '$',
+  async execute(message, _args, _prefix) {
 
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {
@@ -95,7 +93,7 @@ export const xpCommand: Command = {
       }
 
       const collector = message.channel.createMessageCollector({
-        filter: (m: Message) => m.author.id === message.author.id,
+        filter: (m: Message) => m.author.id === message.author.id && m.id !== message.id,
         max: 1,
         time: 30000,
       });

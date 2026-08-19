@@ -4,9 +4,8 @@ import { Command } from './index.js';
 
 export const helpCommand: Command = {
   name: 'help',
-  async execute(message, _args, prefix) {
-    // Only respond to user prefix
-    if (prefix !== PREFIX) return;
+  allowedPrefix: '.',
+  async execute(message, _args, _prefix) {
 
     const embed = new EmbedBuilder()
       .setTitle('🎬 Bomboclat Commands')

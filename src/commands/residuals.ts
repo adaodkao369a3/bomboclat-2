@@ -1,5 +1,4 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, Message } from 'discord.js';
-import { ADMIN_PREFIX } from '../config/index.js';
 import { getUser, type ResidualTransaction } from '../database/client.js';
 import { ResidualsService } from '../services/residuals.js';
 import { canManageResiduals } from '../utils/permissions.js';
@@ -7,9 +6,8 @@ import { Command } from './index.js';
 
 export const residualsCommand: Command = {
   name: 'residuals',
-  async execute(message, _args, prefix) {
-    // Only respond to admin prefix
-    if (prefix !== ADMIN_PREFIX) return;
+  allowedPrefix: '$',
+  async execute(message, _args, _prefix) {
 
     // Check staff permissions
     if (!message.member || !canManageResiduals(message.member)) {
@@ -147,7 +145,7 @@ export const residualsCommand: Command = {
       }
 
       const collector = message.channel.createMessageCollector({
-        filter: (m: Message) => m.author.id === message.author.id,
+        filter: (m: Message) => m.author.id === message.author.id && m.id !== message.id,
         max: 1,
         time: 30000,
       });

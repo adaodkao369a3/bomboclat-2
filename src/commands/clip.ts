@@ -1,5 +1,5 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
-import { ADMIN_PREFIX, CHANNELS } from '../config/index.js';
+import { CHANNELS } from '../config/index.js';
 import { generateClipSummary } from '../services/groq.js';
 import { generateImage } from '../services/huggingface.js';
 import { parseClipArguments } from '../services/clip.js';
@@ -8,9 +8,8 @@ import { Command } from './index.js';
 
 export const clipCommand: Command = {
   name: 'clip',
-  async execute(message, args, prefix) {
-    // Only respond to admin prefix
-    if (prefix !== ADMIN_PREFIX) return;
+  allowedPrefix: '$',
+  async execute(message, args, _prefix) {
 
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {

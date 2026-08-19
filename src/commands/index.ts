@@ -16,6 +16,7 @@ import { rulesCommand } from './rules.js';
 
 export interface Command {
   name: string;
+  allowedPrefix?: '.' | '$' | 'both';
   execute: (message: Message, args: string[], prefix: string) => Promise<void>;
 }
 

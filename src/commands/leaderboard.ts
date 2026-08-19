@@ -1,13 +1,11 @@
 import { EmbedBuilder } from 'discord.js';
-import { PREFIX } from '../config/index.js';
 import { getLeaderboard } from '../database/client.js';
 import { Command } from './index.js';
 
 export const leaderboardCommand: Command = {
   name: 'leaderboard',
-  async execute(message, _args, prefix) {
-    // Only respond to user prefix
-    if (prefix !== PREFIX) return;
+  allowedPrefix: '.',
+  async execute(message, _args, _prefix) {
 
     // Get leaderboard (max 5)
     const leaderboard = await getLeaderboard(5);

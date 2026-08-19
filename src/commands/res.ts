@@ -1,5 +1,4 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
-import { PREFIX } from '../config/index.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
@@ -7,9 +6,8 @@ import { Command } from './index.js';
 
 export const resCommand: Command = {
   name: 'res',
-  async execute(message, args, prefix) {
-    // Only respond to user prefix
-    if (prefix !== PREFIX) return;
+  allowedPrefix: '.',
+  async execute(message, args, _prefix) {
 
     // Cooldown check
     const remaining = getRemaining(message.author.id);

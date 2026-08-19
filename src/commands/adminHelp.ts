@@ -4,11 +4,9 @@ import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
 export const adminHelpCommand: Command = {
-  name: 'help',
-  async execute(message, _args, prefix) {
-    // Only respond to admin prefix
-    if (prefix !== ADMIN_PREFIX) return;
-
+  name: 'adminhelp',
+  allowedPrefix: '$',
+  async execute(message, _args, _prefix) {
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');

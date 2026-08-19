@@ -54,6 +54,10 @@ client.on('messageCreate', async (message) => {
       // Find and execute command
       const command = client.commands.get(commandName);
       if (command) {
+        // Check if command allows this prefix
+        if (command.allowedPrefix && command.allowedPrefix !== 'both' && command.allowedPrefix !== usedPrefix) {
+          return;
+        }
         try {
           await command.execute(message, args, usedPrefix);
         } catch (error) {

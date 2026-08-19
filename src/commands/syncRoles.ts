@@ -1,5 +1,4 @@
 import { EmbedBuilder } from 'discord.js';
-import { ADMIN_PREFIX } from '../config/index.js';
 import { getUser, setUserLevel, setUserProgressionRole, updatePromotionEligibility } from '../database/client.js';
 import { calculateLevelFromXP, calculatePromotionEligibility, getRoleFromLevel, synchronizeProgressionRoles } from '../services/xp.js';
 import { isAdmin } from '../utils/permissions.js';
@@ -7,9 +6,8 @@ import { Command } from './index.js';
 
 export const syncRolesCommand: Command = {
   name: 'syncroles',
-  async execute(message, _args, prefix) {
-    // Only respond to admin prefix
-    if (prefix !== ADMIN_PREFIX) return;
+  allowedPrefix: '$',
+  async execute(message, _args, _prefix) {
 
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {

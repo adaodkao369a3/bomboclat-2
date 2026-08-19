@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { PREFIX, GIF_CONFIG } from '../config/index.js';
+import { GIF_CONFIG } from '../config/index.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { isAdmin, hasSupportingCast } from '../utils/permissions.js';
@@ -7,9 +7,8 @@ import { Command } from './index.js';
 
 export const customGifCommand: Command = {
   name: 'c',
-  async execute(message, args, prefix) {
-    // Only respond to user prefix
-    if (prefix !== PREFIX) return;
+  allowedPrefix: '.',
+  async execute(message, args, _prefix) {
 
     // Check permissions (Supporting Cast+ or admins)
     if (!message.member || (!hasSupportingCast(message.member) && !isAdmin(message.member))) {

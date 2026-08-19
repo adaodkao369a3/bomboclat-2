@@ -1,13 +1,11 @@
 import { EmbedBuilder } from 'discord.js';
-import { ADMIN_PREFIX } from '../config/index.js';
 import { isBotOwner } from '../utils/permissions.js';
 import { Command } from './index.js';
 
 export const rulesCommand: Command = {
   name: 'rules',
-  async execute(message, _args, prefix) {
-    // Only respond to admin prefix
-    if (prefix !== ADMIN_PREFIX) return;
+  allowedPrefix: '$',
+  async execute(message, _args, _prefix) {
 
     // Check bot owner permissions (Director only)
     if (!message.member || !isBotOwner(message.member)) {

@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { PREFIX, GIF_COMMANDS, GIF_CAPTIONS, GIF_CONFIG } from '../config/index.js';
+import { GIF_COMMANDS, GIF_CAPTIONS, GIF_CONFIG } from '../config/index.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { isAdmin } from '../utils/permissions.js';
@@ -8,9 +8,8 @@ import { Command } from './index.js';
 function createGIFCommand(name: string): Command {
   return {
     name,
-    async execute(message, _args, prefix) {
-      // Only respond to user prefix
-      if (prefix !== PREFIX) return;
+    allowedPrefix: '.',
+    async execute(message, _args, _prefix) {
 
       // Check target limit
       const mentions = message.mentions.members;
