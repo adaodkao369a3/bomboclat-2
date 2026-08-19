@@ -1,9 +1,16 @@
 import { HF_API_TOKEN } from '../config/index.js';
+import { InferenceClient } from '@huggingface/inference';
 
-const DEFAULT_MODEL = 'black-forest-labs/FLUX.1-schnell';
-const MAX_RETRIES = 3;
-const RETRY_BACKOFF_BASE = 2000; // 2 seconds
-const REQUEST_TIMEOUT_SECONDS = 60;
+const CLIP_IMAGE_MODELS: Array<{ model: string; provider: 'fal-ai' }> = [
+  {
+    model: 'Qwen/Qwen-Image',
+    provider: 'fal-ai',
+  },
+  {
+    model: 'black-forest-labs/FLUX.1-schnell',
+    provider: 'fal-ai',
+  },
+];
 
 export async function generateImage(prompt: string, style: string = 'anime'): Promise<Buffer | null> {
   if (!HF_API_TOKEN) {
@@ -22,106 +29,41 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
   const stylePrompt = stylePrompts[style] || stylePrompts.anime;
   const fullPrompt = `${prompt}, ${stylePrompt}, landscape orientation, cinematic, high quality`;
 
-  let lastError: Error | null = null;
+  const hf = new InferenceClient(HF_API_TOKEN);
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  // Try each model/provider combination
+  for (const candidate of CLIP_IMAGE_MODELS) {
     try {
-      console.log(`HF image: attempt ${attempt}/${MAX_RETRIES} (model=${DEFAULT_MODEL})`);
+      console.log(`[$clip] Attempting image generation (model=${candidate.model}, provider=${candidate.provider})`);
 
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_SECONDS * 1000);
+      const image = await hf.textToImage({
+        model: candidate.model,
+        provider: candidate.provider,
+        inputs: fullPrompt,
+        parameters: {
+          width: 1024,
+          height: 576,
+        },
+      });
 
-      const response = await fetch(
-        `https://router.huggingface.co/hf-inference/models/${DEFAULT_MODEL}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${HF_API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            inputs: fullPrompt,
-            parameters: {
-              width: 1024,
-              height: 576,
-            },
-          }),
-          signal: controller.signal,
-        }
-      );
+      // The SDK returns a base64 string, convert to Buffer
+      const buffer = Buffer.from(image, 'base64');
 
-      if (!response.ok) {
-        let errorBody = '';
-        try {
-          errorBody = await response.text();
-          // Redact any potential tokens from error body
-          errorBody = errorBody.replace(/hf_[a-zA-Z0-9]{34}/g, 'hf_****');
-        } catch (e) {
-          errorBody = '(unable to read error body)';
-        }
-
-        if (response.status === 401 || response.status === 403) {
-          console.error(`HF image: auth rejected (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
-          return null;
-        }
-        if (response.status === 429) {
-          console.warn(`HF image: rate limited (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
-          lastError = new Error(`Rate limited: ${response.status}`);
-          if (attempt < MAX_RETRIES) {
-            await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
-            continue;
-          }
-          return null;
-        }
-        if (response.status >= 500) {
-          console.warn(`HF image: server error (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
-          lastError = new Error(`Server error: ${response.status}`);
-          if (attempt < MAX_RETRIES) {
-            await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
-            continue;
-          }
-          return null;
-        }
-        console.error(`HF image: generation failed (status=${response.status}, model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${errorBody.substring(0, 200)})`);
-        return null;
-      }
-
-      const buffer = Buffer.from(await response.arrayBuffer());
       if (buffer.length === 0) {
-        console.error('HF image: API returned an empty image');
-        return null;
+        console.warn(`[$clip] Image generation returned empty buffer (model=${candidate.model}, provider=${candidate.provider})`);
+        continue;
       }
-      console.log('HF image: generation complete');
+
+      console.log(`[$clip] Image generation successful (model=${candidate.model}, provider=${candidate.provider})`);
       return buffer;
 
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.warn(`HF image: request timed out (model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES})`);
-        lastError = error;
-        if (attempt < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
-          continue;
-        }
-      } else {
-        lastError = error instanceof Error ? error : new Error('Unknown network error');
-        // Check if it's a DNS/connection error - don't retry these
-        const errorMessage = lastError.message.toLowerCase();
-        if (errorMessage.includes('enotfound') || errorMessage.includes('getaddrinfo') || errorMessage.includes('econnrefused')) {
-          console.error(`HF image: DNS/connection error (model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${lastError.message}) - not retrying`);
-          return null;
-        }
-        console.warn(`HF image: network error (model=${DEFAULT_MODEL}, attempt=${attempt}/${MAX_RETRIES}, error=${lastError.message})`);
-        if (attempt < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_BACKOFF_BASE * attempt));
-          continue;
-        }
-      }
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn(`[$clip] Image generation failed (model=${candidate.model}, provider=${candidate.provider}, error=${errorMessage.substring(0, 200)})`);
+      // Continue to next candidate
     }
   }
 
-  console.error(`HF image: failed after ${MAX_RETRIES} attempts:`, lastError);
+  console.error('[$clip] All image generation attempts failed, publishing summary without artwork');
   return null;
 }
