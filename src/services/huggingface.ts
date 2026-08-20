@@ -46,8 +46,17 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
         },
       });
 
-      // The SDK returns a base64 string, convert to Buffer
-      const buffer = Buffer.from(image, 'base64');
+      // The SDK may return a Blob or base64 string, handle both
+      let buffer: Buffer;
+      
+      if (typeof image === 'string') {
+        // Handle base64 string response
+        buffer = Buffer.from(image, 'base64');
+      } else {
+        // Handle Blob response
+        const arrayBuffer = await (image as Blob).arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
+      }
 
       if (buffer.length === 0) {
         console.warn(`[$clip] Image generation returned empty buffer (model=${candidate.model}, provider=${candidate.provider})`);
