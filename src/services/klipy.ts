@@ -49,16 +49,19 @@ export async function fetchGIF(query: string): Promise<string | null> {
       return null;
     }
     
+    // Randomly select one result from the available results
+    const randomIndex = Math.floor(Math.random() * results.length);
+    const selectedResult = results[randomIndex];
+    
     // Try to find URL in various possible structures
-    const firstResult = results[0];
-    const gifUrl = firstResult.url || firstResult.gif?.url || firstResult.media?.url || firstResult.images?.original?.url;
+    const gifUrl = selectedResult.url || selectedResult.gif?.url || selectedResult.media?.url || selectedResult.images?.original?.url;
     
     if (!gifUrl) {
-      console.error(`Could not extract URL from GIF result:`, JSON.stringify(firstResult, null, 2));
+      console.error(`Could not extract URL from GIF result at index ${randomIndex}:`, JSON.stringify(selectedResult, null, 2));
       return null;
     }
     
-    console.log(`Successfully fetched GIF: ${gifUrl}`);
+    console.log(`Successfully fetched GIF (random selection from ${results.length} results): ${gifUrl}`);
     return gifUrl;
   } catch (error) {
     console.error('Error fetching GIF from Klipy:', error);
