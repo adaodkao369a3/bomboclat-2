@@ -10,12 +10,12 @@ export const resCommand: Command = {
   async execute(message, args, _prefix) {
 
     // Cooldown check
-    const remaining = getRemaining(message.author.id);
+    const remaining = getRemaining(message.author.id, 'res');
     if (remaining > 0) {
       await message.reply(`⏱️ Please wait ${remaining} seconds before using .res again.`);
       return;
     }
-    setCooldown(message.author.id, 15);
+    setCooldown(message.author.id, 'res', 15);
 
     // Get target user
     let target: GuildMember;

@@ -24,15 +24,15 @@ function createGIFCommand(name: string): Command {
         cooldownTime = mentions.size === 2 ? GIF_CONFIG.TWO_TARGET_COOLDOWN_SECONDS : GIF_CONFIG.THREE_TARGET_COOLDOWN_SECONDS;
       }
 
-      // Admin bypass
+      // Admin bypass - admins are exempt from cooldowns
       const isUserAdmin = message.member ? isAdmin(message.member) : false;
       if (!isUserAdmin) {
-        const remaining = getRemaining(message.author.id);
+        const remaining = getRemaining(message.author.id, name);
         if (remaining > 0) {
-          await message.reply(`⏳ Post nut clarity is here. Try again in ${remaining}s.`);
+          await message.reply(`⏳ You can't use this command for another ${remaining} seconds.`);
           return;
         }
-        setCooldown(message.author.id, cooldownTime);
+        setCooldown(message.author.id, name, cooldownTime);
       }
 
       // Build targets string

@@ -51,15 +51,18 @@ client.on('messageCreate', async (message) => {
       
       if (!commandName) return;
       
-      // Find and execute command
-      const command = client.commands.get(commandName);
-      if (command) {
-        // Check if command allows this prefix
-        if (command.allowedPrefix && command.allowedPrefix !== 'both' && command.allowedPrefix !== usedPrefix) {
-          return;
-        }
+      // Find and execute command using prefix-aware key
+      const commandKey = `${usedPrefix}:${commandName}`;
+      const command = client.commands.get(commandKey);
+      
+      // Also try 'both' prefix if specific prefix not found
+      const fallbackCommand = !command ? client.commands.get(`both:${commandName}`) : null;
+      
+      const finalCommand = command || fallbackCommand;
+      
+      if (finalCommand) {
         try {
-          await command.execute(message, args, usedPrefix);
+          await finalCommand.execute(message, args, usedPrefix);
         } catch (error) {
           console.error(`Error executing command ${commandName}:`, error);
           await message.reply('❌ An error occurred while executing this command.');

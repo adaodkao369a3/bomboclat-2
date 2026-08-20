@@ -11,12 +11,12 @@ export const profileCommand: Command = {
   async execute(message, args, _prefix) {
 
     // Cooldown check
-    const remaining = getRemaining(message.author.id);
+    const remaining = getRemaining(message.author.id, 'profile');
     if (remaining > 0) {
       await message.reply(`⏱️ Please wait ${remaining} seconds before using .profile again.`);
       return;
     }
-    setCooldown(message.author.id, 15);
+    setCooldown(message.author.id, 'profile', 15);
 
     // Get target user
     let target: GuildMember;

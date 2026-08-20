@@ -4,7 +4,7 @@ import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
 export const adminHelpCommand: Command = {
-  name: 'adminhelp',
+  name: 'help',
   allowedPrefix: '$',
   async execute(message, _args, _prefix) {
     // Check admin permissions

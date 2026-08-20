@@ -11,12 +11,12 @@ export const levelCommand: Command = {
   async execute(message, args, _prefix) {
 
     // Cooldown check
-    const remaining = getRemaining(message.author.id);
+    const remaining = getRemaining(message.author.id, 'level');
     if (remaining > 0) {
       await message.reply(`⏱️ Please wait ${remaining} seconds before using .level again.`);
       return;
     }
-    setCooldown(message.author.id, 10);
+    setCooldown(message.author.id, 'level', 10);
 
     // Get target user
     let target: GuildMember;

@@ -44,7 +44,10 @@ export async function registerCommands(client: Client): Promise<void> {
   ];
 
   for (const command of commands) {
-    client.commands.set(command.name, command);
+    // Use prefix-aware key to allow same command name with different prefixes
+    const prefix = command.allowedPrefix === 'both' ? 'both' : command.allowedPrefix || '.';
+    const key = `${prefix}:${command.name}`;
+    client.commands.set(key, command);
   }
 
   console.log(`✓ Registered ${commands.length} commands`);
