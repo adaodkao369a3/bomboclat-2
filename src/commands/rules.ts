@@ -107,18 +107,21 @@ export const rulesCommand: Command = {
                  '**4. Don\'t manufacture drama.**\n' +
                  'Arguments happen. Deliberately provoking people, starting unnecessary conflicts or dragging drama across the server isn\'t welcome.\n\n' +
                  '**5. Don\'t abuse the bots.**\n' +
-                 'Don\'t intentionally exploit, spam or abuse Bomboclat, its commands, GIF systems, XP system or other server features.\n\n' +
-                 '**6. Don\'t bypass restrictions.**\n' +
+                 'Don\'t intentionally exploit, spam or abuse Bomboclat, its commands, GIF systems, XP system or other server features.',
+          inline: false 
+        },
+        { 
+          name: '<:catnoted:1529429237675589753> THE RULES — CONTINUED', 
+          value: '**6. Don\'t bypass restrictions.**\n' +
                  'Do not attempt to bypass cooldowns, role restrictions, progression systems or other safeguards.\n\n' +
                  '**7. Follow Discord\'s rules.**\n' +
                  'You must follow Discord\'s Terms of Service and Community Guidelines.\n\n' +
                  '**8. Respect moderation.**\n' +
                  'Staff may take action when necessary to keep the server enjoyable and safe. Follow reasonable moderation instructions.\n\n' +
                  '**9. Use common sense.**\n' +
-                 'Not everything needs a 40-page rulebook. If something is obviously intended to ruin everyone else\'s experience, don\'t do it.\n\n' +
+                 'If something is obviously intended to ruin everyone else\'s experience, don\'t do it.\n\n' +
                  'Basically:\n\n' +
-                 '**Have fun. Don\'t be an asshole. Let everyone enjoy the production.**\n\n' +
-                 '<a:ban:1536398324498702396>', 
+                 '**Have fun. Don\'t be an asshole. Let everyone enjoy the production.**',
           inline: false 
         },
       ])
