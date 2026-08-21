@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js';
 import { GIF_CONFIG } from '../config/index.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
-import { isAdmin, hasSupportingCast } from '../utils/permissions.js';
+import { isAdmin, hasFeaturedExtra } from '../utils/permissions.js';
 import { Command } from './index.js';
 
 export const customGifCommand: Command = {
@@ -10,9 +10,9 @@ export const customGifCommand: Command = {
   allowedPrefix: '.',
   async execute(message, args, _prefix) {
 
-    // Check permissions (Supporting Cast+ or admins)
-    if (!message.member || (!hasSupportingCast(message.member) && !isAdmin(message.member))) {
-      await message.reply('❌ This command requires Supporting Cast role or higher.');
+    // Check permissions (Featured Extra+ or admins)
+    if (!message.member || (!hasFeaturedExtra(message.member) && !isAdmin(message.member))) {
+      await message.reply('❌ This command requires Featured Extra role or higher.');
       return;
     }
 
