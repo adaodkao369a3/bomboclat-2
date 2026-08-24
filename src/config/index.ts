@@ -229,7 +229,7 @@ export const BOOST_MESSAGES: string[] = [
 export const SCHEMA = `
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-  user_id TEXT PRIMARY KEY,
+  user_id BIGINT PRIMARY KEY,
   username TEXT NOT NULL,
   nickname TEXT,
   current_xp INTEGER DEFAULT 0,
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- XP transactions log
 CREATE TABLE IF NOT EXISTS xp_transactions (
   id SERIAL PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   source TEXT NOT NULL,
   reason TEXT,
@@ -261,8 +261,8 @@ CREATE TABLE IF NOT EXISTS xp_transactions (
 -- Admin XP changes log
 CREATE TABLE IF NOT EXISTS admin_xp_changes (
   id SERIAL PRIMARY KEY,
-  admin_user_id TEXT NOT NULL,
-  target_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  admin_user_id BIGINT NOT NULL,
+  target_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   change_type TEXT NOT NULL,
   old_value TEXT,
   new_value TEXT,
@@ -273,14 +273,14 @@ CREATE TABLE IF NOT EXISTS admin_xp_changes (
 -- Residuals transactions log
 CREATE TABLE IF NOT EXISTS residual_transactions (
   id SERIAL PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   balance_before INTEGER NOT NULL,
   balance_after INTEGER NOT NULL,
   transaction_type TEXT NOT NULL,
   source TEXT NOT NULL,
   reason TEXT,
-  admin_user_id TEXT,
+  admin_user_id BIGINT,
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -288,8 +288,8 @@ CREATE TABLE IF NOT EXISTS residual_transactions (
 -- Admin Residuals changes log
 CREATE TABLE IF NOT EXISTS admin_residual_changes (
   id SERIAL PRIMARY KEY,
-  admin_user_id TEXT NOT NULL,
-  target_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  admin_user_id BIGINT NOT NULL,
+  target_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   change_type TEXT NOT NULL,
   old_value INTEGER,
   new_value INTEGER,
@@ -326,7 +326,7 @@ CREATE TABLE IF NOT EXISTS shop_colors (
 -- User archetypes table
 CREATE TABLE IF NOT EXISTS user_archetypes (
   id SERIAL PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   archetype_id INTEGER NOT NULL REFERENCES shop_archetypes(id),
   slot_index INTEGER NOT NULL,
   acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -336,7 +336,7 @@ CREATE TABLE IF NOT EXISTS user_archetypes (
 -- User colors table
 CREATE TABLE IF NOT EXISTS user_colors (
   id SERIAL PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   color_id INTEGER NOT NULL REFERENCES shop_colors(id),
   active BOOLEAN DEFAULT FALSE,
   acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
