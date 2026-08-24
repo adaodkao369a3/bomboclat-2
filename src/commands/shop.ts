@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
-import { CHANNELS, ROLES } from '../config/index.js';
+import { CHANNELS } from '../config/index.js';
 import { getUser } from '../database/client.js';
 import { 
   getShopArchetypes, 
@@ -9,7 +9,6 @@ import {
   purchaseArchetype,
   purchaseColor,
   switchActiveColor,
-  hasBoosterFreeGrants,
   seedShopArchetypes,
   seedShopColors,
   type ShopArchetype,

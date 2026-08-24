@@ -1,5 +1,4 @@
 import { getClient } from '../database/client.js';
-import { ROLES } from '../config/index.js';
 
 export interface ShopArchetype {
   id: number;
