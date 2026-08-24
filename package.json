@@ -2,10 +2,10 @@
   "name": "bomboclat",
   "version": "1.0.0",
   "description": "TypeScript Discord bot for MI BOMBO Studios",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "tsc && node dist/index.js",
+    "start": "tsc && node dist/src/index.js",
     "dev": "ts-node src/index.ts",
     "clean": "rimraf dist",
     "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js"
