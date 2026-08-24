@@ -1,6 +1,6 @@
 import { GuildMember, Message } from 'discord.js';
 import { PREFIX, ADMIN_PREFIX, CHANNELS, ROLES } from '../config/index.js';
-import { getOrCreateUser, getUser, addUserXP, setUserLevel, setUserProgressionRole, updatePromotionEligibility, setDailyBonusPaid } from '../database/client.js';
+import { getOrCreateUser, getUser, addUserXP, setUserLevel, setUserProgressionRole, updatePromotionEligibility, setDailyBonusPaid, resetDailyXP } from '../database/client.js';
 import {
   calculateMessageXP,
   calculateLevelFromXP,
@@ -36,6 +36,23 @@ export async function handleXPMessage(message: Message): Promise<void> {
   if (!userData) return;
 
   const currentDailyXP = userData.daily_xp_earned;
+
+  // Check if daily XP needs to be reset (new day)
+  const now = new Date();
+  const lastReset = userData.last_daily_xp_reset ? new Date(userData.last_daily_xp_reset) : null;
+  const needsReset = !lastReset || 
+    (now.getDate() !== lastReset.getDate() || 
+     now.getMonth() !== lastReset.getMonth() || 
+     now.getFullYear() !== lastReset.getFullYear());
+  
+  if (needsReset && currentDailyXP > 0) {
+    await resetDailyXP(message.author.id);
+    // Reload user data after reset
+    const refreshedUser = await getUser(message.author.id);
+    if (refreshedUser) {
+      Object.assign(userData, refreshedUser);
+    }
+  }
 
   // Check if message is eligible for XP
   const { eligible, reason } = antiSpamValidator.isMessageEligible(
@@ -98,7 +115,10 @@ export async function handleXPMessage(message: Message): Promise<void> {
   // Check for daily XP bonus (first time crossing 200 XP in a day)
   const DAILY_BONUS_THRESHOLD = 200;
   const DAILY_BONUS_AMOUNT = 30;
-  if (!userData.daily_bonus_paid && userData.daily_xp_earned >= DAILY_BONUS_THRESHOLD && currentDailyXP < DAILY_BONUS_THRESHOLD) {
+  const dailyXPBeforeAward = userData.daily_xp_earned;
+  const dailyXPAfterAward = dailyXPBeforeAward + xpToAward;
+  
+  if (!userData.daily_bonus_paid && dailyXPBeforeAward < DAILY_BONUS_THRESHOLD && dailyXPAfterAward >= DAILY_BONUS_THRESHOLD) {
     await ResidualsService.awardResiduals(
       message.author.id,
       DAILY_BONUS_AMOUNT,

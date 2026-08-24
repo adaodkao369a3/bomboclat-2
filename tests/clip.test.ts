@@ -9,14 +9,6 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
   }
 }
 
-function assertDeepEqual<T>(actual: T, expected: T, message: string) {
-  const actualStr = JSON.stringify(actual);
-  const expectedStr = JSON.stringify(expected);
-  if (actualStr !== expectedStr) {
-    throw new Error(`${message}: Expected ${expectedStr}, got ${actualStr}`);
-  }
-}
-
 console.log('Running $clip argument parsing tests...');
 
 const result1 = parseClipArguments([]);
@@ -88,32 +80,32 @@ assertEqual(mixedTest.fromMessageId, '123456789', 'First numeric arg should be t
 assertEqual(mixedTest.toMessageId, undefined, 'Second non-numeric arg should not be treated as ID');
 assertEqual(mixedTest.directorsNote, 'world', 'Non-numeric arg should be treated as note');
 
-// Test casting channel permission bug fix (3d)
-// Regression test: CASTING channel should always be allowed regardless of allowlist
-// This prevents the illogical situation where the command can't be used where results are posted
-function testCastingChannelAlwaysAllowed(currentChannelId: string, allowlist: string[], castingChannelId: string): boolean {
-  const isCastingChannel = currentChannelId === castingChannelId;
-  const effectiveChannels = allowlist.length > 0 
-    ? [...allowlist, castingChannelId] 
-    : ['BOMBO_TIMES', castingChannelId]; // fallback
-  
-  return effectiveChannels.includes(currentChannelId) || isCastingChannel;
+// Test channel allowlist fallback behavior (3b): falls back to just
+// Bombo Times when nothing's configured, otherwise uses exactly what's
+// configured via /settings clip-channels (no more permanently-injected
+// CASTING channel - the real casting-channel bug was a permission gap,
+// not a channel one; see isStaff() coverage in permissions.test.ts for
+// the actual regression test for that fix).
+function resolveEffectiveClipChannels(allowlist: string[], bomboTimesChannelId: string): string[] {
+  return allowlist.length > 0 ? allowlist : [bomboTimesChannelId];
 }
 
-const CASTING_ID = '1534576177421881394';
-const OTHER_CHANNEL = '123456789';
-const allowlist = ['999999999'];
+const BOMBO_TIMES_ID = '1534577767180533872';
 
-// CASTING channel should always be allowed
-const castingAllowed = testCastingChannelAlwaysAllowed(CASTING_ID, allowlist, CASTING_ID);
-assertEqual(castingAllowed, true, 'CASTING channel should always be allowed (bug fix)');
-
-// Other channels should respect allowlist
-const otherAllowed = testCastingChannelAlwaysAllowed(OTHER_CHANNEL, allowlist, CASTING_ID);
-assertEqual(otherAllowed, false, 'Other channels should respect allowlist');
-
-// With empty allowlist, CASTING should still be allowed
-const emptyAllowlistCasting = testCastingChannelAlwaysAllowed(CASTING_ID, [], CASTING_ID);
-assertEqual(emptyAllowlistCasting, true, 'CASTING should be allowed with empty allowlist (fallback)');
+assertEqual(
+  resolveEffectiveClipChannels([], BOMBO_TIMES_ID).length,
+  1,
+  'Empty allowlist should fall back to a single channel'
+);
+assertEqual(
+  resolveEffectiveClipChannels([], BOMBO_TIMES_ID)[0],
+  BOMBO_TIMES_ID,
+  'Empty allowlist should fall back to Bombo Times specifically'
+);
+assertEqual(
+  resolveEffectiveClipChannels(['999999999'], BOMBO_TIMES_ID).includes(BOMBO_TIMES_ID),
+  false,
+  'A configured allowlist should not silently keep Bombo Times if it was not included'
+);
 
 console.log('✓ All $clip argument parsing tests passed!');

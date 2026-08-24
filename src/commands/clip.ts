@@ -4,7 +4,7 @@ import { generateClipSummary } from '../services/groq.js';
 import { generateImage } from '../services/huggingface.js';
 import { parseClipArguments } from '../services/clip.js';
 import { getSetting } from '../services/settings.js';
-import { isAdmin } from '../utils/permissions.js';
+import { isStaff } from '../utils/permissions.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
 
@@ -13,9 +13,9 @@ export const clipCommand: Command = {
   allowedPrefix: '$',
   async execute(message, args, _prefix) {
 
-    // Check admin permissions - no one but admins may use $clip
-    if (!message.member || !isAdmin(message.member)) {
-      await message.reply('❌ This command is restricted to admins.');
+    // Check staff permissions - Casting Director, Producer, Executive Producer, Director
+    if (!message.member || !isStaff(message.member)) {
+      await message.reply('❌ This command is restricted to staff.');
       return;
     }
 
@@ -64,16 +64,19 @@ export const clipCommand: Command = {
       const MAX_MESSAGES = 200;
 
       if (fromMessageId && toMessageId) {
-        // Fetch messages between two IDs
+        // Fetch messages between two IDs - Discord API only supports one of after/before at a time
+        // We'll fetch messages after fromMessageId and filter by toMessageId
         const fetchedMessages = await message.channel.messages.fetch({
           after: fromMessageId,
-          before: toMessageId,
           limit: MAX_MESSAGES,
         });
 
         for (const msg of [...fetchedMessages.values()].sort(
           (left, right) => left.createdTimestamp - right.createdTimestamp
         )) {
+          // Filter by toMessageId if provided
+          if (toMessageId && msg.id >= toMessageId) break;
+          
           if (!msg.author.bot && msg.content) {
             messages.push({
               author: msg.author.displayName,

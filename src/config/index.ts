@@ -308,7 +308,7 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Shop archetypes table
 CREATE TABLE IF NOT EXISTS shop_archetypes (
   id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
   tier TEXT NOT NULL,
   price INTEGER NOT NULL,
   min_role TEXT,
@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS shop_archetypes (
 -- Shop colors table
 CREATE TABLE IF NOT EXISTS shop_colors (
   id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
   hex TEXT NOT NULL,
   price_band TEXT NOT NULL
 );

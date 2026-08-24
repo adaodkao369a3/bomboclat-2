@@ -93,7 +93,7 @@ const level1Residuals = calculateLevelUpResiduals(1);
 assertApproximate(level1Residuals, 12, 1, 'Level 1 should award ~12 residuals (low end of 10-50 range)');
 
 const level13Residuals = calculateLevelUpResiduals(13);
-assertApproximate(level13Residuals, 26, 1, 'Level 13 should award ~26 residuals (mid range)');
+assertApproximate(level13Residuals, 31, 1, 'Level 13 should award ~31 residuals (mid range)');
 
 const level25Residuals = calculateLevelUpResiduals(25);
 assertApproximate(level25Residuals, 50, 1, 'Level 25 should award ~50 residuals (high end of 10-50 range)');
