@@ -1,9 +1,13 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { getUser } from '../database/client.js';
-import { getResidualsInfo } from '../services/residuals.js';
-import { calculateXPForLevel, calculateXPRemaining, calculateProgressPercentage } from '../services/xp.js';
+import { calculateXPForLevel, calculateXPRemaining, calculateProgressPercentage, PROGRESSION_ROLE_KEYS } from '../services/xp.js';
+import { XP_CONFIG, EMOJIS } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
+
+function formatRoleName(role: string): string {
+  return role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
 export const levelCommand: Command = {
   name: 'level',
@@ -43,21 +47,30 @@ export const levelCommand: Command = {
     const xpRemaining = calculateXPRemaining(currentXP, currentLevel);
     const xpProgress = calculateProgressPercentage(currentXP, currentLevel);
 
-    // Get residuals
-    const residualData = await getResidualsInfo(target.user.id);
-    const residualsBalance = residualData?.balance || 0;
-
     // Create progress bar
     const progressBars = Math.floor(xpProgress / 10);
     const progressBar = '█'.repeat(progressBars) + '░'.repeat(10 - progressBars);
 
     // Format role name
-    const roleDisplay = userData.current_progression_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const roleDisplay = formatRoleName(userData.current_progression_role);
+
+    // Build the full role progression ladder - shows every role they'll unlock
+    // down the line, marked with ✅ if already earned or ❌ if not yet, plus
+    // the XP each one kicks in at.
+    const roleLadder = PROGRESSION_ROLE_KEYS.map((roleKey) => {
+      const requiredLevel = XP_CONFIG.ROLE_LEVEL_REQUIREMENTS[roleKey];
+      const requiredXP = calculateXPForLevel(requiredLevel);
+      const achieved = currentLevel >= requiredLevel;
+      const icon = achieved ? '✅' : '❌';
+      const isCurrent = roleKey === userData.current_progression_role;
+      const marker = isCurrent ? ` ${EMOJIS.CROWN}` : '';
+      return `${icon} **${formatRoleName(roleKey)}** \`Lvl ${requiredLevel}+\` — \`${requiredXP.toLocaleString()}\` XP${marker}`;
+    }).join('\n');
 
     // Create embed
     const embed = new EmbedBuilder()
       .setTitle('📊 LEVEL PROGRESS')
-      .setDescription(`**${target.displayName}**\n\`${roleDisplay}\``)
+      .setDescription(`**${target.displayName}**\n\`${roleDisplay}\` ${EMOJIS.CROWN}`)
       .setColor(0x7B61FF)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields([
@@ -66,7 +79,7 @@ export const levelCommand: Command = {
         { name: 'XP Required for Next Level', value: `\`${nextLevelXP.toLocaleString()}\``, inline: true },
         { name: 'XP Remaining', value: `\`${xpRemaining.toLocaleString()}\``, inline: true },
         { name: 'XP Progress', value: `\`${progressBar} ${Math.floor(xpProgress)}%\``, inline: false },
-        { name: '◈ Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
+        { name: '🎭 Role Progression', value: roleLadder, inline: false },
       ])
       .setFooter({ text: 'MI BOM3O Studios' });
 

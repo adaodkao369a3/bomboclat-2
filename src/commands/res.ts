@@ -1,6 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
+import { EMOJIS } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
 
@@ -44,12 +45,12 @@ export const resCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('💰 RESIDUALS')
+      .setTitle(`${EMOJIS.MONEY} RESIDUALS`)
       .setDescription(`**${target.displayName}**`)
       .setColor(0xFFD700)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields([
-        { name: 'Current Balance', value: `\`${residualData.balance.toLocaleString()}\``, inline: true },
+        { name: `${EMOJIS.MONEY} Current Balance`, value: `\`${residualData.balance.toLocaleString()}\``, inline: true },
         { name: 'Lifetime Earned', value: `\`${residualData.lifetime_earned.toLocaleString()}\``, inline: true },
         { name: 'Lifetime Spent', value: `\`${residualData.lifetime_spent.toLocaleString()}\``, inline: true },
       ])

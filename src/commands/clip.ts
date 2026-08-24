@@ -1,9 +1,10 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
-import { CHANNELS } from '../config/index.js';
+import { CHANNELS, ROLES, CLIP_CONFIG } from '../config/index.js';
 import { generateClipSummary } from '../services/groq.js';
 import { generateImage } from '../services/huggingface.js';
 import { parseClipArguments } from '../services/clip.js';
 import { isAdmin } from '../utils/permissions.js';
+import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
 
 export const clipCommand: Command = {
@@ -11,10 +12,24 @@ export const clipCommand: Command = {
   allowedPrefix: '$',
   async execute(message, args, _prefix) {
 
-    // Check admin permissions
+    // Check admin permissions - no one but admins may use $clip
     if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');
       return;
+    }
+
+    // Only the Director role gets full access (summary + artwork).
+    // Any other admin (e.g. Executive Producer) only gets the AI summary,
+    // no image generation, and has to wait between uses.
+    const isDirector = message.member.roles.cache.has(ROLES.DIRECTOR);
+
+    if (!isDirector) {
+      const remaining = getRemaining(message.author.id, 'clip_admin');
+      if (remaining > 0) {
+        const minutesRemaining = Math.ceil(remaining / 60);
+        await message.reply(`⏱️ Please wait ${minutesRemaining} minute(s) before generating another $clip summary.`);
+        return;
+      }
     }
 
     const { style, directorsNote } = parseClipArguments(args);
@@ -47,9 +62,9 @@ export const clipCommand: Command = {
         return;
       }
 
-      // Generate image (Hugging Face)
-      const imageBuffer = await generateImage(summary.summary, style);
-      
+      // Generate image (Hugging Face) - Director only
+      const imageBuffer = isDirector ? await generateImage(summary.summary, style) : null;
+
       // Create embed
       const embed = new EmbedBuilder()
         .setTitle(summary.title)
@@ -69,16 +84,25 @@ export const clipCommand: Command = {
         return;
       }
 
+      // Start the cooldown for non-Director admins now that generation succeeded
+      if (!isDirector) {
+        setCooldown(message.author.id, 'clip_admin', CLIP_CONFIG.ADMIN_COOLDOWN_SECONDS);
+      }
+
       if (imageBuffer) {
         // Create attachment and send with image
         const attachment = new AttachmentBuilder(imageBuffer, { name: 'bombo_times.png' });
         embed.setImage('attachment://bombo_times.png');
         await bomboTimesChannel.send({ embeds: [embed], files: [attachment] });
         await message.reply('✅ Bombo Times clip published!');
-      } else {
-        // Send without image if generation failed
+      } else if (isDirector) {
+        // Director requested artwork, but generation failed
         await bomboTimesChannel.send({ embeds: [embed] });
         await message.reply('⚠️ Bombo Times clip published (without artwork due to image generation failure).');
+      } else {
+        // Non-Director admins only ever get the summary, no artwork
+        await bomboTimesChannel.send({ embeds: [embed] });
+        await message.reply('✅ Bombo Times summary published! (Artwork generation is Director-only.)');
       }
 
     } catch (error) {

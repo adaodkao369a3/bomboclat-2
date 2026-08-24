@@ -16,7 +16,7 @@ export const rulesCommand: Command = {
     // Fetch GIF as attachment for reliable display
     let gifAttachment: AttachmentBuilder | null = null;
     try {
-      const gifResponse = await fetch('https://123emoji.com/wp-content/uploads/2016/04/minions-gif-4.gif');
+      const gifResponse = await fetch('https://media.discordapp.net/attachments/1535286802871623831/1540273341481361458/minions.gif?ex=6a895ad5&is=6a880955&hm=db79686ed2b8dda68e2255b0ee80e46910aaa2db0166df4bb0bf539436598d5c&=');
       if (gifResponse.ok) {
         const gifBuffer = Buffer.from(await gifResponse.arrayBuffer());
         gifAttachment = new AttachmentBuilder(gifBuffer, { name: 'minions.gif' });
@@ -26,7 +26,7 @@ export const rulesCommand: Command = {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('<:botkun_smile:1529443061581611120> WELCOME TO MI BOMBO STUDIOS <:botkun_love:1530299136664928377>')
+      .setTitle('🎬 WELCOME TO MI BOMBO STUDIOS 🎥')
       .setDescription('Welcome to the set.\n\nEveryone here is part of the cast — show up, talk, have fun, and make the place worth coming back to.\n\nBomboclat helps keep the studio moving, but you\'re the cast that actually makes the place alive.\n\n<:botkun_smile:1529443061581611120>')
       .setColor(0x7B61FF)
       .addFields([
@@ -121,18 +121,18 @@ export const rulesCommand: Command = {
                  '**9. Use common sense.**\n' +
                  'If something is obviously intended to ruin everyone else\'s experience, don\'t do it.\n\n' +
                  'Basically:\n\n' +
-                 '**Have fun. Don\'t be an asshole. Let everyone enjoy the production.**',
+                 '**🎬 Have fun. Don\'t be an asshole. Let everyone enjoy the production.**',
           inline: false 
         },
       ])
-      .setFooter({ text: '<:botkun_smile:1529443061581611120> CAMERAS ARE ROLLING.\n\nWelcome to MI BOMBO Studios.\n\nNow go make something worth putting in the outtakes.\n<:botkun_love:1530299136664928377>' });
+      .setFooter({ text: '🎬 CAMERAS ARE ROLLING. Welcome to MI BOMBO Studios. Now go make something worth putting in the outtakes. 🎬' });
 
     // Set image from attachment if successfully fetched, otherwise use external URL
     if (gifAttachment) {
       embed.setImage('attachment://minions.gif');
       await message.reply({ embeds: [embed], files: [gifAttachment] });
     } else {
-      embed.setImage('https://123emoji.com/wp-content/uploads/2016/04/minions-gif-4.gif');
+      embed.setImage('https://media.discordapp.net/attachments/1535286802871623831/1540273341481361458/minions.gif?ex=6a895ad5&is=6a880955&hm=db79686ed2b8dda68e2255b0ee80e46910aaa2db0166df4bb0bf539436598d5c&=');
       await message.reply({ embeds: [embed] });
     }
   },

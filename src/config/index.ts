@@ -37,6 +37,15 @@ export const ROLES = {
   PRODUCER: '1535285114618249246',
   EXECUTIVE_PRODUCER: '1535285775275655168',
   DIRECTOR: '1535285079658598460',
+
+  // Booster Role
+  BOOSTER: '1540782365893337100',
+};
+
+// Custom Emojis
+export const EMOJIS = {
+  MONEY: '<:money:1529443112127168623>',
+  CROWN: '<:crown:1529443082406461521>',
 };
 
 // XP Configuration
@@ -126,11 +135,51 @@ export const GIF_CAPTIONS: Record<string, string> = {
 // Art Styles for $clip
 export const ART_STYLES = ['anime', 'jojos', 'ghibli', 'jjk'];
 
+// Human-readable descriptions of each $clip art style (shown in $help)
+export const ART_STYLE_INFO: Record<string, string> = {
+  anime: 'Vibrant anime style, dynamic composition, cinematic lighting',
+  jojos: 'JoJo-style dramatic poses, bold colors, manga aesthetic',
+  ghibli: 'Studio Ghibli style, soft colors, peaceful hand-drawn look',
+  jjk: 'Jujutsu Kaisen style, dark atmosphere, intense modern anime',
+};
+
+// $clip Admin Restrictions
+export const CLIP_CONFIG = {
+  // Non-Director admins only get a summary (no artwork) and must wait between uses
+  ADMIN_COOLDOWN_SECONDS: 1800, // 30 minutes
+};
+
 // Channel IDs (as strings for Discord.js compatibility)
 export const CHANNELS = {
   BOMBO_TIMES: '1534577767180533872',
   CASTING: '1534576177421881394',
+
+  // Booster shoutout channel
+  BOOSTER_THANKYOU: '1540867037771993129',
+
+  // Welcome channel - set WELCOME_CHANNEL_ID in your .env to override.
+  // Falls back to the server's configured System Messages channel if left blank.
+  WELCOME: process.env.WELCOME_CHANNEL_ID || '',
 };
+
+// Randomized GIF search queries (via Klipy) - a different one is rolled every time
+export const WELCOME_GIF_QUERIES = [
+  'welcome',
+  'welcome party',
+  'red carpet welcome',
+  'excited welcome wave',
+  'hooray celebration',
+  'applause cheering',
+];
+
+export const BOOST_GIF_QUERIES = [
+  'thank you',
+  'thank you so much',
+  'grateful sparkle',
+  'confetti celebration',
+  'vip celebration',
+  'star sparkle',
+];
 
 // Database Schema
 export const SCHEMA = `

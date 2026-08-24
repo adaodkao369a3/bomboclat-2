@@ -27,7 +27,11 @@ export async function generateImage(prompt: string, style: string = 'anime'): Pr
   };
 
   const stylePrompt = stylePrompts[style] || stylePrompts.anime;
-  const fullPrompt = `${prompt}, ${stylePrompt}, landscape orientation, cinematic, high quality`;
+
+  // Explicitly steer the model toward illustrating the actual scene/events
+  // described in the summary (multiple characters, action, setting) instead
+  // of defaulting to a single centered character portrait.
+  const fullPrompt = `Wide cinematic movie-still illustrating this exact scene: ${prompt}. Depict the specific characters, actions, and setting described above interacting together in a dynamic ensemble composition — this is a scene from a story, not a single centered character portrait. ${stylePrompt}, landscape orientation, cinematic, high quality`;
 
   const hf = new InferenceClient(HF_API_TOKEN);
 

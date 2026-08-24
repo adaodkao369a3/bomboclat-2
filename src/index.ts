@@ -3,6 +3,7 @@ import { connect as connectDB, disconnect as disconnectDB } from './database/cli
 import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX } from './config/index.js';
 import { registerCommands } from './commands/index.js';
 import { handleXPMessage } from './services/messageHandler.js';
+import { sendWelcomeMessage, sendBoosterThankYou, hasBoosterRole } from './services/welcome.js';
 import { Command } from './commands/index.js';
 
 // Extend Client to include commands
@@ -27,6 +28,25 @@ client.once('ready', async () => {
   await registerCommands(client);
   
   console.log('🤖 MI BOM3O is online!');
+});
+
+client.on('guildMemberAdd', async (member) => {
+  try {
+    await sendWelcomeMessage(member);
+  } catch (error) {
+    console.error('Unhandled error in guildMemberAdd handler:', error);
+  }
+});
+
+client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  try {
+    // Fire the thank-you message the moment the booster role is newly assigned
+    if (!hasBoosterRole(oldMember) && hasBoosterRole(newMember)) {
+      await sendBoosterThankYou(newMember);
+    }
+  } catch (error) {
+    console.error('Unhandled error in guildMemberUpdate handler:', error);
+  }
 });
 
 client.on('messageCreate', async (message) => {

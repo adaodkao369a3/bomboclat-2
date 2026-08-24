@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { ADMIN_PREFIX, PREFIX } from '../config/index.js';
+import { ADMIN_PREFIX, PREFIX, ART_STYLES, ART_STYLE_INFO, ROLES } from '../config/index.js';
 import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
@@ -19,9 +19,19 @@ export const adminHelpCommand: Command = {
       .setColor(0xFF0000)
       .setFooter({ text: `Admin Prefix: ${ADMIN_PREFIX} | User Prefix: ${PREFIX}` });
 
+    const artStylesList = ART_STYLES.map(s => `\`${s}\` - ${ART_STYLE_INFO[s] || ''}`).join('\n');
+
     // Admin commands
     embed.addFields([
-      { name: 'Bombo Times', value: '`$clip [style] [director\'s note]` - Generate AI summary and artwork', inline: false },
+      {
+        name: 'Bombo Times',
+        value:
+          '`$clip [style] [director\'s note]` - Generate AI summary (+ artwork, Director only)\n' +
+          `Only <@&${ROLES.DIRECTOR}> (Director) gets full access with artwork.\n` +
+          'Other admins get a summary only, no artwork, and a 30 minute cooldown between uses.',
+        inline: false,
+      },
+      { name: '🎨 $clip Art Styles', value: artStylesList, inline: false },
       { name: 'XP Management', value: '`$xp @user` - Manage user XP and progression', inline: false },
       { name: 'Residuals Management', value: '`$residuals @user` - Manage user Residuals (Admin/Staff)', inline: false },
       { name: 'Role Synchronization', value: '`$syncroles` - Synchronize all progression roles', inline: false },
