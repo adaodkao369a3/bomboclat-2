@@ -132,6 +132,12 @@ export async function giftBoosterResiduals(member: GuildMember): Promise<void> {
     );
     if (result === null) {
       console.error(`[booster] Failed to gift ${BOOST_RESIDUAL_GIFT} residuals to ${member.user.id}`);
+    } else {
+      console.log(`[booster] Gifted ${BOOST_RESIDUAL_GIFT} residuals to ${member.user.id} (Guest Star boost)`);
+      
+      // Note: Free archetype and color grants are handled through the shop UI
+      // Users can claim their free Standard archetype and Common color via the shop
+      // The shop system tracks free grant eligibility separately
     }
   } catch (error) {
     console.error('[booster] Failed to gift booster residuals:', error);

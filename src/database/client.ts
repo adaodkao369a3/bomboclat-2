@@ -17,6 +17,7 @@ export interface User extends QueryResultRow {
   last_xp_timestamp: Date | null;
   daily_xp_earned: number;
   last_daily_xp_reset: Date | null;
+  daily_bonus_paid: boolean;
   last_promotion_timestamp: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -263,9 +264,25 @@ export async function resetDailyXP(userId: string): Promise<void> {
   const client = await getClient();
   try {
     await client.query(
-      `UPDATE users 
+      `UPDATE users
        SET daily_xp_earned = 0,
+           daily_bonus_paid = FALSE,
            last_daily_xp_reset = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1`,
+      [userId]
+    );
+  } finally {
+    client.release();
+  }
+}
+
+export async function setDailyBonusPaid(userId: string): Promise<void> {
+  const client = await getClient();
+  try {
+    await client.query(
+      `UPDATE users
+       SET daily_bonus_paid = TRUE,
            updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $1`,
       [userId]
@@ -476,6 +493,7 @@ function mapRowToUser(row: User): User {
     last_xp_timestamp: row.last_xp_timestamp,
     daily_xp_earned: row.daily_xp_earned,
     last_daily_xp_reset: row.last_daily_xp_reset,
+    daily_bonus_paid: row.daily_bonus_paid || false,
     last_promotion_timestamp: row.last_promotion_timestamp,
     created_at: row.created_at,
     updated_at: row.updated_at,

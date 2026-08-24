@@ -1,4 +1,4 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, Message } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { getUser, setUserXP, setUserLevel, addUserXP } from '../database/client.js';
 import {
   calculateLevelFromXP,
@@ -79,114 +79,147 @@ export const xpCommand: Command = {
 
       const action = interaction.customId;
 
-      // Ask for amount
-      await interaction.reply({ content: `Please enter the ${action.replace('_', ' ')} amount:`, ephemeral: true });
+      // Create modal for amount input
+      const modal = new ModalBuilder()
+        .setCustomId(`xp_${action}`)
+        .setTitle(`${action.replace('_', ' ').toUpperCase()} XP`);
 
-      // Wait for user response
-      if (!message.channel.isTextBased()) {
-        await message.reply('❌ This command can only be used in text channels.');
-        return;
-      }
-      if (!('createMessageCollector' in message.channel)) {
-        await message.reply('❌ This channel cannot collect messages.');
-        return;
-      }
+      const amountInput = new TextInputBuilder()
+        .setCustomId('amount')
+        .setLabel('Enter amount')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('e.g., 100')
+        .setRequired(true);
 
-      const collector = message.channel.createMessageCollector({
-        filter: (m: Message) => m.author.id === message.author.id && m.id !== message.id,
-        max: 1,
-        time: 30000,
+      const reasonInput = new TextInputBuilder()
+        .setCustomId('reason')
+        .setLabel('Reason (optional)')
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder('e.g., Bonus for event participation')
+        .setRequired(false);
+
+      const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(amountInput);
+      const secondActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
+      modal.addComponents(firstActionRow, secondActionRow);
+
+      await interaction.showModal(modal);
+
+      // Wait for modal submission
+      const modalInteraction = await interaction.awaitModalSubmit({
+        time: 300000,
       });
 
-      collector.on('collect', async (m: Message) => {
-        const amount = parseInt(m.content);
-        if (isNaN(amount) || amount < 0) {
-          await m.reply('❌ Please enter a valid positive number.');
+      const amountStr = modalInteraction.fields.getTextInputValue('amount');
+      const amount = parseInt(amountStr);
+      const reason = modalInteraction.fields.getTextInputValue('reason') || `Manual ${action} by ${message.author.displayName}`;
+
+      if (isNaN(amount) || amount < 0) {
+        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', ephemeral: true });
+        return;
+      }
+
+      // Add reasonable bounds to prevent abuse
+      const MAX_XP_CHANGE = 1000000; // 1 million XP max per change
+      if (amount > MAX_XP_CHANGE) {
+        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_XP_CHANGE.toLocaleString()} XP.`, ephemeral: true });
+        return;
+      }
+
+      // Additional validation for specific actions
+      if (action === 'set_level') {
+        if (amount < 1 || amount > 100) {
+          await modalInteraction.reply({ content: '❌ Level must be between 1 and 100.', ephemeral: true });
+          return;
+        }
+      }
+
+      // Add/remove should not be zero
+      if ((action === 'add_xp' || action === 'remove_xp') && amount === 0) {
+        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', ephemeral: true });
+        return;
+      }
+
+      try {
+        let newXP: number;
+
+        if (action === 'set_xp') {
+          const persistedXP = await setUserXP(target.user.id, amount);
+          if (persistedXP === null) throw new Error('Failed to set XP');
+          newXP = persistedXP;
+        } else if (action === 'add_xp') {
+          const persistedXP = await addUserXP(
+            target.user.id,
+            amount,
+            'admin',
+            reason
+          );
+          if (persistedXP === null) throw new Error('Failed to add XP');
+          newXP = persistedXP;
+        } else if (action === 'remove_xp') {
+          const persistedXP = await setUserXP(
+            target.user.id,
+            Math.max(0, userData.current_xp - amount)
+          );
+          if (persistedXP === null) throw new Error('Failed to remove XP');
+          newXP = persistedXP;
+        } else if (action === 'set_level') {
+          newXP = calculateXPForLevel(amount);
+          const persistedXP = await setUserXP(target.user.id, newXP);
+          if (persistedXP === null) throw new Error('Failed to set XP for level');
+        } else {
+          throw new Error(`Unknown XP action: ${action}`);
+        }
+
+        const newLevel = calculateLevelFromXP(newXP);
+        await setUserLevel(target.user.id, newLevel);
+        const newRole = getRoleFromLevel(newLevel);
+        const syncResult = await synchronizeProgressionRoles(target, newLevel);
+        if (!syncResult.success) {
+          await modalInteraction.reply({ content: '❌ Failed to update progression roles. XP was saved; please retry synchronization.', ephemeral: true });
           return;
         }
 
-        try {
-          let newXP: number;
+        if (userData.current_progression_role !== newRole) {
+          await setUserProgressionRole(target.user.id, newRole);
+        }
+        await updatePromotionEligibility(
+          target.user.id,
+          calculatePromotionEligibility(newXP, newLevel, newRole)
+        );
 
-          if (action === 'set_xp') {
-            const persistedXP = await setUserXP(target.user.id, amount);
-            if (persistedXP === null) throw new Error('Failed to set XP');
-            newXP = persistedXP;
-          } else if (action === 'add_xp') {
-            const persistedXP = await addUserXP(
-              target.user.id,
-              amount,
-              'admin',
-              `Manual addition by ${message.author.displayName}`
-            );
-            if (persistedXP === null) throw new Error('Failed to add XP');
-            newXP = persistedXP;
-          } else if (action === 'remove_xp') {
-            const persistedXP = await setUserXP(
-              target.user.id,
-              Math.max(0, userData.current_xp - amount)
-            );
-            if (persistedXP === null) throw new Error('Failed to remove XP');
-            newXP = persistedXP;
-          } else if (action === 'set_level') {
-            newXP = calculateXPForLevel(amount);
-            const persistedXP = await setUserXP(target.user.id, newXP);
-            if (persistedXP === null) throw new Error('Failed to set XP for level');
-          } else {
-            throw new Error(`Unknown XP action: ${action}`);
-          }
+        await modalInteraction.reply({ content: `✅ XP updated successfully. New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`, ephemeral: true });
 
-          const newLevel = calculateLevelFromXP(newXP);
-          await setUserLevel(target.user.id, newLevel);
-          const newRole = getRoleFromLevel(newLevel);
-          const syncResult = await synchronizeProgressionRoles(target, newLevel);
-          if (!syncResult.success) {
-            await m.reply('❌ Failed to update progression roles. XP was saved; please retry synchronization.');
-            return;
-          }
-
-          if (userData.current_progression_role !== newRole) {
-            await setUserProgressionRole(target.user.id, newRole);
-          }
-          await updatePromotionEligibility(
-            target.user.id,
-            calculatePromotionEligibility(newXP, newLevel, newRole)
+        // Disable buttons
+        const disabledRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('set_xp')
+              .setLabel('Set XP')
+              .setStyle(ButtonStyle.Primary)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('add_xp')
+              .setLabel('Add XP')
+              .setStyle(ButtonStyle.Success)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('remove_xp')
+              .setLabel('Remove XP')
+              .setStyle(ButtonStyle.Danger)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('set_level')
+              .setLabel('Set Level')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true),
           );
 
-          await m.reply(`✅ XP updated successfully. New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`);
+        await msg.edit({ components: [disabledRow] });
 
-          // Disable buttons
-          const disabledRow = new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId('set_xp')
-                .setLabel('Set XP')
-                .setStyle(ButtonStyle.Primary)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('add_xp')
-                .setLabel('Add XP')
-                .setStyle(ButtonStyle.Success)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('remove_xp')
-                .setLabel('Remove XP')
-                .setStyle(ButtonStyle.Danger)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('set_level')
-                .setLabel('Set Level')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true),
-            );
-
-          await msg.edit({ components: [disabledRow] });
-
-        } catch (error) {
-          console.error('Error updating XP:', error);
-          await m.reply('❌ Failed to update XP. Please try again.');
-        }
-      });
+      } catch (error) {
+        console.error('Error updating XP:', error);
+        await modalInteraction.reply({ content: '❌ Failed to update XP. Please try again.', ephemeral: true });
+      }
 
     } catch (error) {
       console.error('Error waiting for interaction:', error);

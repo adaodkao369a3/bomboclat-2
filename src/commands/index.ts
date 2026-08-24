@@ -15,6 +15,8 @@ import { adminHelpCommand } from './adminHelp.js';
 import { rulesCommand } from './rules.js';
 import { testWelcomeCommand } from './testWelcome.js';
 import { testBoosterCommand } from './testBooster.js';
+import { settingsCommand } from './settings.js';
+import { shopCommand } from './shop.js';
 
 export interface Command {
   name: string;
@@ -45,6 +47,8 @@ export async function registerCommands(client: Client): Promise<void> {
     rulesCommand,
     testWelcomeCommand,
     testBoosterCommand,
+    settingsCommand,
+    shopCommand,
   ];
 
   for (const command of commands) {

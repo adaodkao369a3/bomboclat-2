@@ -5,6 +5,7 @@ import { registerCommands } from './commands/index.js';
 import { handleXPMessage } from './services/messageHandler.js';
 import { sendWelcomeMessage, sendBoosterThankYou, giftBoosterResiduals, hasBoosterRole } from './services/welcome.js';
 import { Command } from './commands/index.js';
+import { handleVoiceStateUpdate, startVoiceTicker } from './services/voiceHandler.js';
 
 // Extend Client to include commands
 class ExtendedClient extends Client {
@@ -17,6 +18,7 @@ const client = new ExtendedClient({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildVoiceStates,
   ],
   partials: [Partials.Channel, Partials.Message, Partials.Reaction],
 });
@@ -26,6 +28,9 @@ client.once('ready', async () => {
   
   // Register commands
   await registerCommands(client);
+  
+  // Start voice XP ticker
+  startVoiceTicker();
   
   console.log('🤖 MI BOM3O is online!');
 });
@@ -47,6 +52,14 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
   } catch (error) {
     console.error('Unhandled error in guildMemberUpdate handler:', error);
+  }
+});
+
+client.on('voiceStateUpdate', async (oldState, newState) => {
+  try {
+    handleVoiceStateUpdate(oldState, newState);
+  } catch (error) {
+    console.error('Unhandled error in voiceStateUpdate handler:', error);
   }
 });
 

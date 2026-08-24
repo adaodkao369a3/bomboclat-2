@@ -3,6 +3,7 @@ import { CHANNELS, ROLES, CLIP_CONFIG } from '../config/index.js';
 import { generateClipSummary } from '../services/groq.js';
 import { generateImage } from '../services/huggingface.js';
 import { parseClipArguments } from '../services/clip.js';
+import { getSetting } from '../services/settings.js';
 import { isAdmin } from '../utils/permissions.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
@@ -15,6 +16,29 @@ export const clipCommand: Command = {
     // Check admin permissions - no one but admins may use $clip
     if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to admins.');
+      return;
+    }
+
+    // Check channel allowlist
+    const clipChannelsSetting = await getSetting('clip_channels');
+    let allowedChannels: string[] = [];
+    if (clipChannelsSetting) {
+      try {
+        allowedChannels = JSON.parse(clipChannelsSetting);
+      } catch {
+        console.error('Invalid clip_channels data in database');
+      }
+    }
+
+    // CASTING channel is always allowed (bug fix: command should be usable where results are posted)
+    // If allowlist is empty, fall back to BOMBO_TIMES and CASTING
+    // If allowlist is set, only allow those channels PLUS CASTING (always allowed)
+    const effectiveChannels = allowedChannels.length > 0 
+      ? [...allowedChannels, CHANNELS.CASTING] 
+      : [CHANNELS.BOMBO_TIMES, CHANNELS.CASTING];
+
+    if (!effectiveChannels.includes(message.channel.id)) {
+      await message.reply('❌ This command can only be used in allowed channels. Use $settings clip_channels list to see allowed channels.');
       return;
     }
 
@@ -32,21 +56,71 @@ export const clipCommand: Command = {
       }
     }
 
-    const { style, directorsNote } = parseClipArguments(args);
+    const { style, directorsNote, fromMessageId, toMessageId } = parseClipArguments(args);
 
     try {
-      // Fetch last 60 messages from the channel
+      // Fetch messages based on arguments
       const messages: Array<{ author: string; content: string }> = [];
-      const fetchedMessages = await message.channel.messages.fetch({ limit: 60 });
+      const MAX_MESSAGES = 200;
 
-      for (const msg of [...fetchedMessages.values()].sort(
-        (left, right) => left.createdTimestamp - right.createdTimestamp
-      )) {
-        if (!msg.author.bot && msg.content) {
-          messages.push({
-            author: msg.author.displayName,
-            content: msg.content,
-          });
+      if (fromMessageId && toMessageId) {
+        // Fetch messages between two IDs
+        const fetchedMessages = await message.channel.messages.fetch({
+          after: fromMessageId,
+          before: toMessageId,
+          limit: MAX_MESSAGES,
+        });
+
+        for (const msg of [...fetchedMessages.values()].sort(
+          (left, right) => left.createdTimestamp - right.createdTimestamp
+        )) {
+          if (!msg.author.bot && msg.content) {
+            messages.push({
+              author: msg.author.displayName,
+              content: msg.content,
+            });
+          }
+        }
+
+        if (messages.length >= MAX_MESSAGES) {
+          await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
+          return;
+        }
+      } else if (fromMessageId) {
+        // Fetch messages from a specific ID onwards
+        const fetchedMessages = await message.channel.messages.fetch({
+          after: fromMessageId,
+          limit: MAX_MESSAGES,
+        });
+
+        for (const msg of [...fetchedMessages.values()].sort(
+          (left, right) => left.createdTimestamp - right.createdTimestamp
+        )) {
+          if (!msg.author.bot && msg.content) {
+            messages.push({
+              author: msg.author.displayName,
+              content: msg.content,
+            });
+          }
+        }
+
+        if (messages.length >= MAX_MESSAGES) {
+          await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
+          return;
+        }
+      } else {
+        // Default: fetch last 60 messages
+        const fetchedMessages = await message.channel.messages.fetch({ limit: 60 });
+
+        for (const msg of [...fetchedMessages.values()].sort(
+          (left, right) => left.createdTimestamp - right.createdTimestamp
+        )) {
+          if (!msg.author.bot && msg.content) {
+            messages.push({
+              author: msg.author.displayName,
+              content: msg.content,
+            });
+          }
         }
       }
 

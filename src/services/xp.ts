@@ -10,6 +10,15 @@ export const PROGRESSION_ROLE_KEYS = [
   'lead_cast',
 ] as const;
 
+// Calculate residuals awarded on level-up (10-50 range, scaling with level)
+export function calculateLevelUpResiduals(newLevel: number): number {
+  const maxLevel = XP_CONFIG.LEVEL_XP_REQUIREMENTS.length;
+  const normalizedLevel = Math.min(newLevel, maxLevel) / maxLevel;
+  const minResiduals = 10;
+  const maxResiduals = 50;
+  return Math.floor(minResiduals + (maxResiduals - minResiduals) * normalizedLevel);
+}
+
 export type ProgressionRoleName = (typeof PROGRESSION_ROLE_KEYS)[number];
 
 export function calculateMessageXP(): number {

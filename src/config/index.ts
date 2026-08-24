@@ -169,6 +169,9 @@ export const CHANNELS = {
   // Welcome channel - set WELCOME_CHANNEL_ID in your .env to override.
   // Falls back to the server's configured System Messages channel if left blank.
   WELCOME: process.env.WELCOME_CHANNEL_ID || '',
+
+  // Shop channel - set SHOP_CHANNEL_ID in your .env to override.
+  SHOP: process.env.SHOP_CHANNEL_ID || '',
 };
 
 // Randomized GIF search queries (via Klipy) - a different one is rolled every time
@@ -239,6 +242,7 @@ CREATE TABLE IF NOT EXISTS users (
   last_xp_timestamp TIMESTAMP,
   daily_xp_earned INTEGER DEFAULT 0,
   last_daily_xp_reset TIMESTAMP,
+  daily_bonus_paid BOOLEAN DEFAULT FALSE,
   last_promotion_timestamp TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -291,6 +295,52 @@ CREATE TABLE IF NOT EXISTS admin_residual_changes (
   new_value INTEGER,
   reason TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Settings table (key-value store for bot configuration)
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_by TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Shop archetypes table
+CREATE TABLE IF NOT EXISTS shop_archetypes (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  tier TEXT NOT NULL,
+  price INTEGER NOT NULL,
+  min_role TEXT,
+  slot_group TEXT NOT NULL
+);
+
+-- Shop colors table
+CREATE TABLE IF NOT EXISTS shop_colors (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  hex TEXT NOT NULL,
+  price_band TEXT NOT NULL
+);
+
+-- User archetypes table
+CREATE TABLE IF NOT EXISTS user_archetypes (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  archetype_id INTEGER NOT NULL REFERENCES shop_archetypes(id),
+  slot_index INTEGER NOT NULL,
+  acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  free_grant BOOLEAN DEFAULT FALSE
+);
+
+-- User colors table
+CREATE TABLE IF NOT EXISTS user_colors (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  color_id INTEGER NOT NULL REFERENCES shop_colors(id),
+  active BOOLEAN DEFAULT FALSE,
+  acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  free_grant BOOLEAN DEFAULT FALSE
 );
 
 -- Indexes for performance

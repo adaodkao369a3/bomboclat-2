@@ -19,7 +19,7 @@ export async function fetchGIF(query: string): Promise<string | null> {
     url.searchParams.append('q', query);
     url.searchParams.append('key', KLIPY_KEY);
     
-    console.log(`Fetching GIF from Klipy: ${url.toString()}`);
+    console.log(`Fetching GIF from Klipy for query: "${query}"`);
     
     const response = await fetch(url.toString());
     
@@ -29,7 +29,6 @@ export async function fetchGIF(query: string): Promise<string | null> {
     }
     
     const data: any = await response.json();
-    console.log(`Klipy API response for query "${query}":`, JSON.stringify(data, null, 2));
     
     // Handle different possible response structures
     let results: any[] = [];

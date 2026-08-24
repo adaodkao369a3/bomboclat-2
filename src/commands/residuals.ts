@@ -1,4 +1,4 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, Message } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { getUser, type ResidualTransaction } from '../database/client.js';
 import { ResidualsService } from '../services/residuals.js';
 import { canManageResiduals } from '../utils/permissions.js';
@@ -131,113 +131,133 @@ export const residualsCommand: Command = {
         return;
       }
 
-      // Ask for amount
-      await interaction.reply({ content: `Please enter the ${action.replace('_', ' ')} amount:`, ephemeral: true });
+      // Create modal for amount input
+      const modal = new ModalBuilder()
+        .setCustomId(`residuals_${action}`)
+        .setTitle(`${action.replace('_', ' ').toUpperCase()} RESIDUALS`);
 
-      // Wait for user response
-      if (!message.channel.isTextBased()) {
-        await message.reply('❌ This command can only be used in text channels.');
-        return;
-      }
-      if (!('createMessageCollector' in message.channel)) {
-        await message.reply('❌ This channel cannot collect messages.');
-        return;
-      }
+      const amountInput = new TextInputBuilder()
+        .setCustomId('amount')
+        .setLabel('Enter amount')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('e.g., 100')
+        .setRequired(true);
 
-      const collector = message.channel.createMessageCollector({
-        filter: (m: Message) => m.author.id === message.author.id && m.id !== message.id,
-        max: 1,
-        time: 30000,
+      const reasonInput = new TextInputBuilder()
+        .setCustomId('reason')
+        .setLabel('Reason (optional)')
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder('e.g., Bonus for event participation')
+        .setRequired(false);
+
+      const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(amountInput);
+      const secondActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
+      modal.addComponents(firstActionRow, secondActionRow);
+
+      await interaction.showModal(modal);
+
+      // Wait for modal submission
+      const modalInteraction = await interaction.awaitModalSubmit({
+        time: 300000,
       });
 
-      collector.on('collect', async (m: Message) => {
-        const amount = parseInt(m.content);
-        if (isNaN(amount) || amount < 0) {
-          await m.reply('❌ Please enter a valid positive number.');
-          return;
-        }
-        if ((action === 'add_residuals' || action === 'remove_residuals') && amount === 0) {
-          await m.reply('❌ Add and remove amounts must be greater than zero.');
-          return;
-        }
+      const amountStr = modalInteraction.fields.getTextInputValue('amount');
+      const amount = parseInt(amountStr);
+      const reason = modalInteraction.fields.getTextInputValue('reason') || `Manual ${action} by ${message.author.displayName}`;
 
-        try {
-          let newBalance = residualData.balance;
+      if (isNaN(amount) || amount < 0) {
+        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', ephemeral: true });
+        return;
+      }
 
-          if (action === 'set_residuals') {
-            const persistedBalance = await ResidualsService.setResiduals(
-              target.user.id,
-              amount,
-              message.author.id,
-              `Manual set by ${message.author.displayName}`
-            );
-            if (persistedBalance === null) {
-              await m.reply('❌ Failed to set Residuals.');
-              return;
-            }
-            newBalance = persistedBalance;
-          } else if (action === 'add_residuals') {
-            const persistedBalance = await ResidualsService.awardResiduals(
-              target.user.id,
-              amount,
-              'staff',
-              `Manual addition by ${message.author.displayName}`,
-              message.author.id
-            );
-            if (persistedBalance === null) {
-              await m.reply('❌ Failed to add Residuals.');
-              return;
-            }
-            newBalance = persistedBalance;
-          } else if (action === 'remove_residuals') {
-            const persistedBalance = await ResidualsService.removeResiduals(
-              target.user.id,
-              amount,
-              'staff',
-              `Manual removal by ${message.author.displayName}`,
-              message.author.id
-            );
-            if (persistedBalance === null) {
-              await m.reply('❌ Insufficient Residuals or update failed.');
-              return;
-            }
-            newBalance = persistedBalance;
+      // Add reasonable bounds to prevent abuse
+      const MAX_RESIDUALS_CHANGE = 1000000; // 1 million residuals max per change
+      if (amount > MAX_RESIDUALS_CHANGE) {
+        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_RESIDUALS_CHANGE.toLocaleString()} residuals.`, ephemeral: true });
+        return;
+      }
+
+      if ((action === 'add_residuals' || action === 'remove_residuals') && amount === 0) {
+        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', ephemeral: true });
+        return;
+      }
+
+      try {
+        let newBalance = residualData.balance;
+
+        if (action === 'set_residuals') {
+          const persistedBalance = await ResidualsService.setResiduals(
+            target.user.id,
+            amount,
+            message.author.id,
+            reason
+          );
+          if (persistedBalance === null) {
+            await modalInteraction.reply({ content: '❌ Failed to set Residuals.', ephemeral: true });
+            return;
           }
-
-          await m.reply(`✅ Residuals updated successfully. New balance: ${newBalance?.toLocaleString() || 'Unknown'}`);
-
-          // Disable buttons
-          const disabledRow = new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId('set_residuals')
-                .setLabel('Set')
-                .setStyle(ButtonStyle.Primary)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('add_residuals')
-                .setLabel('Add')
-                .setStyle(ButtonStyle.Success)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('remove_residuals')
-                .setLabel('Remove')
-                .setStyle(ButtonStyle.Danger)
-                .setDisabled(true),
-              new ButtonBuilder()
-                .setCustomId('show_history')
-                .setLabel('History')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true),
-            );
-
-          await msg.edit({ components: [disabledRow] });
-
-        } catch (error) {
-          console.error('Error updating Residuals:', error);
-          await m.reply('❌ Failed to update Residuals. Please try again.');
+          newBalance = persistedBalance;
+        } else if (action === 'add_residuals') {
+          const persistedBalance = await ResidualsService.awardResiduals(
+            target.user.id,
+            amount,
+            'staff',
+            reason,
+            message.author.id
+          );
+          if (persistedBalance === null) {
+            await modalInteraction.reply({ content: '❌ Failed to add Residuals.', ephemeral: true });
+            return;
+          }
+          newBalance = persistedBalance;
+        } else if (action === 'remove_residuals') {
+          const persistedBalance = await ResidualsService.removeResiduals(
+            target.user.id,
+            amount,
+            'staff',
+            reason,
+            message.author.id
+          );
+          if (persistedBalance === null) {
+            await modalInteraction.reply({ content: '❌ Insufficient Residuals or update failed.', ephemeral: true });
+            return;
+          }
+          newBalance = persistedBalance;
         }
-      });
+
+        await modalInteraction.reply({ content: `✅ Residuals updated successfully. New balance: ${newBalance?.toLocaleString() || 'Unknown'}`, ephemeral: true });
+
+        // Disable buttons
+        const disabledRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('set_residuals')
+              .setLabel('Set')
+              .setStyle(ButtonStyle.Primary)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('add_residuals')
+              .setLabel('Add')
+              .setStyle(ButtonStyle.Success)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('remove_residuals')
+              .setLabel('Remove')
+              .setStyle(ButtonStyle.Danger)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('show_history')
+              .setLabel('History')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true),
+          );
+
+        await msg.edit({ components: [disabledRow] });
+
+      } catch (error) {
+        console.error('Error updating Residuals:', error);
+        await modalInteraction.reply({ content: '❌ Failed to update Residuals. Please try again.', ephemeral: true });
+      }
 
     } catch (error) {
       console.error('Error waiting for interaction:', error);
