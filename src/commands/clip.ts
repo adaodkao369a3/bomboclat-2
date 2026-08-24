@@ -94,7 +94,7 @@ export const clipCommand: Command = {
         const attachment = new AttachmentBuilder(imageBuffer, { name: 'bombo_times.png' });
         embed.setImage('attachment://bombo_times.png');
         await bomboTimesChannel.send({ embeds: [embed], files: [attachment] });
-        await message.reply('✅ Bombo Times clip published!');
+        await message.reply('<a:sparkles:1529443142175166585> Bombo Times clip published!');
       } else if (isDirector) {
         // Director requested artwork, but generation failed
         await bomboTimesChannel.send({ embeds: [embed] });
@@ -102,7 +102,7 @@ export const clipCommand: Command = {
       } else {
         // Non-Director admins only ever get the summary, no artwork
         await bomboTimesChannel.send({ embeds: [embed] });
-        await message.reply('✅ Bombo Times summary published! (Artwork generation is Director-only.)');
+        await message.reply('<a:sparkles:1529443142175166585> Bombo Times summary published! (Artwork generation is Director-only.)');
       }
 
     } catch (error) {
