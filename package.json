@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "tsc && node dist/index.js",
     "dev": "ts-node src/index.ts",
     "clean": "rimraf dist",
     "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js"
