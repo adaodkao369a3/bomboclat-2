@@ -38,14 +38,23 @@ export const ROLES = {
   EXECUTIVE_PRODUCER: '1535285775275655168',
   DIRECTOR: '1535285079658598460',
 
-  // Booster Role
+  // Booster Role ("Guest Star")
   BOOSTER: '1540782365893337100',
 };
 
-// Custom Emojis
+// Display label for the booster role
+export const BOOSTER_ROLE_LABEL = 'Guest Star';
+
+// Custom Emojis (server emojis only - keep these out of embed footers, Discord
+// doesn't render custom emojis there)
 export const EMOJIS = {
   MONEY: '<:money:1529443112127168623>',
   CROWN: '<:crown:1529443082406461521>',
+  CROWN2: '<:crown1:1529443086193660084>',
+  SUNGLASSES: '<:sunglas:1536398312448589884>',
+  ORANGE_HEART: '<a:orangeheartexclaim:1529443126328950785>',
+  PINK_HEART: '<a:pinkheartexclaim:1529443130104090734>',
+  TYPING: '<a:typing:1529443144901464205>',
 };
 
 // XP Configuration
@@ -172,13 +181,45 @@ export const WELCOME_GIF_QUERIES = [
   'applause cheering',
 ];
 
+// Guest Star (booster) shoutouts pull from guest star / red carpet themed GIFs
 export const BOOST_GIF_QUERIES = [
-  'thank you',
-  'thank you so much',
-  'grateful sparkle',
-  'confetti celebration',
-  'vip celebration',
-  'star sparkle',
+  'red carpet',
+  'red carpet celebrity',
+  'vip red carpet',
+  'guest star',
+  'movie premiere',
+  'star studded celebration',
+];
+
+// Residuals gifted automatically when someone boosts (becomes Guest Star)
+export const BOOST_RESIDUAL_GIFT = 40;
+
+// Randomized welcome message lines. {user} = mention, {count} = member number.
+export const WELCOME_MESSAGES: string[] = [
+  '{user} just walked onto the set. Welcome to MI BOM3O Studios {typing} — introduce yourself and start the climb from Audience to Lead Cast.',
+  'Say hi to {user}, the newest face at MI BOM3O Studios {sunglasses}. Your journey starts now.',
+  '{user} has entered the building {pink} — welcome to the cast, grab a seat.',
+  'Casting call complete — {user} is officially part of MI BOM3O Studios {orange}.',
+  'New face on set: {user} {sunglasses} Welcome to MI BOM3O Studios.',
+  '{user} just joined. Member #{count} {typing} — the cast just got bigger.',
+  'Everyone welcome {user} to MI BOM3O Studios {pink}.',
+  '{user} has arrived. MI BOM3O Studios welcomes its newest star {sunglasses}.',
+  'The set just got one more cast member — welcome {user} {orange}.',
+  '{user} is officially cast in MI BOM3O Studios {typing}. Can\'t wait to see where your story goes.',
+];
+
+// Randomized booster ("Guest Star") message lines, sent to the red carpet channel.
+export const BOOST_MESSAGES: string[] = [
+  '{user} just boosted MI BOM3O Studios {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
+  'Red carpet\'s rolled out for {user} {crown2} thanks for boosting. Guest Star, 40 residuals, custom gifs — all unlocked.',
+  '{user} boosted the server {crown} that\'s Guest Star status unlocked, plus a 40 residual gift {money}.',
+  'Big thanks to {user} for boosting {pink} — Guest Star role, 40 residuals, and custom gifs, all yours now.',
+  '{user} just stepped onto the red carpet {sunglasses} Guest Star status and 40 residuals are locked in.',
+  'MI BOM3O Studios just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
+  '{user} boosted the server {money} that\'s a 40 residual thank-you gift and Guest Star perks headed your way.',
+  'Thank you {user} for the boost {crown2} you\'re Guest Star now, 40 residuals and custom gifs unlocked.',
+  '{user} just gave MI BOM3O Studios a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
+  'Red carpet moment: {user} boosted MI BOM3O Studios {crown} Guest Star unlocked, 40 residuals gifted.',
 ];
 
 // Database Schema

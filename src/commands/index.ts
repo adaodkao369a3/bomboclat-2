@@ -13,6 +13,8 @@ import { residualsCommand } from './residuals.js';
 import { syncRolesCommand } from './syncRoles.js';
 import { adminHelpCommand } from './adminHelp.js';
 import { rulesCommand } from './rules.js';
+import { testWelcomeCommand } from './testWelcome.js';
+import { testBoosterCommand } from './testBooster.js';
 
 export interface Command {
   name: string;
@@ -41,6 +43,8 @@ export async function registerCommands(client: Client): Promise<void> {
     syncRolesCommand,
     adminHelpCommand,
     rulesCommand,
+    testWelcomeCommand,
+    testBoosterCommand,
   ];
 
   for (const command of commands) {

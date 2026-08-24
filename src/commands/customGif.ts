@@ -12,7 +12,7 @@ export const customGifCommand: Command = {
 
     // Check permissions (Featured Extra+ or admins)
     if (!message.member || (!hasFeaturedExtra(message.member) && !isAdmin(message.member))) {
-      await message.reply('❌ This command requires Featured Extra role or higher.');
+      await message.reply('❌ This command requires Featured Extra role (or Guest Star) or higher.');
       return;
     }
 

@@ -3,7 +3,7 @@ import { connect as connectDB, disconnect as disconnectDB } from './database/cli
 import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX } from './config/index.js';
 import { registerCommands } from './commands/index.js';
 import { handleXPMessage } from './services/messageHandler.js';
-import { sendWelcomeMessage, sendBoosterThankYou, hasBoosterRole } from './services/welcome.js';
+import { sendWelcomeMessage, sendBoosterThankYou, giftBoosterResiduals, hasBoosterRole } from './services/welcome.js';
 import { Command } from './commands/index.js';
 
 // Extend Client to include commands
@@ -40,9 +40,10 @@ client.on('guildMemberAdd', async (member) => {
 
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   try {
-    // Fire the thank-you message the moment the booster role is newly assigned
+    // Fire the thank-you message + residual gift the moment the Guest Star role is newly assigned
     if (!hasBoosterRole(oldMember) && hasBoosterRole(newMember)) {
       await sendBoosterThankYou(newMember);
+      await giftBoosterResiduals(newMember);
     }
   } catch (error) {
     console.error('Unhandled error in guildMemberUpdate handler:', error);

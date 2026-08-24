@@ -26,12 +26,13 @@ export function canManageResiduals(member: GuildMember): boolean {
 }
 
 export function hasFeaturedExtra(member: GuildMember): boolean {
-  // Featured Extra role or higher progression roles (Level 8+)
+  // Featured Extra role or higher progression roles (Level 8+), or Guest Star (boosters)
   return (
     member.roles.cache.has(ROLES.FEATURED_EXTRA) ||
     member.roles.cache.has(ROLES.SUPPORTING_CAST) ||
     member.roles.cache.has(ROLES.PRINCIPAL_CAST) ||
-    member.roles.cache.has(ROLES.LEAD_CAST)
+    member.roles.cache.has(ROLES.LEAD_CAST) ||
+    member.roles.cache.has(ROLES.BOOSTER)
   );
 }
 

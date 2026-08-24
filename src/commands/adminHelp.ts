@@ -35,12 +35,13 @@ export const adminHelpCommand: Command = {
       { name: 'XP Management', value: '`$xp @user` - Manage user XP and progression', inline: false },
       { name: 'Residuals Management', value: '`$residuals @user` - Manage user Residuals (Admin/Staff)', inline: false },
       { name: 'Role Synchronization', value: '`$syncroles` - Synchronize all progression roles', inline: false },
+      { name: 'Testing', value: '`$testwelcome` - Preview the welcome message\n`$testbooster` - Preview the Guest Star message (no residuals gifted)', inline: false },
       { name: 'Owner Commands', value: '`$rules` - Display Director\'s rules (Director only)', inline: false },
     ]);
 
     // Public commands reference
     embed.addFields([
-      { name: 'Public Commands', value: '`help`, `profile`, `level`, `res`, `leaderboard`, GIF commands, `c <query>` (Featured Extra+)', inline: false },
+      { name: 'Public Commands', value: '`help`, `profile`, `level`, `res`, `leaderboard`, GIF commands, `c <query>` (Featured Extra+ or Guest Star)', inline: false },
     ]);
 
     await message.reply({ embeds: [embed] });
