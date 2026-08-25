@@ -312,8 +312,12 @@ CREATE TABLE IF NOT EXISTS shop_archetypes (
   tier TEXT NOT NULL,
   price INTEGER NOT NULL,
   min_role TEXT,
-  slot_group TEXT NOT NULL
+  slot_group TEXT NOT NULL,
+  image_url TEXT
 );
+
+-- Idempotent upgrade for existing shop_archetypes rows (pre-image_url deploys)
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 -- Shop colors table
 CREATE TABLE IF NOT EXISTS shop_colors (

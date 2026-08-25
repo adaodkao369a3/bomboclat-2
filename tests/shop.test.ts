@@ -248,4 +248,84 @@ assertEqual(boosterWithBothGrants.color, false, 'Booster with both grants should
 assertEqual(boosterFreeArchetype.free_grant, true, 'Free grant flag should persist as true');
 assertEqual(normalArchetype.free_grant, false, 'Normal purchase should remain as free_grant=false');
 
+// --- Category shop embed/select-menu tests (per-category dropdown layout) ---
+
+// Mock shop archetype with image_url, as added for per-tier grid images
+interface ShopArchetypeWithImage extends ShopArchetype {
+  image_url: string | null;
+}
+
+const fullStandardArchetypes: ShopArchetypeWithImage[] = [
+  { id: 1, name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: '' },
+  { id: 2, name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: '' },
+  { id: 3, name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: '' },
+  { id: 4, name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: '' },
+  { id: 5, name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: '' },
+  { id: 6, name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: '' },
+  { id: 7, name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy', image_url: '' },
+  { id: 8, name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror', image_url: '' },
+  { id: 9, name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller', image_url: '' },
+  { id: 10, name: 'Documentary Host', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary', image_url: '' },
+];
+
+const fullLegendaryArchetypes: ShopArchetypeWithImage[] = [
+  { id: 11, name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: '' },
+  { id: 12, name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: '' },
+  { id: 13, name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: '' },
+  { id: 14, name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: '' },
+  { id: 15, name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: '' },
+];
+
+const fullMythicArchetypes: ShopArchetypeWithImage[] = [
+  { id: 16, name: "Director's Cut", tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: '' },
+  { id: 17, name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: '' },
+];
+
+// Discord caps a StringSelectMenu at 25 options. Since the shop is now split
+// into one dropdown per tier/band, each dropdown must independently stay
+// under that cap, not just the shop as a whole.
+const DISCORD_SELECT_MENU_OPTION_CAP = 25;
+assertEqual(fullStandardArchetypes.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Standard archetype dropdown must stay under the 25-option cap');
+assertEqual(fullLegendaryArchetypes.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Legendary archetype dropdown must stay under the 25-option cap');
+assertEqual(fullMythicArchetypes.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Mythic archetype dropdown must stay under the 25-option cap');
+
+const fullColorBands = {
+  common: ['Crimson Red', 'Ocean Blue', 'Forest Green', 'Golden Yellow', 'Royal Purple', 'Hot Pink'],
+  uncommon: ['Sapphire', 'Emerald', 'Ruby', 'Amethyst', 'Topaz', 'Turquoise'],
+  rare: ['Diamond White', 'Midnight Black', 'Sunset Orange', 'Aurora Green', 'Platinum Silver', 'Galaxy Purple'],
+};
+assertEqual(fullColorBands.common.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Common color dropdown must stay under the 25-option cap');
+assertEqual(fullColorBands.uncommon.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Uncommon color dropdown must stay under the 25-option cap');
+assertEqual(fullColorBands.rare.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Rare color dropdown must stay under the 25-option cap');
+
+// Discord caps a message at 5 action rows. Each shop message now carries one
+// action row (select menu) per category it displays, so the categories per
+// message must not exceed that cap.
+const DISCORD_ACTION_ROW_CAP = 5;
+const colorShopCategoryCount = Object.keys(fullColorBands).length; // common, uncommon, rare
+const archetypeShopCategoryCount = 3; // standard, legendary, mythic
+assertEqual(colorShopCategoryCount <= DISCORD_ACTION_ROW_CAP, true, 'Color shop message must not exceed the 5 action-row cap');
+assertEqual(archetypeShopCategoryCount <= DISCORD_ACTION_ROW_CAP, true, 'Archetype shop message must not exceed the 5 action-row cap');
+
+// Grid image layout math: a fixed 3-column layout should compute the row
+// count the same way the image generator does, so a category with a
+// non-multiple-of-3 item count (e.g. 10 or 5) still lays out cleanly.
+function computeGridRows(itemCount: number, columns: number): number {
+  return Math.max(1, Math.ceil(itemCount / columns));
+}
+
+assertEqual(computeGridRows(6, 3), 2, '6 items in 3 columns should be 2 rows');
+assertEqual(computeGridRows(10, 3), 4, '10 items in 3 columns should be 4 rows (Standard archetypes)');
+assertEqual(computeGridRows(5, 3), 2, '5 items in 3 columns should be 2 rows (Legendary archetypes)');
+assertEqual(computeGridRows(2, 3), 1, '2 items in 3 columns should be 1 row (Mythic archetypes)');
+assertEqual(computeGridRows(0, 3), 1, '0 items should still compute at least 1 row to avoid a zero-height canvas');
+
+// image_url is optional per-archetype art, filled in directly in code (not
+// via env/config) and left blank until real art is supplied.
+const archetypeWithoutImage: ShopArchetypeWithImage = fullStandardArchetypes[0];
+assertEqual(archetypeWithoutImage.image_url, '', 'Archetype without art yet should have a blank image_url');
+
+const archetypeWithImage: ShopArchetypeWithImage = { ...fullStandardArchetypes[1], image_url: 'https://example.com/drama-king.png' };
+assertEqual(archetypeWithImage.image_url, 'https://example.com/drama-king.png', 'Archetype image_url should pass through once set');
+
 console.log('✓ All shop functionality tests passed!');

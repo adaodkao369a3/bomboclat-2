@@ -19,10 +19,11 @@
   "license": "MIT",
   "dependencies": {
     "@huggingface/inference": "^3.0.0",
+    "@napi-rs/canvas": "^1.0.8",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
-    "pg": "^8.11.3",
     "node-fetch": "^3.3.2",
+    "pg": "^8.11.3",
     "typescript": "^5.3.3"
   },
   "devDependencies": {

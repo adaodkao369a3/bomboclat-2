@@ -7,6 +7,7 @@ export interface ShopArchetype {
   price: number;
   min_role: string | null;
   slot_group: string;
+  image_url: string | null;
 }
 
 export interface ShopColor {
@@ -34,41 +35,52 @@ export interface UserColor {
   free_grant: boolean;
 }
 
-// Seed shop archetypes (idempotent)
+// Seed shop archetypes (idempotent).
+//
+// image_url is intentionally left blank here for each entry — this is where
+// real archetype artwork gets filled in directly in code (not via .env).
+// Fill in a URL per archetype below, redeploy, and it will pick up automatically
+// (the ON CONFLICT DO UPDATE below means editing values here and redeploying
+// updates existing rows, it isn't just a first-boot insert).
 export async function seedShopArchetypes(): Promise<void> {
   const client = await getClient();
   try {
     const archetypes: Omit<ShopArchetype, 'id'>[] = [
       // Standard archetypes (10 types × 5 slots each = 50 total)
       // Group 1
-      { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy' },
-      { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama' },
-      { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action' },
-      { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance' },
-      { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery' },
+      { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: 'https://pbs.twimg.com/profile_images/1819065962160967684/k_Un-Pg1.jpg' },
+      { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: 'https://www.pngitem.com/pimgs/m/84-845622_kanye-west-hd-png-download.png' },
+      { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: 'https://media.gq.com/photos/590c8a5fee7e6447b1025be2/1:1/w_1999,h_1999,c_limit/spiderman-3.jpg' },
+      { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: 'https://i.pinimg.com/736x/8e/44/fc/8e44fcfb4537a5bbeb9bfc21ca5e4775.jpg' },
+      { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: 'https://i.pinimg.com/1200x/51/68/95/5168958d4a823c4370b03ad8c2b0cf92.jpg' },
       // Group 2
-      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi' },
-      { name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy' },
-      { name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror' },
-      { name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller' },
-      { name: 'Documentary Host', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary' },
+      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: 'https://i.pinimg.com/736x/57/bb/e4/57bbe47568735f71115a077544d86385.jpg' },
+      { name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy', image_url: 'https://i.pinimg.com/736x/c2/4c/ec/c24cec3e9bcffefec1101a42efacfd3e.jpg' },
+      { name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror', image_url: 'https://i.pinimg.com/736x/61/05/fe/6105fee8f28d5fc57615d6f718f5ca5b.jpg' },
+      { name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller', image_url: 'https://i.pinimg.com/736x/da/d6/3b/dad63b90e9c9196a89fa62052ab2db81.jpg' },
+      { name: 'Documentary Host', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary', image_url: 'https://i.pinimg.com/736x/63/b5/99/63b5991291e3c884543bbff82a6c7bec.jpg' },
       // Legendary archetypes (5 types × 1-2 slots each)
-      { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary' },
-      { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice' },
-      { name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards' },
-      { name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult' },
-      { name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival' },
+      { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: 'https://media-cldnry.s-nbcnews.com/image/upload/t_fit-1500w,f_auto,q_auto:best/streams/2013/September/130911/8C8952203-130911-ent-saulgoodman-hmed.jpg' },
+      { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: 'https://assets.sbs.com.au/dims4/default/426bed7/2147483647/strip/true/crop/640x360+0+0/resize/1280x720!/quality/90/?url=https%3A%2F%2Fsbs-au-brightspot.s3.ap-southeast-2.amazonaws.com%2Fdrupal%2Ffilm%2Fpublic%2Fimages%2F6%2F3%2F6311_the-wolf-of-wall-street-640-2.jpg&imwidth=1280' },
+      { name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: 'https://images.stockcake.com/public/5/f/7/5f7dbedb-c2c9-4bfd-8b6e-6b90aa909461_large/victory-awaits-glory-stockcake.jpg' },
+      { name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: 'https://64.media.tumblr.com/fababb2954021811072b391f73db1413/91b45c92c3c50f84-c7/s1280x1920/bbdba078377976b577e5f2e5882d16d59e336613.png' },
+      { name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: 'https://i.pinimg.com/736x/9c/9d/6d/9c9d6d16269d46970a61b2e02088cb0c.jpg' },
       // Mythic archetypes (gate behind Lead Cast)
-      { name: 'Director\'s Cut', tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic' },
-      { name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic' },
+      { name: 'Director\'s Cut', tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: 'https://images.stockcake.com/public/a/5/1/a511b368-8e38-4f45-827f-f34fde5963cd_large/cinematic-clapperboard-presence-stockcake.jpg' },
+      { name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: 'https://images.moneycontrol.com/static-mcnews/2024/04/the-oscars.png?impolicy=website&width=1600&height=900' },
     ];
 
     for (const archetype of archetypes) {
       await client.query(
-        `INSERT INTO shop_archetypes (name, tier, price, min_role, slot_group)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (name) DO NOTHING`,
-        [archetype.name, archetype.tier, archetype.price, archetype.min_role, archetype.slot_group]
+        `INSERT INTO shop_archetypes (name, tier, price, min_role, slot_group, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (name) DO UPDATE SET
+           tier = EXCLUDED.tier,
+           price = EXCLUDED.price,
+           min_role = EXCLUDED.min_role,
+           slot_group = EXCLUDED.slot_group,
+           image_url = NULLIF(EXCLUDED.image_url, '')`,
+        [archetype.name, archetype.tier, archetype.price, archetype.min_role, archetype.slot_group, archetype.image_url || null]
       );
     }
   } finally {
