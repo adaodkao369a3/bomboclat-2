@@ -17,6 +17,7 @@ import { testWelcomeCommand } from './testWelcome.js';
 import { testBoosterCommand } from './testBooster.js';
 import { settingsCommand } from './settings.js';
 import { shopCommand } from './shop.js';
+import { roleorderCommand } from './roleorder.js';
 
 export interface Command {
   name: string;
@@ -49,6 +50,7 @@ export async function registerCommands(client: Client): Promise<void> {
     testBoosterCommand,
     settingsCommand,
     shopCommand,
+    roleorderCommand,
   ];
 
   for (const command of commands) {

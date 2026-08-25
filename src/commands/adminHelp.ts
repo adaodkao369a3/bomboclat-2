@@ -35,6 +35,7 @@ export const adminHelpCommand: Command = {
       { name: 'XP Management', value: '`$xp @user` - Manage user XP and progression', inline: false },
       { name: 'Residuals Management', value: '`$residuals @user` - Manage user Residuals (Admin/Staff)', inline: false },
       { name: 'Role Synchronization', value: '`$syncroles` - Synchronize all progression roles', inline: false },
+      { name: 'Role Ordering', value: '`$roleorder` - Reorder server roles into the proper hierarchy', inline: false },
       { name: 'Settings', value: '`$settings clip_channels <add|remove|list> [#channel]` or `$settings <key> set <value>`', inline: false },
       { name: 'Shop', value: '`$shop` - Publish/re-post the public shop message (Director only)', inline: false },
       { name: 'Testing', value: '`$testwelcome` - Preview the welcome message\n`$testbooster` - Preview the Guest Star message (no residuals gifted)', inline: false },
