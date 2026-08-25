@@ -23,7 +23,7 @@ const client = new ExtendedClient({
   partials: [Partials.Channel, Partials.Message, Partials.Reaction],
 });
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user?.tag} (ID: ${client.user?.id})`);
   
   // Register commands

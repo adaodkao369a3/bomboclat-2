@@ -195,10 +195,21 @@ export async function addUserXP(userId: string, amount: number, source: string, 
   }
 }
 
-export async function setUserXP(userId: string, amount: number): Promise<number | null> {
+export async function setUserXP(userId: string, amount: number, adminUserId?: string, reason?: string): Promise<number | null> {
   const client = await getClient();
   try {
     const result = await client.query(
+      `SELECT current_xp FROM users WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const oldXP = result.rows[0].current_xp;
+
+    const updateResult = await client.query(
       `UPDATE users 
        SET current_xp = $1, updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $2
@@ -206,11 +217,20 @@ export async function setUserXP(userId: string, amount: number): Promise<number 
       [amount, userId]
     );
 
-    if (result.rows.length === 0) {
+    if (updateResult.rows.length === 0) {
       return null;
     }
 
-    return result.rows[0].current_xp;
+    // Log admin change if adminUserId provided
+    if (adminUserId) {
+      await client.query(
+        `INSERT INTO admin_xp_changes (admin_user_id, target_user_id, change_type, old_value, new_value, reason)
+         VALUES ($1, $2, 'set', $3, $4, $5)`,
+        [adminUserId, userId, oldXP.toString(), amount.toString(), reason || null]
+      );
+    }
+
+    return updateResult.rows[0].current_xp;
   } finally {
     client.release();
   }

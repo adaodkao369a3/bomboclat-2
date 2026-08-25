@@ -1,5 +1,16 @@
 import { XP_CONFIG, ROLES } from '../config/index.js';
 import { GuildMember } from 'discord.js';
+import { 
+  getOrCreateUser, 
+  getUser, 
+  addUserXP, 
+  setUserLevel, 
+  setUserProgressionRole, 
+  updatePromotionEligibility, 
+  setDailyBonusPaid, 
+  resetDailyXP 
+} from '../database/client.js';
+import { ResidualsService } from './residuals.js';
 
 export const PROGRESSION_ROLE_KEYS = [
   'audience',
@@ -267,6 +278,182 @@ export async function synchronizeProgressionRoles(
   return { success: true, addedRoles, removedRoles };
 }
 
+export interface XPAwardResult {
+  success: boolean;
+  newXP: number | null;
+  oldLevel: number;
+  newLevel: number;
+  levelUpOccurred: boolean;
+  roleChanged: boolean;
+  newRole: string | null;
+  levelsCrossed: number[];
+  levelUpResiduals: number;
+}
+
+export async function awardXP(
+  userId: string,
+  username: string,
+  displayName: string,
+  baseXP: number,
+  source: string,
+  reason: string,
+  hasBooster: boolean,
+  member: GuildMember | null
+): Promise<XPAwardResult> {
+  try {
+    // Ensure user exists
+    await getOrCreateUser(userId, username, displayName);
+
+    // Get current user data
+    const userData = await getUser(userId);
+    if (!userData) {
+      return {
+        success: false,
+        newXP: null,
+        oldLevel: 0,
+        newLevel: 0,
+        levelUpOccurred: false,
+        roleChanged: false,
+        newRole: null,
+        levelsCrossed: [],
+        levelUpResiduals: 0,
+      };
+    }
+
+    const oldLevel = userData.current_level;
+    // Check if daily XP needs to be reset (new day)
+    const now = new Date();
+    const lastReset = userData.last_daily_xp_reset ? new Date(userData.last_daily_xp_reset) : null;
+    const needsReset = !lastReset || 
+      (now.getDate() !== lastReset.getDate() || 
+       now.getMonth() !== lastReset.getMonth() || 
+       now.getFullYear() !== lastReset.getFullYear());
+    
+    if (needsReset) {
+      await resetDailyXP(userId);
+      // Reload user data after reset
+      const refreshedUser = await getUser(userId);
+      if (refreshedUser) {
+        Object.assign(userData, refreshedUser);
+      }
+    }
+
+    // Apply booster XP multiplier (+25%)
+    let xpToAward = baseXP;
+    if (hasBooster) {
+      xpToAward = Math.floor(baseXP * 1.25);
+    }
+
+    // Update user XP
+    const newXP = await addUserXP(userId, xpToAward, source, reason);
+    if (newXP === null) {
+      return {
+        success: false,
+        newXP: null,
+        oldLevel,
+        newLevel: oldLevel,
+        levelUpOccurred: false,
+        roleChanged: false,
+        newRole: null,
+        levelsCrossed: [],
+        levelUpResiduals: 0,
+      };
+    }
+
+    // Calculate new level
+    const newLevel = calculateLevelFromXP(newXP);
+    const levelUpOccurred = newLevel !== oldLevel;
+
+    // Track all levels crossed for multi-level jumps
+    const levelsCrossed: number[] = [];
+    if (levelUpOccurred) {
+      for (let level = oldLevel + 1; level <= newLevel; level++) {
+        levelsCrossed.push(level);
+      }
+      await setUserLevel(userId, newLevel);
+    }
+
+    // Award level-up residuals for EACH level crossed.
+    let totalLevelUpResiduals = 0;
+    for (const level of levelsCrossed) {
+      const levelUpResiduals = calculateLevelUpResiduals(level);
+      totalLevelUpResiduals += levelUpResiduals;
+      await ResidualsService.awardResiduals(
+        userId,
+        levelUpResiduals,
+        'level_up',
+        `Level up to ${level}`
+      );
+    }
+
+    // Check for daily XP bonus (first time crossing 200 XP in a day)
+    const DAILY_BONUS_THRESHOLD = 200;
+    const DAILY_BONUS_AMOUNT = 30;
+    const dailyXPBeforeAward = userData.daily_xp_earned;
+    const dailyXPAfterAward = dailyXPBeforeAward + xpToAward;
+    
+    if (!userData.daily_bonus_paid && dailyXPBeforeAward < DAILY_BONUS_THRESHOLD && dailyXPAfterAward >= DAILY_BONUS_THRESHOLD) {
+      await ResidualsService.awardResiduals(
+        userId,
+        DAILY_BONUS_AMOUNT,
+        'daily_bonus',
+        'Daily XP threshold bonus'
+      );
+      await setDailyBonusPaid(userId);
+    }
+
+    // Update promotion eligibility
+    const currentRole = getRoleFromLevel(newLevel);
+    const eligibility = calculatePromotionEligibility(newXP, newLevel, currentRole);
+    await updatePromotionEligibility(userId, eligibility);
+
+    // Check for role promotions if member is available
+    let roleChanged = false;
+    let newRole: string | null = null;
+
+    if (member) {
+      try {
+        const syncResult = await synchronizeProgressionRoles(member, newLevel);
+        if (syncResult.success) {
+          const oldRole = userData.current_progression_role;
+          if (oldRole !== currentRole) {
+            await setUserProgressionRole(userId, currentRole);
+            roleChanged = true;
+            newRole = currentRole;
+          }
+        }
+      } catch (error) {
+        console.error('Error during role progression check:', error);
+      }
+    }
+
+    return {
+      success: true,
+      newXP,
+      oldLevel,
+      newLevel,
+      levelUpOccurred,
+      roleChanged,
+      newRole,
+      levelsCrossed,
+      levelUpResiduals: totalLevelUpResiduals,
+    };
+  } catch (error) {
+    console.error('Error awarding XP:', error);
+    return {
+      success: false,
+      newXP: null,
+      oldLevel: 0,
+      newLevel: 0,
+      levelUpOccurred: false,
+      roleChanged: false,
+      newRole: null,
+      levelsCrossed: [],
+      levelUpResiduals: 0,
+    };
+  }
+}
+
 export class AntiSpamValidator {
   private userMessageHistory: Map<string, Array<{ content: string; timestamp: number }>> = new Map();
   private userLastXPTime: Map<string, number> = new Map();
@@ -299,7 +486,7 @@ export class AntiSpamValidator {
     }
   }
 
-  isMessageEligible(userId: string, messageContent: string, currentDailyXP: number): { eligible: boolean; reason: string } {
+  isMessageEligible(userId: string, messageContent: string, _currentDailyXP: number): { eligible: boolean; reason: string } {
     const now = Date.now();
 
     // Reset daily tracking if needed
@@ -311,11 +498,6 @@ export class AntiSpamValidator {
 
     // Periodic cleanup
     this.cleanupOldEntries();
-
-    // Check daily XP cap
-    if (currentDailyXP >= XP_CONFIG.DAILY_XP_CAP) {
-      return { eligible: false, reason: 'Daily XP cap reached' };
-    }
 
     // Check message length
     if (messageContent.length < XP_CONFIG.MIN_MESSAGE_LENGTH) {

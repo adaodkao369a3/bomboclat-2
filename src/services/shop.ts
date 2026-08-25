@@ -175,69 +175,89 @@ export async function getUserColors(userId: string): Promise<UserColor[]> {
   }
 }
 
+const SHOP_SLOT_CAPS: Record<string, number> = {
+  comedy: 5,
+  drama: 5,
+  action: 5,
+  romance: 5,
+  mystery: 5,
+  scifi: 5,
+  fantasy: 5,
+  horror: 5,
+  thriller: 5,
+  documentary: 5,
+  legendary: 2,
+  boxoffice: 2,
+  awards: 2,
+  cult: 2,
+  festival: 2,
+  mythic: 1,
+};
+
+async function checkCanPurchaseArchetype(
+  client: import('pg').PoolClient,
+  userId: string,
+  archetypeId: number
+): Promise<{ canPurchase: boolean; reason?: string }> {
+  const archetypeResult = await client.query(
+    'SELECT * FROM shop_archetypes WHERE id = $1',
+    [archetypeId]
+  );
+  if (archetypeResult.rows.length === 0) {
+    return { canPurchase: false, reason: 'Archetype not found' };
+  }
+
+  const archetype = archetypeResult.rows[0] as ShopArchetype;
+  const userResult = await client.query(
+    'SELECT current_progression_role FROM users WHERE user_id = $1 FOR UPDATE',
+    [userId]
+  );
+
+  if (userResult.rows.length === 0) {
+    return { canPurchase: false, reason: 'User not found' };
+  }
+
+  if (archetype.min_role) {
+    const roleHierarchy = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
+    const userRole = userResult.rows[0].current_progression_role;
+    const userRoleIndex = roleHierarchy.indexOf(userRole);
+    const requiredRoleIndex = roleHierarchy.indexOf(archetype.min_role);
+
+    if (userRoleIndex < requiredRoleIndex) {
+      return { canPurchase: false, reason: `Requires ${archetype.min_role.replace('_', ' ')} role or higher` };
+    }
+  }
+
+  const maxSlots = SHOP_SLOT_CAPS[archetype.slot_group] || 1;
+  const currentSlotsResult = await client.query(
+    `SELECT COUNT(*) as count
+     FROM user_archetypes ua
+     JOIN shop_archetypes sa ON ua.archetype_id = sa.id
+     WHERE ua.user_id = $1 AND sa.slot_group = $2`,
+    [userId, archetype.slot_group]
+  );
+
+  const currentSlots = Number(currentSlotsResult.rows[0].count);
+  if (currentSlots >= maxSlots) {
+    return { canPurchase: false, reason: `Slot cap reached for ${archetype.slot_group} (max ${maxSlots})` };
+  }
+
+  return { canPurchase: true };
+}
+
 // Check if user can purchase archetype (slot cap + tier gating)
-export async function canPurchaseArchetype(userId: string, archetypeId: number): Promise<{ canPurchase: boolean; reason?: string }> {
+export async function canPurchaseArchetype(
+  userId: string,
+  archetypeId: number
+): Promise<{ canPurchase: boolean; reason?: string }> {
   const client = await getClient();
   try {
-    // Get archetype details
-    const archetypeResult = await client.query(
-      'SELECT * FROM shop_archetypes WHERE id = $1',
-      [archetypeId]
-    );
-    if (archetypeResult.rows.length === 0) {
-      return { canPurchase: false, reason: 'Archetype not found' };
-    }
-    const archetype = archetypeResult.rows[0] as ShopArchetype;
-
-    // Check tier gating
-    if (archetype.min_role) {
-      const userResult = await client.query(
-        'SELECT current_progression_role FROM users WHERE user_id = $1',
-        [userId]
-      );
-      if (userResult.rows.length === 0) {
-        return { canPurchase: false, reason: 'User not found' };
-      }
-      const userRole = userResult.rows[0].current_progression_role;
-      
-      const roleHierarchy = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
-      const userRoleIndex = roleHierarchy.indexOf(userRole);
-      const requiredRoleIndex = roleHierarchy.indexOf(archetype.min_role);
-      
-      if (userRoleIndex < requiredRoleIndex) {
-        return { canPurchase: false, reason: `Requires ${archetype.min_role.replace('_', ' ')} role or higher` };
-      }
-    }
-
-    // Check slot cap
-    const slotCaps: Record<string, number> = {
-      standard: 5,
-      legendary: 2,
-      mythic: 1,
-    };
-    
-    const maxSlots = slotCaps[archetype.tier] || 1;
-    
-    const currentSlotsResult = await client.query(
-      `SELECT COUNT(*) as count
-       FROM user_archetypes ua
-       JOIN shop_archetypes sa ON ua.archetype_id = sa.id
-       WHERE ua.user_id = $1 AND sa.slot_group = $2`,
-      [userId, archetype.slot_group]
-    );
-    
-    const currentSlots = parseInt(currentSlotsResult.rows[0].count);
-    if (currentSlots >= maxSlots) {
-      return { canPurchase: false, reason: `Slot cap reached for ${archetype.slot_group} (max ${maxSlots})` };
-    }
-
-    return { canPurchase: true };
+    return await checkCanPurchaseArchetype(client, userId, archetypeId);
   } finally {
     client.release();
   }
 }
 
-// Purchase archetype
 export async function purchaseArchetype(
   userId: string,
   archetypeId: number,
@@ -248,7 +268,7 @@ export async function purchaseArchetype(
     await client.query('BEGIN');
 
     // Check if user can purchase
-    const canPurchase = await canPurchaseArchetype(userId, archetypeId);
+    const canPurchase = await checkCanPurchaseArchetype(client, userId, archetypeId);
     if (!canPurchase.canPurchase) {
       await client.query('ROLLBACK');
       return { success: false, reason: canPurchase.reason };
@@ -261,15 +281,16 @@ export async function purchaseArchetype(
     );
     const price = archetypeResult.rows[0].price;
 
-    // Check user balance (unless free grant)
+    // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
+    let balanceBefore = 0;
     if (!freeGrant) {
       const balanceResult = await client.query(
-        'SELECT total_residuals_balance FROM users WHERE user_id = $1',
+        'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
         [userId]
       );
-      const balance = balanceResult.rows[0].total_residuals_balance;
+      balanceBefore = balanceResult.rows[0].total_residuals_balance;
       
-      if (balance < price) {
+      if (balanceBefore < price) {
         await client.query('ROLLBACK');
         return { success: false, reason: 'Insufficient residuals' };
       }
@@ -281,6 +302,12 @@ export async function purchaseArchetype(
              lifetime_residuals_spent = lifetime_residuals_spent + $1
          WHERE user_id = $2`,
         [price, userId]
+      );
+    } else {
+      // For free grants, still lock the user row for consistency
+      await client.query(
+        'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
+        [userId]
       );
     }
 
@@ -302,10 +329,11 @@ export async function purchaseArchetype(
 
     // Log transaction
     if (!freeGrant) {
+      const balanceAfter = balanceBefore - price;
       await client.query(
         `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
-         VALUES ($1, $2, (SELECT total_residuals_balance + $2 FROM users WHERE user_id = $1), (SELECT total_residuals_balance FROM users WHERE user_id = $1), 'purchase', 'shop_purchase', 'Archetype purchase')`,
-        [userId, -price]
+         VALUES ($1, $2, $3, $4, 'purchase', 'shop_purchase', 'Archetype purchase')`,
+        [userId, -price, balanceBefore, balanceAfter]
       );
     }
 
@@ -359,15 +387,16 @@ export async function purchaseColor(
     };
     const price = priceMap[color.price_band] || 200;
 
-    // Check user balance (unless free grant)
+    // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
+    let balanceBefore = 0;
     if (!freeGrant) {
       const balanceResult = await client.query(
-        'SELECT total_residuals_balance FROM users WHERE user_id = $1',
+        'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
         [userId]
       );
-      const balance = balanceResult.rows[0].total_residuals_balance;
+      balanceBefore = balanceResult.rows[0].total_residuals_balance;
       
-      if (balance < price) {
+      if (balanceBefore < price) {
         await client.query('ROLLBACK');
         return { success: false, reason: 'Insufficient residuals' };
       }
@@ -379,6 +408,12 @@ export async function purchaseColor(
              lifetime_residuals_spent = lifetime_residuals_spent + $1
          WHERE user_id = $2`,
         [price, userId]
+      );
+    } else {
+      // For free grants, still lock the user row for consistency
+      await client.query(
+        'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
+        [userId]
       );
     }
 
@@ -397,10 +432,11 @@ export async function purchaseColor(
 
     // Log transaction
     if (!freeGrant) {
+      const balanceAfter = balanceBefore - price;
       await client.query(
         `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
-         VALUES ($1, $2, (SELECT total_residuals_balance + $2 FROM users WHERE user_id = $1), (SELECT total_residuals_balance FROM users WHERE user_id = $1), 'purchase', 'shop_purchase', 'Color purchase')`,
-        [userId, -price]
+         VALUES ($1, $2, $3, $4, 'purchase', 'shop_purchase', 'Color purchase')`,
+        [userId, -price, balanceBefore, balanceAfter]
       );
     }
 

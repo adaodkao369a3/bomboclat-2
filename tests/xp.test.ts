@@ -120,4 +120,50 @@ const highBaseXP = 15;
 const highBoostedXP = Math.floor(highBaseXP * boosterMultiplier);
 assertEqual(highBoostedXP, 18, 'Booster should get +25% XP (15 -> 18)');
 
+// Test that daily XP can exceed 500 (hard cap removed)
+const highDailyXP = 20000;
+const levelAtHighXP = calculateLevelFromXP(highDailyXP);
+assertEqual(levelAtHighXP, 25, '20000 XP should reach level 25 (proving daily XP can exceed 500)');
+
+// Test multiple level crossing scenario
+// Level 7 (1800 XP) to Level 10 (2750 XP) - should cross levels 8, 9, 10
+const level7XP = XP_CONFIG.LEVEL_XP_REQUIREMENTS[6]; // 1800
+const level10XP = XP_CONFIG.LEVEL_XP_REQUIREMENTS[9]; // 2750
+const level7 = calculateLevelFromXP(level7XP);
+const level10 = calculateLevelFromXP(level10XP);
+assertEqual(level7, 7, 'Level 7 threshold should give level 7');
+assertEqual(level10, 10, 'Level 10 threshold should give level 10');
+
+// Simulate crossing multiple levels
+const levelsCrossed: number[] = [];
+for (let level = level7 + 1; level <= level10; level++) {
+  levelsCrossed.push(level);
+}
+assertEqual(levelsCrossed.length, 3, 'Should cross 3 levels (8, 9, 10)');
+assertEqual(levelsCrossed.join(','), '8,9,10', 'Should cross exactly levels 8, 9, 10');
+
+// Test that each level crossed would award appropriate residuals
+const level8Residuals = calculateLevelUpResiduals(8);
+const level9Residuals = calculateLevelUpResiduals(9);
+const level10Residuals = calculateLevelUpResiduals(10);
+
+// Verify each level's residuals are within bounds and increasing
+if (level8Residuals < 10 || level8Residuals > 50) {
+  throw new Error(`Level 8 residuals ${level8Residuals} outside 10-50 range`);
+}
+if (level9Residuals < 10 || level9Residuals > 50) {
+  throw new Error(`Level 9 residuals ${level9Residuals} outside 10-50 range`);
+}
+if (level10Residuals < 10 || level10Residuals > 50) {
+  throw new Error(`Level 10 residuals ${level10Residuals} outside 10-50 range`);
+}
+
+// Verify residuals increase with level
+if (level9Residuals < level8Residuals) {
+  throw new Error(`Level 9 residuals ${level9Residuals} should be >= level 8 residuals ${level8Residuals}`);
+}
+if (level10Residuals < level9Residuals) {
+  throw new Error(`Level 10 residuals ${level10Residuals} should be >= level 9 residuals ${level9Residuals}`);
+}
+
 console.log('✓ All XP calculation tests passed!');

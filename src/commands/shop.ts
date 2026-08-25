@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
-import { CHANNELS } from '../config/index.js';
+import { CHANNELS, ROLES } from '../config/index.js';
 import { getUser } from '../database/client.js';
 import { 
   getShopArchetypes, 
@@ -11,6 +11,7 @@ import {
   switchActiveColor,
   seedShopArchetypes,
   seedShopColors,
+  hasBoosterFreeGrants,
   type ShopArchetype,
   type ShopColor
 } from '../services/shop.js';
@@ -69,7 +70,8 @@ export const shopCommand: Command = {
       );
 
     // Check if there's an existing shop message and delete it
-    const existingMessages = await shopChannel.messages.fetch({ limit: 10 });
+    // Look at more messages to find existing shop messages
+    const existingMessages = await shopChannel.messages.fetch({ limit: 100 });
     const existingShopMessage = existingMessages.find(msg => 
       msg.author.id === message.client.user?.id && 
       msg.embeds.length > 0 && 
@@ -116,6 +118,11 @@ async function showArchetypeShop(interaction: any, userId: string): Promise<void
     return;
   }
 
+  // Check if user is booster and has free grant available
+  const member = await interaction.guild?.members.fetch(userId).catch(() => null);
+  const isBooster = member?.roles.cache.has(ROLES.BOOSTER) || false;
+  const freeGrants = isBooster ? await hasBoosterFreeGrants(userId) : { archetype: false, color: false };
+
   // Group by tier
   const tierGroups: Record<string, ShopArchetype[]> = {
     standard: archetypes.filter(a => a.tier === 'standard'),
@@ -134,12 +141,21 @@ async function showArchetypeShop(interaction: any, userId: string): Promise<void
   for (const archetype of archetypes) {
     const owned = userArchetypes.some(ua => ua.archetype_id === archetype.id);
     const canAfford = userData.total_residuals_balance >= archetype.price;
-    const label = `${archetype.name} (${archetype.tier}) - ${archetype.price} residuals`;
+    
+    // Check if this is a free grant option for booster
+    const isFreeOption = freeGrants.archetype && archetype.tier === 'standard' && !owned;
+    
+    let label = `${archetype.name} (${archetype.tier})`;
+    if (isFreeOption) {
+      label += ' - 🎁 FREE';
+    } else {
+      label += ` - ${archetype.price} residuals`;
+    }
     
     const option = new StringSelectMenuOptionBuilder()
       .setLabel(label)
       .setValue(archetype.id.toString())
-      .setDescription(owned ? '✅ Owned' : (canAfford ? '💰 Affordable' : '❌ Cannot afford'));
+      .setDescription(owned ? '✅ Owned' : (isFreeOption ? '🎁 Free Booster Grant' : (canAfford ? '💰 Affordable' : '❌ Cannot afford')));
     
     if (owned) {
       option.setDefault(true);
@@ -150,9 +166,14 @@ async function showArchetypeShop(interaction: any, userId: string): Promise<void
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
+  let description = `Your balance: ${userData.total_residuals_balance.toLocaleString()} residuals`;
+  if (freeGrants.archetype) {
+    description += '\n\n🎁 You have a free Standard archetype available!';
+  }
+
   const embed = new EmbedBuilder()
     .setTitle('🎭 Archetype Shop')
-    .setDescription(`Your balance: ${userData.total_residuals_balance.toLocaleString()} residuals`)
+    .setDescription(description)
     .setColor(0x7B61FF)
     .addFields([
       { name: 'Standard', value: `${tierGroups.standard.length} available (5 slots each)`, inline: true },
@@ -180,15 +201,18 @@ async function showArchetypeShop(interaction: any, userId: string): Promise<void
 
     const owned = userArchetypes.some(ua => ua.archetype_id === archetype.id);
     const canAfford = userData.total_residuals_balance >= archetype.price;
+    
+    // Check if this is a free grant
+    const isFreeGrant = freeGrants.archetype && archetype.tier === 'standard' && !owned;
 
     // Create purchase confirmation
     const confirmRow = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`confirm_archetype_${archetypeId}`)
-          .setLabel('Purchase')
+          .setLabel(isFreeGrant ? 'Claim Free' : 'Purchase')
           .setStyle(ButtonStyle.Success)
-          .setDisabled(owned || !canAfford),
+          .setDisabled(owned || (!isFreeGrant && !canAfford)),
         new ButtonBuilder()
           .setCustomId('cancel_archetype')
           .setLabel('Cancel')
@@ -197,11 +221,11 @@ async function showArchetypeShop(interaction: any, userId: string): Promise<void
 
     const detailEmbed = new EmbedBuilder()
       .setTitle(`${archetype.name} (${archetype.tier})`)
-      .setDescription(owned ? '✅ You already own this archetype!' : `Price: ${archetype.price} residuals`)
+      .setDescription(owned ? '✅ You already own this archetype!' : (isFreeGrant ? '🎁 Free Booster Grant - No cost!' : `Price: ${archetype.price} residuals`))
       .setColor(0x7B61FF)
       .addFields([
         { name: 'Tier', value: archetype.tier, inline: true },
-        { name: 'Price', value: archetype.price.toString(), inline: true },
+        { name: 'Price', value: isFreeGrant ? 'FREE' : archetype.price.toString(), inline: true },
         { name: 'Slot Group', value: archetype.slot_group, inline: true },
         { name: 'Requirements', value: archetype.min_role ? `Requires ${archetype.min_role.replace('_', ' ')}` : 'None', inline: false },
       ]);
@@ -217,11 +241,11 @@ async function showArchetypeShop(interaction: any, userId: string): Promise<void
 
     buttonCollector?.on('collect', async (buttonInteraction: any) => {
       if (buttonInteraction.customId === `confirm_archetype_${archetypeId}`) {
-        const result = await purchaseArchetype(userId, archetypeId);
+        const result = await purchaseArchetype(userId, archetypeId, isFreeGrant);
         
         if (result.success) {
           await buttonInteraction.update({ 
-            content: '✅ Archetype purchased successfully!', 
+            content: isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!', 
             embeds: [], 
             components: [] 
           });
@@ -248,6 +272,11 @@ async function showColorShop(interaction: any, userId: string): Promise<void> {
     return;
   }
 
+  // Check if user is booster and has free grant available
+  const member = await interaction.guild?.members.fetch(userId).catch(() => null);
+  const isBooster = member?.roles.cache.has(ROLES.BOOSTER) || false;
+  const freeGrants = isBooster ? await hasBoosterFreeGrants(userId) : { archetype: false, color: false };
+
   // Group by price band
   const bandGroups: Record<string, ShopColor[]> = {
     common: colors.filter(c => c.price_band === 'common'),
@@ -270,12 +299,20 @@ async function showColorShop(interaction: any, userId: string): Promise<void> {
     const price = priceMap[color.price_band] || 200;
     const canAfford = userData.total_residuals_balance >= price;
     
-    const label = `${color.name} (${color.price_band}) - ${price} residuals`;
+    // Check if this is a free grant option for booster
+    const isFreeOption = freeGrants.color && color.price_band === 'common' && !owned;
+    
+    let label = `${color.name} (${color.price_band})`;
+    if (isFreeOption) {
+      label += ' - 🎁 FREE';
+    } else {
+      label += ` - ${price} residuals`;
+    }
     
     const option = new StringSelectMenuOptionBuilder()
       .setLabel(label)
       .setValue(color.id.toString())
-      .setDescription(active ? '🔹 Active' : (owned ? '✅ Owned' : (canAfford ? '💰 Affordable' : '❌ Cannot afford')));
+      .setDescription(active ? '🔹 Active' : (owned ? '✅ Owned' : (isFreeOption ? '🎁 Free Booster Grant' : (canAfford ? '💰 Affordable' : '❌ Cannot afford'))));
     
     if (active) {
       option.setDefault(true);
@@ -286,9 +323,14 @@ async function showColorShop(interaction: any, userId: string): Promise<void> {
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
+  let description = `Your balance: ${userData.total_residuals_balance.toLocaleString()} residuals`;
+  if (freeGrants.color) {
+    description += '\n\n🎁 You have a free Common color available!';
+  }
+
   const embed = new EmbedBuilder()
     .setTitle('🎨 Color Shop')
-    .setDescription(`Your balance: ${userData.total_residuals_balance.toLocaleString()} residuals`)
+    .setDescription(description)
     .setColor(0xFFD700)
     .addFields([
       { name: 'Common', value: `${bandGroups.common.length} available (200 residuals)`, inline: true },
@@ -319,15 +361,18 @@ async function showColorShop(interaction: any, userId: string): Promise<void> {
     const priceMap: Record<string, number> = { common: 200, uncommon: 500, rare: 800 };
     const price = priceMap[color.price_band] || 200;
     const canAfford = userData.total_residuals_balance >= price;
+    
+    // Check if this is a free grant
+    const isFreeGrant = freeGrants.color && color.price_band === 'common' && !owned;
 
     // Create action buttons
     const confirmRow = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`purchase_color_${colorId}`)
-          .setLabel('Purchase')
+          .setLabel(isFreeGrant ? 'Claim Free' : 'Purchase')
           .setStyle(ButtonStyle.Success)
-          .setDisabled(owned || !canAfford),
+          .setDisabled(owned || (!isFreeGrant && !canAfford)),
         new ButtonBuilder()
           .setCustomId(`equip_color_${colorId}`)
           .setLabel('Equip')
@@ -341,11 +386,11 @@ async function showColorShop(interaction: any, userId: string): Promise<void> {
 
     const detailEmbed = new EmbedBuilder()
       .setTitle(color.name)
-      .setDescription(owned ? (active ? '🔹 Currently equipped' : '✅ Owned (click Equip to use)') : `Price: ${price} residuals`)
+      .setDescription(owned ? (active ? '🔹 Currently equipped' : '✅ Owned (click Equip to use)') : (isFreeGrant ? '🎁 Free Booster Grant - No cost!' : `Price: ${price} residuals`))
       .setColor(parseInt(color.hex.replace('#', ''), 16))
       .addFields([
         { name: 'Price Band', value: color.price_band, inline: true },
-        { name: 'Price', value: price.toString(), inline: true },
+        { name: 'Price', value: isFreeGrant ? 'FREE' : price.toString(), inline: true },
         { name: 'Hex', value: color.hex, inline: true },
       ]);
 
@@ -360,11 +405,11 @@ async function showColorShop(interaction: any, userId: string): Promise<void> {
 
     buttonCollector?.on('collect', async (buttonInteraction: any) => {
       if (buttonInteraction.customId === `purchase_color_${colorId}`) {
-        const result = await purchaseColor(userId, colorId);
+        const result = await purchaseColor(userId, colorId, isFreeGrant);
         
         if (result.success) {
           await buttonInteraction.update({ 
-            content: '✅ Color purchased and equipped!', 
+            content: isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!', 
             embeds: [], 
             components: [] 
           });

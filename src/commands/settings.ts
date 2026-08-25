@@ -1,5 +1,5 @@
 import { getSetting, setSetting } from '../services/settings.js';
-import { isStaff } from '../utils/permissions.js';
+import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
 export const settingsCommand: Command = {
@@ -7,7 +7,7 @@ export const settingsCommand: Command = {
   allowedPrefix: '$',
   async execute(message, args, _prefix) {
     // Check staff permissions
-    if (!message.member || !isStaff(message.member)) {
+    if (!message.member || !isAdmin(message.member)) {
       await message.reply('❌ This command is restricted to staff.');
       return;
     }

@@ -1,14 +1,7 @@
-import { VoiceState, Guild, GuildMember } from 'discord.js';
-import { getOrCreateUser, addUserXP, setUserLevel, updatePromotionEligibility, getUser, setUserProgressionRole } from '../database/client.js';
-import {
-  calculateLevelFromXP,
-  calculatePromotionEligibility,
-  getRoleFromLevel,
-  calculateLevelUpResiduals,
-  synchronizeProgressionRoles,
-} from './xp.js';
-import { ResidualsService } from './residuals.js';
-import { CHANNELS, ROLES } from '../config/index.js';
+import { VoiceState, Guild } from 'discord.js';
+import { awardXP } from './xp.js';
+import { sendLevelUpNotification } from './levelUpNotification.js';
+import { ROLES } from '../config/index.js';
 
 // Track active voice sessions per user
 interface VoiceSession {
@@ -120,143 +113,49 @@ async function awardVoiceXP(userId: string, channelId: string, guild: Guild): Pr
   try {
     // Ensure user exists
     const member = await guild.members.fetch(userId).catch(() => null);
-    const username = member?.user.username || 'Unknown';
-    const displayName = member?.displayName || 'Unknown';
-    await getOrCreateUser(userId, username, displayName);
+    if (!member) return;
 
-    let xpToAward = Math.floor(Math.random() * (VOICE_XP_MAX - VOICE_XP_MIN + 1)) + VOICE_XP_MIN;
+    const username = member.user.username;
+    const displayName = member.displayName;
 
-    // Apply booster XP multiplier (+25%)
-    if (member && member.roles.cache.has(ROLES.BOOSTER)) {
-      xpToAward = Math.floor(xpToAward * 1.25);
-    }
+    // Calculate base XP (5-15 range)
+    const baseXP = Math.floor(Math.random() * (VOICE_XP_MAX - VOICE_XP_MIN + 1)) + VOICE_XP_MIN;
 
-    const newXP = await addUserXP(
+    // Check if user has booster role
+    const hasBooster = member.roles.cache.has(ROLES.BOOSTER);
+
+    // Use shared XP award path
+    const result = await awardXP(
       userId,
-      xpToAward,
+      username,
+      displayName,
+      baseXP,
       'voice',
-      `Voice activity in channel ${channelId}`
+      `Voice activity in channel ${channelId}`,
+      hasBooster,
+      member
     );
 
-    if (newXP === null) {
+    if (!result.success || result.newXP === null) {
       console.error(`Failed to award voice XP to user ${userId}`);
       return;
     }
 
-    // Calculate new level
-    const newLevel = calculateLevelFromXP(newXP);
-
-    // Update level in database if changed
-    const userData = await getUser(userId);
-    if (!userData) return;
-
-    const oldLevel = userData.current_level;
-    let roleChanged = false;
-    let newRole = null;
-    const levelChanged = newLevel !== oldLevel;
-    
-    if (levelChanged) {
-      await setUserLevel(userId, newLevel);
-      console.log(`User ${userId} leveled up to ${newLevel} (voice XP)`);
-
-      // Award level-up residuals
-      const levelUpResiduals = calculateLevelUpResiduals(newLevel);
-      await ResidualsService.awardResiduals(
-        userId,
-        levelUpResiduals,
-        'level_up',
-        `Level up to ${newLevel}`
+    // Use the same level-up notification path as message XP.
+    if (result.levelUpOccurred) {
+      await sendLevelUpNotification(
+        guild,
+        member.id,
+        member.displayName,
+        member.user.displayAvatarURL(),
+        result
       );
     }
 
-    // Update promotion eligibility
-    const currentRole = getRoleFromLevel(newLevel);
-    const eligibility = calculatePromotionEligibility(newXP, newLevel, currentRole);
-    await updatePromotionEligibility(userId, eligibility);
+    console.log(`[voice] Awarded ${baseXP} base XP to user ${userId} (total: ${result.newXP})`);
 
-    // Check for role promotions
-    if (member) {
-      try {
-        const syncResult = await synchronizeProgressionRoles(member, newLevel);
-        if (syncResult.success) {
-          const oldRole = userData.current_progression_role;
-          if (oldRole !== currentRole) {
-            await setUserProgressionRole(userId, currentRole);
-            roleChanged = true;
-            newRole = currentRole;
-          }
-        }
-      } catch (error) {
-        console.error('Error during role progression check for voice XP:', error);
-      }
-    }
-
-    // Send level-up notification on any level change
-    if (levelChanged && member) {
-      await sendVoiceLevelUpNotification(member, newRole || currentRole, newLevel, newXP, roleChanged);
-    }
-
-    console.log(`[voice] Awarded ${xpToAward} XP to user ${userId} (total: ${newXP})`);
   } catch (error) {
     console.error(`Error awarding voice XP to user ${userId}:`, error);
-  }
-}
-
-async function sendVoiceLevelUpNotification(member: GuildMember, currentRole: string, newLevel: number, newXP: number, roleChanged: boolean): Promise<void> {
-  try {
-    // Calculate residuals earned from level-up
-    const residualsEarned = calculateLevelUpResiduals(newLevel);
-
-    // Build perks description based on role
-    const perks: string[] = [];
-    if (currentRole === 'featured_extra') {
-      perks.push('✨ Custom GIF search unlocked');
-    } else if (currentRole === 'supporting_cast') {
-      perks.push('✨ Custom GIF search unlocked');
-      perks.push('🎨 Additional media permissions');
-    } else if (currentRole === 'principal_cast') {
-      perks.push('✨ Custom GIF search unlocked');
-      perks.push('🎨 Additional media permissions');
-      perks.push('👑 Principal Cast privileges');
-    } else if (currentRole === 'lead_cast') {
-      perks.push('✨ Custom GIF search unlocked');
-      perks.push('🎨 Additional media permissions');
-      perks.push('👑 Lead Cast privileges');
-      perks.push('💎 Mythic shop access');
-    }
-
-    const perksText = perks.length > 0 ? perks.join('\n') : 'Continue your journey to unlock more perks!';
-
-    // Create an embed for the level up
-    const embed = {
-      title: roleChanged ? '🎬 PROMOTION ALERT!' : '📈 LEVEL UP!',
-      description: roleChanged 
-        ? `**${member.displayName}** has been promoted to **${currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}**!`
-        : `**${member.displayName}** has reached level **${newLevel}**!`,
-      color: 0x7B61FF,
-      fields: [
-        { name: 'New Level', value: newLevel.toString(), inline: true },
-        { name: 'Total XP', value: newXP.toLocaleString(), inline: true },
-        { name: 'Residuals Earned', value: `+${residualsEarned}`, inline: true },
-        { name: 'Current Role', value: currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()), inline: true },
-        { name: 'Perks Unlocked', value: perksText, inline: false },
-      ],
-      footer: { text: 'MI BOM3O Studios' },
-      thumbnail: { url: member.user.displayAvatarURL() },
-    };
-
-    // Find the casting channel
-    const castingChannel = member.guild.channels.cache.get(CHANNELS.CASTING);
-    if (!castingChannel || !castingChannel.isTextBased()) {
-      return; // Don't send notification if casting channel is not available for voice XP
-    }
-
-    await castingChannel.send({
-      content: member.user.toString(),
-      embeds: [embed],
-    });
-  } catch (error) {
-    console.error('Failed to send voice level up notification:', error);
   }
 }
 

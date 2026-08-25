@@ -143,7 +143,7 @@ export const xpCommand: Command = {
         let newXP: number;
 
         if (action === 'set_xp') {
-          const persistedXP = await setUserXP(target.user.id, amount);
+          const persistedXP = await setUserXP(target.user.id, amount, message.author.id, reason);
           if (persistedXP === null) throw new Error('Failed to set XP');
           newXP = persistedXP;
         } else if (action === 'add_xp') {
@@ -158,13 +158,15 @@ export const xpCommand: Command = {
         } else if (action === 'remove_xp') {
           const persistedXP = await setUserXP(
             target.user.id,
-            Math.max(0, userData.current_xp - amount)
+            Math.max(0, userData.current_xp - amount),
+            message.author.id,
+            reason
           );
           if (persistedXP === null) throw new Error('Failed to remove XP');
           newXP = persistedXP;
         } else if (action === 'set_level') {
           newXP = calculateXPForLevel(amount);
-          const persistedXP = await setUserXP(target.user.id, newXP);
+          const persistedXP = await setUserXP(target.user.id, newXP, message.author.id, reason);
           if (persistedXP === null) throw new Error('Failed to set XP for level');
         } else {
           throw new Error(`Unknown XP action: ${action}`);

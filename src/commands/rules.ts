@@ -88,7 +88,7 @@ export const rulesCommand: Command = {
                  'You can use the normal preset GIF reactions and GIFs from supported services such as Tenor and Klipy.\n\n' +
                  '**Featured Extra**\n' +
                  'You unlock broader media permissions.\n\n' +
-                 '**Supporting Cast+**\n' +
+                 '**Featured Extra+**\n' +
                  'You can use `.c [query]` for custom GIF searches.\n\n' +
                  '**Admins / Staff**\n' +
                  'Staff can bypass these restrictions when necessary.\n\n' +

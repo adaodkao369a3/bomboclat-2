@@ -30,12 +30,12 @@ export const clipCommand: Command = {
       }
     }
 
-    // CASTING channel is always allowed (bug fix: command should be usable where results are posted)
-    // If allowlist is empty, fall back to BOMBO_TIMES and CASTING
-    // If allowlist is set, only allow those channels PLUS CASTING (always allowed)
-    const effectiveChannels = allowedChannels.length > 0 
-      ? [...allowedChannels, CHANNELS.CASTING] 
-      : [CHANNELS.BOMBO_TIMES, CHANNELS.CASTING];
+    // An explicit allowlist is authoritative. When it is empty, only Bombo Times
+    // is allowed. CASTING is not implicitly added; it is only allowed when an
+    // admin explicitly adds it with $settings clip_channels add #casting.
+    const effectiveChannels = allowedChannels.length > 0
+      ? allowedChannels
+      : [CHANNELS.BOMBO_TIMES];
 
     if (!effectiveChannels.includes(message.channel.id)) {
       await message.reply('❌ This command can only be used in allowed channels. Use $settings clip_channels list to see allowed channels.');
@@ -58,58 +58,109 @@ export const clipCommand: Command = {
 
     const { style, directorsNote, fromMessageId, toMessageId } = parseClipArguments(args);
 
+    if (fromMessageId && toMessageId) {
+      try {
+        if (BigInt(fromMessageId) >= BigInt(toMessageId)) {
+          await message.reply('❌ Invalid message range. The starting message ID must be older than the ending message ID.');
+          return;
+        }
+      } catch {
+        await message.reply('❌ Invalid message ID range.');
+        return;
+      }
+    }
+
     try {
-      // Fetch messages based on arguments
+      // Verify explicitly supplied IDs belong to this channel before fetching
+      // the range. This gives staff a useful error instead of a generic AI error.
+      if (fromMessageId) {
+        try {
+          await message.channel.messages.fetch(fromMessageId);
+          if (toMessageId) {
+            await message.channel.messages.fetch(toMessageId);
+          }
+        } catch {
+          await message.reply('❌ One or more message IDs were not found in this channel.');
+          return;
+        }
+      }
+
+      // Fetch messages based on arguments.
+      // Discord message IDs are snowflakes, so BigInt comparison is safe and
+      // avoids accidental lexical ordering surprises.
       const messages: Array<{ author: string; content: string }> = [];
       const MAX_MESSAGES = 200;
 
       if (fromMessageId && toMessageId) {
-        // Fetch messages between two IDs - Discord API only supports one of after/before at a time
-        // We'll fetch messages after fromMessageId and filter by toMessageId
-        const fetchedMessages = await message.channel.messages.fetch({
-          after: fromMessageId,
-          limit: MAX_MESSAGES,
-        });
+        let afterId = fromMessageId;
+        let fetchedCount = 0;
+        let done = false;
 
-        for (const msg of [...fetchedMessages.values()].sort(
-          (left, right) => left.createdTimestamp - right.createdTimestamp
-        )) {
-          // Filter by toMessageId if provided
-          if (toMessageId && msg.id >= toMessageId) break;
-          
-          if (!msg.author.bot && msg.content) {
-            messages.push({
-              author: msg.author.displayName,
-              content: msg.content,
-            });
+        while (!done && fetchedCount <= MAX_MESSAGES) {
+          const batch = await message.channel.messages.fetch({
+            after: afterId,
+            before: toMessageId,
+            limit: 100,
+          });
+
+          const ordered = [...batch.values()].sort(
+            (left, right) => left.createdTimestamp - right.createdTimestamp
+          );
+
+          if (ordered.length === 0) {
+            break;
           }
-        }
 
-        if (messages.length >= MAX_MESSAGES) {
-          await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
-          return;
+          for (const msg of ordered) {
+            const msgId = BigInt(msg.id);
+            const endId = BigInt(toMessageId);
+            if (msgId >= endId) {
+              done = true;
+              break;
+            }
+
+            fetchedCount++;
+            if (fetchedCount > MAX_MESSAGES) {
+              await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
+              return;
+            }
+
+            if (!msg.author.bot && msg.content) {
+              messages.push({
+                author: msg.author.displayName,
+                content: msg.content,
+              });
+            }
+
+            afterId = msg.id;
+          }
+
+          if (ordered.length < 100 || done) {
+            break;
+          }
         }
       } else if (fromMessageId) {
-        // Fetch messages from a specific ID onwards
         const fetchedMessages = await message.channel.messages.fetch({
           after: fromMessageId,
           limit: MAX_MESSAGES,
         });
 
-        for (const msg of [...fetchedMessages.values()].sort(
+        const ordered = [...fetchedMessages.values()].sort(
           (left, right) => left.createdTimestamp - right.createdTimestamp
-        )) {
+        );
+
+        if (ordered.length >= MAX_MESSAGES) {
+          await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
+          return;
+        }
+
+        for (const msg of ordered) {
           if (!msg.author.bot && msg.content) {
             messages.push({
               author: msg.author.displayName,
               content: msg.content,
             });
           }
-        }
-
-        if (messages.length >= MAX_MESSAGES) {
-          await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
-          return;
         }
       } else {
         // Default: fetch last 60 messages

@@ -348,4 +348,25 @@ CREATE INDEX IF NOT EXISTS idx_xp_transactions_user_id ON xp_transactions(user_i
 CREATE INDEX IF NOT EXISTS idx_xp_transactions_created_at ON xp_transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_residual_transactions_user_id ON residual_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_residual_transactions_created_at ON residual_transactions(created_at);
+
+-- Idempotent schema upgrades for existing databases
+ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_bonus_paid BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Ensure unique constraints for shop tables (required for ON CONFLICT)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'shop_archetypes_name_key'
+  ) THEN
+    ALTER TABLE shop_archetypes ADD CONSTRAINT shop_archetypes_name_key UNIQUE (name);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'shop_colors_name_key'
+  ) THEN
+    ALTER TABLE shop_colors ADD CONSTRAINT shop_colors_name_key UNIQUE (name);
+  END IF;
+END $$;
 `;
