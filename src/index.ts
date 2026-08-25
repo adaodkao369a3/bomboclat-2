@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Partials, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, Collection, ActivityType } from 'discord.js';
 import { connect as connectDB, disconnect as disconnectDB } from './database/client.js';
 import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX } from './config/index.js';
 import { registerCommands } from './commands/index.js';
@@ -23,8 +23,13 @@ const client = new ExtendedClient({
   partials: [Partials.Channel, Partials.Message, Partials.Reaction],
 });
 
-client.once('clientReady', async () => {
+client.once('ready', async () => {
   console.log(`Logged in as ${client.user?.tag} (ID: ${client.user?.id})`);
+  
+  // Set bot status to describe what it does
+  if (client.user) {
+    await client.user.setActivity('XP, shop & community', { type: ActivityType.Watching });
+  }
   
   // Register commands
   await registerCommands(client);
