@@ -120,16 +120,35 @@ function colorRoleName(name: string): string {
   return `Color • ${name}`;
 }
 
-async function ensureShopRole(guild: Guild, name: string, color?: string): Promise<Role | null> {
-  const existing = guild.roles.cache.find(role => role.name === name);
-  if (existing) return existing;
+async function ensureShopRole(guild: Guild, name: string, color?: string, existingRoleId?: string | null): Promise<Role | null> {
+  // First try to find by ID if we have one stored
+  if (existingRoleId) {
+    try {
+      const existing = await guild.roles.fetch(existingRoleId);
+      if (existing) {
+        console.log(`Found existing role by ID: ${existing.name} (${existing.id})`);
+        return existing;
+      }
+    } catch (error) {
+      console.log(`Role ID ${existingRoleId} not found, will try to find by name or create new`);
+    }
+  }
 
+  // Try to find by name
+  const existingByName = guild.roles.cache.find(role => role.name === name);
+  if (existingByName) {
+    console.log(`Found existing role by name: ${existingByName.name} (${existingByName.id})`);
+    return existingByName;
+  }
+
+  // Create new role
   try {
     const role = await guild.roles.create({
       name,
       color: color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color as `#${string}` : '#7B61FF',
       reason: 'Shop item role setup',
     });
+    console.log(`Created new role: ${role.name} (${role.id})`);
     return role;
   } catch (error) {
     console.error(`Failed to create shop role "${name}":`, error);
@@ -143,27 +162,57 @@ async function ensureAllShopRoles(
   colors: ShopColor[],
 ): Promise<{ errors: string[] }> {
   const errors: string[] = [];
-  for (const archetype of archetypes) {
-    const role = await ensureShopRole(guild, archetypeRoleName(archetype.name));
-    if (!role) errors.push(archetypeRoleName(archetype.name));
+  const client = await (await import('../database/client.js')).getClient();
+
+  try {
+    // Handle archetypes
+    for (const archetype of archetypes) {
+      const role = await ensureShopRole(guild, archetypeRoleName(archetype.name), undefined, archetype.role_id);
+      if (role) {
+        // Update the database with the role ID
+        await client.query(
+          'UPDATE shop_archetypes SET role_id = $1 WHERE id = $2',
+          [role.id, archetype.id]
+        );
+      } else {
+        errors.push(archetypeRoleName(archetype.name));
+      }
+    }
+
+    // Handle colors
+    for (const color of colors) {
+      const role = await ensureShopRole(guild, colorRoleName(color.name), color.hex, color.role_id);
+      if (role) {
+        // Update the database with the role ID
+        await client.query(
+          'UPDATE shop_colors SET role_id = $1 WHERE id = $2',
+          [role.id, color.id]
+        );
+      } else {
+        errors.push(colorRoleName(color.name));
+      }
+    }
+  } finally {
+    client.release();
   }
-  for (const color of colors) {
-    const role = await ensureShopRole(guild, colorRoleName(color.name), color.hex);
-    if (!role) errors.push(colorRoleName(color.name));
-  }
+
   return { errors };
 }
 
-async function assignShopRole(member: GuildMember, roleName: string): Promise<boolean> {
-  const role = member.guild.roles.cache.find(role => role.name === roleName);
-  if (!role) return false;
-  if (member.roles.cache.has(role.id)) return true;
-
+async function assignShopRole(member: GuildMember, roleId: string): Promise<boolean> {
   try {
+    const role = await member.guild.roles.fetch(roleId);
+    if (!role) {
+      console.error(`Role ID ${roleId} not found in guild`);
+      return false;
+    }
+    if (member.roles.cache.has(role.id)) return true;
+
     await member.roles.add(role, 'Shop purchase/grant');
+    console.log(`Assigned role ${role.name} (${role.id}) to user ${member.id}`);
     return true;
   } catch (error) {
-    console.error(`Failed to assign shop role "${roleName}" to ${member.id}:`, error);
+    console.error(`Failed to assign shop role ID ${roleId} to ${member.id}:`, error);
     return false;
   }
 }
@@ -181,11 +230,15 @@ async function syncOwnedShopRoles(
 
   for (const owned of ownedArchetypes) {
     const archetype = archetypeById.get(owned.archetype_id);
-    if (archetype) await assignShopRole(member, archetypeRoleName(archetype.name));
+    if (archetype && archetype.role_id) {
+      await assignShopRole(member, archetype.role_id);
+    }
   }
   for (const owned of ownedColors) {
     const color = colorById.get(owned.color_id);
-    if (color) await assignShopRole(member, colorRoleName(color.name));
+    if (color && color.role_id) {
+      await assignShopRole(member, color.role_id);
+    }
   }
 }
 
@@ -301,46 +354,66 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
       { name: 'Hex', value: color.hex, inline: true },
     ]);
 
-  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true });
+  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch(error => {
+    console.error('Failed to reply to color selection interaction:', error);
+  });
 
   const buttonCollector = interaction.channel?.createMessageComponentCollector({
     componentType: ComponentType.Button,
-    time: 60000,
+    time: 120000, // Increased to 2 minutes
     filter: (i: any) => i.user.id === userId && (i.customId === `purchase_color_${colorId}` || i.customId === `equip_color_${colorId}` || i.customId === 'cancel_color'),
   });
 
   buttonCollector?.on('collect', async (buttonInteraction: any) => {
-    if (buttonInteraction.customId === `purchase_color_${colorId}`) {
-      const result = await purchaseColor(userId, colorId, isFreeGrant);
-      if (result.success) {
-        const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
-        const roleAssigned = member ? await assignShopRole(member, colorRoleName(color.name)) : false;
-        await buttonInteraction.update({
-          content: `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}${roleAssigned ? `\n🎨 Role assigned: **${colorRoleName(color.name)}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'}`,
-          embeds: [],
-          components: [],
-        });
-      } else {
-        await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+    try {
+      if (buttonInteraction.customId === `purchase_color_${colorId}`) {
+        const result = await purchaseColor(userId, colorId, isFreeGrant);
+        if (result.success) {
+          const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
+          const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
+          const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
+          await buttonInteraction.update({
+            content: `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}${roleAssigned ? `\n🎨 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'}`,
+            embeds: [],
+            components: [],
+          });
+        } else {
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        }
+        buttonCollector.stop();
+      } else if (buttonInteraction.customId === `equip_color_${colorId}`) {
+        const result = await switchActiveColor(userId, colorId);
+        if (result.success) {
+          const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
+          const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
+          const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
+          await buttonInteraction.update({
+            content: roleAssigned ? `✅ Color equipped!\n🎨 Role confirmed: **${roleName}**` : '✅ Color equipped!\n⚠️ The color role could not be assigned.',
+            embeds: [],
+            components: [],
+          });
+        } else {
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        }
+        buttonCollector.stop();
+      } else if (buttonInteraction.customId === 'cancel_color') {
+        await buttonInteraction.update({ content: 'Cancelled.', embeds: [], components: [] });
+        buttonCollector.stop();
+      }
+    } catch (error) {
+      console.error('Error handling color button interaction:', error);
+      try {
+        await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', ephemeral: true });
+      } catch (replyError) {
+        console.error('Failed to send error reply:', replyError);
       }
       buttonCollector.stop();
-    } else if (buttonInteraction.customId === `equip_color_${colorId}`) {
-      const result = await switchActiveColor(userId, colorId);
-      if (result.success) {
-        const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
-        const roleAssigned = member ? await assignShopRole(member, colorRoleName(color.name)) : false;
-        await buttonInteraction.update({
-          content: roleAssigned ? `✅ Color equipped!\n🎨 Role confirmed: **${colorRoleName(color.name)}**` : '✅ Color equipped!\n⚠️ The color role could not be assigned.',
-          embeds: [],
-          components: [],
-        });
-      } else {
-        await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
-      }
-      buttonCollector.stop();
-    } else if (buttonInteraction.customId === 'cancel_color') {
-      await buttonInteraction.update({ content: 'Cancelled.', embeds: [], components: [] });
-      buttonCollector.stop();
+    }
+  });
+
+  buttonCollector?.on('end', (collected, reason) => {
+    if (reason === 'time') {
+      console.log(`Color selection for user ${userId} timed out`);
     }
   });
 }
@@ -454,32 +527,51 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
     detailEmbed.setThumbnail(archetype.image_url);
   }
 
-  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true });
+  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch(error => {
+    console.error('Failed to reply to archetype selection interaction:', error);
+  });
 
   const buttonCollector = interaction.channel?.createMessageComponentCollector({
     componentType: ComponentType.Button,
-    time: 60000,
+    time: 120000, // Increased to 2 minutes
     filter: (i: any) => i.user.id === userId && (i.customId === `confirm_archetype_${archetypeId}` || i.customId === 'cancel_archetype'),
   });
 
   buttonCollector?.on('collect', async (buttonInteraction: any) => {
-    if (buttonInteraction.customId === `confirm_archetype_${archetypeId}`) {
-      const result = await purchaseArchetype(userId, archetypeId, isFreeGrant);
-      if (result.success) {
-        const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
-        const roleAssigned = member ? await assignShopRole(member, archetypeRoleName(archetype.name)) : false;
-        await buttonInteraction.update({
-          content: `${isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!'}${roleAssigned ? `\n🎭 Role assigned: **${archetypeRoleName(archetype.name)}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'}`,
-          embeds: [],
-          components: [],
-        });
-      } else {
-        await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+    try {
+      if (buttonInteraction.customId === `confirm_archetype_${archetypeId}`) {
+        const result = await purchaseArchetype(userId, archetypeId, isFreeGrant);
+        if (result.success) {
+          const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
+          const roleAssigned = member && archetype.role_id ? await assignShopRole(member, archetype.role_id) : false;
+          const roleName = member?.guild.roles.cache.get(archetype.role_id || '')?.name || archetypeRoleName(archetype.name);
+          await buttonInteraction.update({
+            content: `${isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!'}${roleAssigned ? `\n🎭 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'}`,
+            embeds: [],
+            components: [],
+          });
+        } else {
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        }
+        buttonCollector.stop();
+      } else if (buttonInteraction.customId === 'cancel_archetype') {
+        await buttonInteraction.update({ content: 'Purchase cancelled.', embeds: [], components: [] });
+        buttonCollector.stop();
+      }
+    } catch (error) {
+      console.error('Error handling archetype button interaction:', error);
+      try {
+        await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', ephemeral: true });
+      } catch (replyError) {
+        console.error('Failed to send error reply:', replyError);
       }
       buttonCollector.stop();
-    } else if (buttonInteraction.customId === 'cancel_archetype') {
-      await buttonInteraction.update({ content: 'Purchase cancelled.', embeds: [], components: [] });
-      buttonCollector.stop();
+    }
+  });
+
+  buttonCollector?.on('end', (collected, reason) => {
+    if (reason === 'time') {
+      console.log(`Archetype selection for user ${userId} timed out`);
     }
   });
 }

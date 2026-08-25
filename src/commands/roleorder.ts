@@ -73,6 +73,15 @@ export const roleorderCommand: Command = {
         { name: '@everyone', roles: [], priority: 19 },
       ];
 
+      // Create a mapping of shop role IDs for color and archetype detection
+      const shopRoleIds = new Set<string>();
+      for (const archetype of shopArchetypes) {
+        if (archetype.role_id) shopRoleIds.add(archetype.role_id);
+      }
+      for (const color of shopColors) {
+        if (color.role_id) shopRoleIds.add(color.role_id);
+      }
+
       // Known bot role names to detect random bot roles
       const knownBotRolePatterns = [
         'bot',
@@ -108,10 +117,67 @@ export const roleorderCommand: Command = {
 
         const roleName = role.name.toLowerCase();
 
+        // Use role IDs for specific known roles (more reliable than names)
         // Director
         if (role.id === ROLES.DIRECTOR) {
           categories.find(c => c.name === 'Director')?.roles.push(role);
         }
+        // Guest Star / Booster (use role ID)
+        else if (role.id === ROLES.BOOSTER) {
+          categories.find(c => c.name === 'Guest Star / Booster')?.roles.push(role);
+        }
+        // Executive Producer (use role ID)
+        else if (role.id === ROLES.EXECUTIVE_PRODUCER) {
+          categories.find(c => c.name === 'Executive Producer')?.roles.push(role);
+        }
+        // Producer (use role ID)
+        else if (role.id === ROLES.PRODUCER) {
+          categories.find(c => c.name === 'Producer')?.roles.push(role);
+        }
+        // Lead Cast (use role ID)
+        else if (role.id === ROLES.LEAD_CAST) {
+          categories.find(c => c.name === 'Lead Cast')?.roles.push(role);
+        }
+        // Principal Cast (use role ID)
+        else if (role.id === ROLES.PRINCIPAL_CAST) {
+          categories.find(c => c.name === 'Principal Cast')?.roles.push(role);
+        }
+        // Supporting Cast (use role ID)
+        else if (role.id === ROLES.SUPPORTING_CAST) {
+          categories.find(c => c.name === 'Supporting Cast')?.roles.push(role);
+        }
+        // Featured Extra (use role ID)
+        else if (role.id === ROLES.FEATURED_EXTRA) {
+          categories.find(c => c.name === 'Featured Extra')?.roles.push(role);
+        }
+        // Extra (use role ID)
+        else if (role.id === ROLES.EXTRA) {
+          categories.find(c => c.name === 'Extra')?.roles.push(role);
+        }
+        // Audience (use role ID)
+        else if (role.id === ROLES.AUDIENCE) {
+          categories.find(c => c.name === 'Audience')?.roles.push(role);
+        }
+        // Use role IDs for shop roles (colors and archetypes) - check before name-based detection
+        else if (shopRoleIds.has(role.id)) {
+          // Determine if it's a color or archetype by checking the shop data
+          const isColor = shopColors.some(c => c.role_id === role.id);
+          const isArchetype = shopArchetypes.some(a => a.role_id === role.id);
+          
+          if (isColor) {
+            categories.find(c => c.name === 'Colors')?.roles.push(role);
+          } else if (isArchetype) {
+            categories.find(c => c.name === 'Archetypes')?.roles.push(role);
+          } else {
+            // Fallback to name-based detection if role ID is in shop data but type unclear
+            if (colorNames.has(roleName) || /^#[0-9a-f]{6}$/i.test(roleName) || roleName.includes('color')) {
+              categories.find(c => c.name === 'Colors')?.roles.push(role);
+            } else if (archetypeNames.has(role.name)) {
+              categories.find(c => c.name === 'Archetypes')?.roles.push(role);
+            }
+          }
+        }
+        // Use names for custom bot roles (since they don't have fixed IDs)
         // Server Mafia
         else if (roleName === 'server mafia') {
           categories.find(c => c.name === 'Server Mafia')?.roles.push(role);
@@ -128,49 +194,17 @@ export const roleorderCommand: Command = {
         else if (roleName === 'bob-kun') {
           categories.find(c => c.name === 'bob-kun')?.roles.push(role);
         }
-        // Guest Star / Booster
-        else if (role.id === ROLES.BOOSTER || roleName === 'guest star') {
+        // Fallback: Guest Star by name (in case ID doesn't match)
+        else if (roleName === 'guest star') {
           categories.find(c => c.name === 'Guest Star / Booster')?.roles.push(role);
         }
-        // Color roles (check against shop colors and hex patterns)
+        // Color roles (fallback name-based detection for colors not yet in shop DB)
         else if (colorNames.has(roleName) || /^#[0-9a-f]{6}$/i.test(roleName) || roleName.includes('color')) {
           categories.find(c => c.name === 'Colors')?.roles.push(role);
         }
-        // Archetype roles (check against shop archetypes)
+        // Archetype roles (fallback name-based detection for archetypes not yet in shop DB)
         else if (archetypeNames.has(role.name)) {
           categories.find(c => c.name === 'Archetypes')?.roles.push(role);
-        }
-        // Executive Producer
-        else if (role.id === ROLES.EXECUTIVE_PRODUCER) {
-          categories.find(c => c.name === 'Executive Producer')?.roles.push(role);
-        }
-        // Producer
-        else if (role.id === ROLES.PRODUCER) {
-          categories.find(c => c.name === 'Producer')?.roles.push(role);
-        }
-        // Lead Cast
-        else if (role.id === ROLES.LEAD_CAST) {
-          categories.find(c => c.name === 'Lead Cast')?.roles.push(role);
-        }
-        // Principal Cast
-        else if (role.id === ROLES.PRINCIPAL_CAST) {
-          categories.find(c => c.name === 'Principal Cast')?.roles.push(role);
-        }
-        // Supporting Cast
-        else if (role.id === ROLES.SUPPORTING_CAST) {
-          categories.find(c => c.name === 'Supporting Cast')?.roles.push(role);
-        }
-        // Featured Extra
-        else if (role.id === ROLES.FEATURED_EXTRA) {
-          categories.find(c => c.name === 'Featured Extra')?.roles.push(role);
-        }
-        // Extra
-        else if (role.id === ROLES.EXTRA) {
-          categories.find(c => c.name === 'Extra')?.roles.push(role);
-        }
-        // Audience
-        else if (role.id === ROLES.AUDIENCE) {
-          categories.find(c => c.name === 'Audience')?.roles.push(role);
         }
         // Bots role
         else if (roleName === 'bots' || roleName === 'bot') {

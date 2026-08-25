@@ -313,19 +313,25 @@ CREATE TABLE IF NOT EXISTS shop_archetypes (
   price INTEGER NOT NULL,
   min_role TEXT,
   slot_group TEXT NOT NULL,
-  image_url TEXT
+  image_url TEXT,
+  role_id TEXT
 );
 
 -- Idempotent upgrade for existing shop_archetypes rows (pre-image_url deploys)
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS role_id TEXT;
 
 -- Shop colors table
 CREATE TABLE IF NOT EXISTS shop_colors (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   hex TEXT NOT NULL,
-  price_band TEXT NOT NULL
+  price_band TEXT NOT NULL,
+  role_id TEXT
 );
+
+-- Idempotent upgrade for existing shop_colors rows (role_id support)
+ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS role_id TEXT;
 
 -- User archetypes table
 CREATE TABLE IF NOT EXISTS user_archetypes (

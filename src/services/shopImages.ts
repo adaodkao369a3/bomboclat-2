@@ -1,5 +1,30 @@
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import type { ShopArchetype, ShopColor } from './shop.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Register font for text rendering
+const FONT_PATH = join(__dirname, '../../assets/fonts/Roboto-Bold.ttf');
+let fontRegistered = false;
+let fontChecked = false;
+
+function registerFont(): void {
+  if (fontChecked) return;
+  fontChecked = true;
+  
+  try {
+    // Try to register the font
+    GlobalFonts.registerFromPath(FONT_PATH);
+    fontRegistered = true;
+    console.log('Font registered successfully from:', FONT_PATH);
+  } catch (error) {
+    console.log('Font registration failed (font file may not exist):', error, '- using system font');
+    // Continue without custom font, system font will be used
+  }
+}
 
 const CANVAS_WIDTH = 1200;
 const OUTER_PADDING = 24;
@@ -122,13 +147,19 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.fillStyle = TEXT_COLOR;
       ctx.font = '700 20px sans-serif';
       ctx.textAlign = 'center';
-      const label = truncateLabel(ctx, color.name, tileWidth - 20);
+      
+      // Display format: "color name #hex" - make sure hex code is included
+      const displayText = `${color.name} ${color.hex}`;
+      const label = truncateLabel(ctx, displayText, tileWidth - 20);
       ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
     });
   });
 }
 
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
+  // Register font before image generation
+  registerFont();
+
   const columns = Math.min(3, Math.max(1, archetypes.length));
   const rows = getRows(archetypes, columns);
   const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
@@ -174,18 +205,33 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // Archetype role name is written directly over its own artwork so each
       // image is unambiguous even when the shop contains many items.
       const label = truncateLabel(ctx, archetype.name, rowTileWidth - 36);
-      ctx.font = '700 20px sans-serif';
-      const labelWidth = Math.min(rowTileWidth - 20, ctx.measureText(label).width + 28);
-      const labelHeight = 34;
-      const labelX = x + (rowTileWidth - labelWidth) / 2;
-      const labelY = y + rowTileHeight - labelHeight - 12;
-      ctx.fillStyle = 'rgba(0,0,0,0.68)';
-      ctx.beginPath();
-      ctx.roundRect(labelX, labelY, labelWidth, labelHeight, 10);
-      ctx.fill();
-      ctx.fillStyle = TEXT_COLOR;
+      
+      // Use custom font if registered, otherwise fallback to system font
+      const fontName = fontRegistered ? 'Roboto' : 'sans-serif';
+      const fontSize = 24;
+      ctx.font = `bold ${fontSize}px ${fontName}`;
+      
+      // Add shadow for better readability
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
+      ctx.fillStyle = 'white';
       ctx.textAlign = 'center';
-      ctx.fillText(label, x + rowTileWidth / 2, labelY + 23);
+      ctx.textBaseline = 'middle';
+      
+      // Position text near the bottom of the image
+      const textX = x + rowTileWidth / 2;
+      const textY = y + rowTileHeight - 30;
+      
+      ctx.fillText(label, textX, textY);
+      
+      // Reset shadow for subsequent operations
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
     }
   }
 
