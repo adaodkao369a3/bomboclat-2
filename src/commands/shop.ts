@@ -41,49 +41,55 @@ const ARCHETYPE_SLOT_CAPS_BY_TIER: Record<string, string> = {
 export const shopCommand: Command = {
   name: 'shop',
   allowedPrefix: '$',
-  async execute(message, _args, _prefix) {
+  async execute(message, args, _prefix) {
     // Check if bot owner (Director only)
     if (!message.member || !isBotOwner(message.member)) {
       await message.reply('❌ This command is restricted to the Director.');
       return;
     }
 
-    // Check if shop channel is configured
     if (!CHANNELS.SHOP) {
       await message.reply('❌ SHOP_CHANNEL_ID is not configured. Please set it in your environment variables.');
       return;
     }
 
-    // Find the shop channel
     const shopChannel = message.guild?.channels.cache.get(CHANNELS.SHOP);
     if (!shopChannel || !shopChannel.isTextBased()) {
       await message.reply('❌ Failed to find the shop channel.');
       return;
     }
 
-    // Seed shop data if needed (also picks up any image_url edits made in code)
+    const section = args[0]?.toLowerCase() || 'all';
+    if (!['all', 'color', 'archetype'].includes(section)) {
+      await message.reply('❌ Usage: `$shop color`, `$shop archetype`, or `$shop` for both.');
+      return;
+    }
+
+    // Seed shop data if needed (also picks up image_url edits made in code).
     await seedShopArchetypes();
     await seedShopColors();
 
-    const colors = await getShopColors();
-    const archetypes = await getShopArchetypes();
+    if (section === 'color' || section === 'all') {
+      const colors = await getShopColors();
+      const colorBands: Record<string, ShopColor[]> = {
+        common: colors.filter(c => c.price_band === 'common'),
+        uncommon: colors.filter(c => c.price_band === 'uncommon'),
+        rare: colors.filter(c => c.price_band === 'rare'),
+      };
+      await postColorShop(shopChannel as TextChannel, colorBands);
+    }
 
-    const colorBands: Record<string, ShopColor[]> = {
-      common: colors.filter(c => c.price_band === 'common'),
-      uncommon: colors.filter(c => c.price_band === 'uncommon'),
-      rare: colors.filter(c => c.price_band === 'rare'),
-    };
+    if (section === 'archetype' || section === 'all') {
+      const archetypes = await getShopArchetypes();
+      const archetypeTiers: Record<string, ShopArchetype[]> = {
+        standard: archetypes.filter(a => a.tier === 'standard'),
+        legendary: archetypes.filter(a => a.tier === 'legendary'),
+        mythic: archetypes.filter(a => a.tier === 'mythic'),
+      };
+      await postArchetypeShop(shopChannel as TextChannel, archetypeTiers);
+    }
 
-    const archetypeTiers: Record<string, ShopArchetype[]> = {
-      standard: archetypes.filter(a => a.tier === 'standard'),
-      legendary: archetypes.filter(a => a.tier === 'legendary'),
-      mythic: archetypes.filter(a => a.tier === 'mythic'),
-    };
-
-    await postColorShop(shopChannel as TextChannel, colorBands);
-    await postArchetypeShop(shopChannel as TextChannel, archetypeTiers);
-
-    await message.reply('✅ Shop posted!');
+    await message.reply(`✅ ${section === 'all' ? 'Shop' : section === 'color' ? 'Color shop' : 'Archetype shop'} posted!`);
   },
 };
 
@@ -92,27 +98,22 @@ export const shopCommand: Command = {
 // ---------------------------------------------------------------------------
 
 async function postColorShop(shopChannel: TextChannel, colorBands: Record<string, ShopColor[]>): Promise<void> {
-  const title = '🎨 Color Shop';
-  await deleteExistingShopMessage(shopChannel, title);
-
-  const embeds: EmbedBuilder[] = [];
-  const files: AttachmentBuilder[] = [];
-  const rows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
-
   for (const band of ['common', 'uncommon', 'rare'] as const) {
     const bandColors = colorBands[band];
     if (bandColors.length === 0) continue;
 
+    const title = band === 'common' ? '🎨 Color Shop' : COLOR_BAND_TITLES[band];
+    await deleteExistingShopMessages(shopChannel, title);
+
     const filename = `colors_${band}.png`;
     const buffer = generateColorGridImage(bandColors);
-    files.push(new AttachmentBuilder(buffer, { name: filename }));
+    const file = new AttachmentBuilder(buffer, { name: filename });
 
     const embed = new EmbedBuilder()
-      .setTitle(band === 'common' ? title : COLOR_BAND_TITLES[band])
+      .setTitle(title)
       .setDescription(`${COLOR_BAND_TITLES[band]} colors — ${COLOR_PRICE_MAP[band]} residuals each. Pick one below to buy or equip it.`)
       .setColor(0xFFD700)
       .setImage(`attachment://${filename}`);
-    embeds.push(embed);
 
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId(`shop_select_color_${band}`)
@@ -129,21 +130,25 @@ async function postColorShop(shopChannel: TextChannel, colorBands: Record<string
       );
     }
 
-    rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+    // One message per band means the dropdown is directly beneath the image
+    // for that band instead of all dropdowns being collected at the bottom.
+    const shopMessage = await shopChannel.send({
+      embeds: [embed],
+      files: [file],
+      components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
+    });
+
+    const collector = shopMessage.createMessageComponentCollector({
+      componentType: ComponentType.StringSelect,
+      time: 0,
+      filter: (i) => i.customId === `shop_select_color_${band}`,
+    });
+
+    collector.on('collect', async (interaction) => {
+      const colorId = parseInt(interaction.values[0], 10);
+      await handleColorSelection(interaction, colorId);
+    });
   }
-
-  const shopMessage = await shopChannel.send({ embeds, files, components: rows });
-
-  const collector = shopMessage.createMessageComponentCollector({
-    componentType: ComponentType.StringSelect,
-    time: 0, // Persistent — the posted shop message stays usable indefinitely
-    filter: (i) => i.customId.startsWith('shop_select_color_'),
-  });
-
-  collector.on('collect', async (interaction) => {
-    const colorId = parseInt(interaction.values[0], 10);
-    await handleColorSelection(interaction, colorId);
-  });
 }
 
 async function handleColorSelection(interaction: any, colorId: number): Promise<void> {
@@ -241,27 +246,22 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Record<string, ShopArchetype[]>): Promise<void> {
-  const title = '🎭 Archetype Shop';
-  await deleteExistingShopMessage(shopChannel, title);
-
-  const embeds: EmbedBuilder[] = [];
-  const files: AttachmentBuilder[] = [];
-  const rows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
-
   for (const tier of ['standard', 'legendary', 'mythic'] as const) {
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
+    const title = tier === 'standard' ? '🎭 Archetype Shop' : ARCHETYPE_TIER_TITLES[tier];
+    await deleteExistingShopMessages(shopChannel, title);
+
     const filename = `archetypes_${tier}.png`;
     const buffer = await generateArchetypeGridImage(tierArchetypes);
-    files.push(new AttachmentBuilder(buffer, { name: filename }));
+    const file = new AttachmentBuilder(buffer, { name: filename });
 
     const embed = new EmbedBuilder()
-      .setTitle(tier === 'standard' ? title : ARCHETYPE_TIER_TITLES[tier])
+      .setTitle(title)
       .setDescription(`${ARCHETYPE_TIER_TITLES[tier]} archetypes — ${ARCHETYPE_SLOT_CAPS_BY_TIER[tier]}. Pick one below to buy it.`)
       .setColor(0x7B61FF)
       .setImage(`attachment://${filename}`);
-    embeds.push(embed);
 
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId(`shop_select_archetype_${tier}`)
@@ -274,25 +274,28 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
         new StringSelectMenuOptionBuilder()
           .setLabel(`${archetype.name} - ${archetype.price} residuals`)
           .setValue(archetype.id.toString())
-          .setDescription(archetype.min_role ? `Requires ${archetype.min_role.replace('_', ' ')}` : archetype.slot_group)
+          .setDescription(archetype.min_role ? `Requires ${archetype.min_role.replace(/_/g, ' ')}` : archetype.slot_group)
       );
     }
 
-    rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+    // One message per tier keeps each dropdown immediately below its own image.
+    const shopMessage = await shopChannel.send({
+      embeds: [embed],
+      files: [file],
+      components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
+    });
+
+    const collector = shopMessage.createMessageComponentCollector({
+      componentType: ComponentType.StringSelect,
+      time: 0,
+      filter: (i) => i.customId === `shop_select_archetype_${tier}`,
+    });
+
+    collector.on('collect', async (interaction) => {
+      const archetypeId = parseInt(interaction.values[0], 10);
+      await handleArchetypeSelection(interaction, archetypeId);
+    });
   }
-
-  const shopMessage = await shopChannel.send({ embeds, files, components: rows });
-
-  const collector = shopMessage.createMessageComponentCollector({
-    componentType: ComponentType.StringSelect,
-    time: 0,
-    filter: (i) => i.customId.startsWith('shop_select_archetype_'),
-  });
-
-  collector.on('collect', async (interaction) => {
-    const archetypeId = parseInt(interaction.values[0], 10);
-    await handleArchetypeSelection(interaction, archetypeId);
-  });
 }
 
 async function handleArchetypeSelection(interaction: any, archetypeId: number): Promise<void> {
@@ -379,12 +382,11 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
 // Shared
 // ---------------------------------------------------------------------------
 
-async function deleteExistingShopMessage(shopChannel: TextChannel, title: string): Promise<void> {
+async function deleteExistingShopMessages(shopChannel: TextChannel, title: string): Promise<void> {
   const existingMessages = await shopChannel.messages.fetch({ limit: 100 });
-  const existing = existingMessages.find(
+  const existing = existingMessages.filter(
     msg => msg.author.id === shopChannel.client.user?.id && msg.embeds.length > 0 && msg.embeds[0].title === title
   );
-  if (existing) {
-    await existing.delete().catch(() => undefined);
-  }
+
+  await Promise.all(existing.map(message => message.delete().catch(() => undefined)));
 }

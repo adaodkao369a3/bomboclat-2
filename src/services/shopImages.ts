@@ -1,22 +1,21 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import type { ShopArchetype, ShopColor } from './shop.js';
 
-// Fixed swatch/tile geometry so every category image renders at a
-// consistent, predictable size regardless of how many items are in it.
-const COLUMNS = 3;
-const TILE_WIDTH = 200;
-const TILE_HEIGHT = 150;
-const SWATCH_SIZE = 96;
-const PADDING = 20;
-const GAP = 16;
-const BACKGROUND = '#2b2d31'; // Discord embed dark background, so the PNG blends in
+const CANVAS_WIDTH = 1200;
+const OUTER_PADDING = 24;
+const ROW_GAP = 20;
+const TILE_GAP = 16;
+const TILE_ASPECT_RATIO = 16 / 9;
+const BACKGROUND = '#2b2d31';
 const TEXT_COLOR = '#f2f3f5';
+const MUTED_TEXT_COLOR = '#b5bac1';
 
-function canvasDimensions(itemCount: number): { width: number; height: number; rows: number } {
-  const rows = Math.max(1, Math.ceil(itemCount / COLUMNS));
-  const width = PADDING * 2 + COLUMNS * TILE_WIDTH + (COLUMNS - 1) * GAP;
-  const height = PADDING * 2 + rows * TILE_HEIGHT + (rows - 1) * GAP;
-  return { width, height, rows };
+function getRows<T>(items: T[], columns: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += columns) {
+    rows.push(items.slice(i, i + columns));
+  }
+  return rows;
 }
 
 function truncateLabel(ctx: any, label: string, maxWidth: number): string {
@@ -28,108 +27,165 @@ function truncateLabel(ctx: any, label: string, maxWidth: number): string {
   return `${truncated}…`;
 }
 
+function drawRoundedImage(
+  ctx: any,
+  image: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+  ctx.clip();
+
+  // Cover the tile without distorting the source artwork.
+  const sourceRatio = image.width / image.height;
+  const targetRatio = width / height;
+  let drawWidth = width;
+  let drawHeight = height;
+  let offsetX = x;
+  let offsetY = y;
+
+  if (sourceRatio > targetRatio) {
+    drawHeight = height;
+    drawWidth = height * sourceRatio;
+    offsetX = x - (drawWidth - width) / 2;
+  } else {
+    drawWidth = width;
+    drawHeight = width / sourceRatio;
+    offsetY = y - (drawHeight - height) / 2;
+  }
+
+  ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  ctx.restore();
+}
+
+function drawPlaceholderTile(ctx: any, x: number, y: number, width: number, height: number, radius: number): void {
+  ctx.fillStyle = '#3f4147';
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+  ctx.fill();
+}
+
+function calculateTileHeight(tileWidth: number): number {
+  return Math.max(120, Math.round(tileWidth / TILE_ASPECT_RATIO));
+}
+
 /**
- * Renders one grid image for a single color price band (e.g. Common),
- * with each swatch drawn from its hex value and the color name centered
- * underneath it.
+ * Builds a category image that fills every row with the items it actually
+ * contains. The final row never reserves empty slots for missing items.
+ * Artwork tiles are landscape rather than square, and the canvas height is
+ * calculated from the actual number of rows.
  */
-export function generateColorGridImage(colors: ShopColor[]): Buffer {
-  const { width, height } = canvasDimensions(colors.length);
-  const canvas = createCanvas(width, height);
+function renderGridCanvas(itemCount: number, renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void): Buffer {
+  const columns = Math.min(3, Math.max(1, itemCount));
+  const rowIndexes = getRows(Array.from({ length: itemCount }, (_, i) => i), columns);
+  const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
+  const tileHeight = calculateTileHeight(tileWidth);
+  const labelHeight = 54;
+  const rowHeight = tileHeight + labelHeight;
+  const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rowIndexes.length) * rowHeight + Math.max(0, rowIndexes.length - 1) * ROW_GAP;
+
+  const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
-
   ctx.fillStyle = BACKGROUND;
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
 
-  colors.forEach((color, index) => {
-    const col = index % COLUMNS;
-    const row = Math.floor(index / COLUMNS);
-    const tileX = PADDING + col * (TILE_WIDTH + GAP);
-    const tileY = PADDING + row * (TILE_HEIGHT + GAP);
-    const swatchX = tileX + (TILE_WIDTH - SWATCH_SIZE) / 2;
-    const swatchY = tileY;
-
-    // Swatch
-    ctx.fillStyle = color.hex;
-    const radius = 10;
-    ctx.beginPath();
-    ctx.roundRect(swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE, radius);
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.stroke();
-
-    // Name label, centered under the swatch
-    ctx.fillStyle = TEXT_COLOR;
-    ctx.font = '600 15px sans-serif';
-    ctx.textAlign = 'center';
-    const label = truncateLabel(ctx, color.name, TILE_WIDTH - 8);
-    ctx.fillText(label, tileX + TILE_WIDTH / 2, swatchY + SWATCH_SIZE + 24);
+  rowIndexes.forEach((rowItems, row) => {
+    const rowTileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (rowItems.length - 1)) / rowItems.length);
+    const rowTileHeight = calculateTileHeight(rowTileWidth);
+    const y = OUTER_PADDING + row * (rowHeight + ROW_GAP);
+    renderRow(ctx, row, rowItems, rowTileWidth, rowTileHeight, y);
   });
 
   return canvas.toBuffer('image/png');
 }
 
-/**
- * Renders one grid image for a single archetype tier (e.g. Standard),
- * pulling each archetype's image_url (once one has been filled in) as its
- * tile artwork, with the archetype name centered underneath. Archetypes
- * without an image_url yet get a plain placeholder tile with just the name.
- */
+export function generateColorGridImage(colors: ShopColor[]): Buffer {
+  return renderGridCanvas(colors.length, (ctx, _row, rowItems, tileWidth, tileHeight, y) => {
+    rowItems.forEach((itemIndex, index) => {
+      const color = colors[itemIndex];
+      const x = OUTER_PADDING + index * (tileWidth + TILE_GAP);
+      const radius = 14;
+
+      ctx.fillStyle = color.hex;
+      ctx.beginPath();
+      ctx.roundRect(x, y, tileWidth, tileHeight, radius);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = TEXT_COLOR;
+      ctx.font = '700 20px sans-serif';
+      ctx.textAlign = 'center';
+      const label = truncateLabel(ctx, color.name, tileWidth - 20);
+      ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
+    });
+  });
+}
+
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
-  const { width, height } = canvasDimensions(archetypes.length);
-  const canvas = createCanvas(width, height);
+  const columns = Math.min(3, Math.max(1, archetypes.length));
+  const rows = getRows(archetypes, columns);
+  const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
+  const baseTileHeight = calculateTileHeight(tileWidth);
+  const labelHeight = 58;
+  const rowHeight = baseTileHeight + labelHeight;
+  const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rows.length) * rowHeight + Math.max(0, rows.length - 1) * ROW_GAP;
+
+  const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
-
   ctx.fillStyle = BACKGROUND;
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
 
-  for (let index = 0; index < archetypes.length; index++) {
-    const archetype = archetypes[index];
-    const col = index % COLUMNS;
-    const row = Math.floor(index / COLUMNS);
-    const tileX = PADDING + col * (TILE_WIDTH + GAP);
-    const tileY = PADDING + row * (TILE_HEIGHT + GAP);
-    const swatchX = tileX + (TILE_WIDTH - SWATCH_SIZE) / 2;
-    const swatchY = tileY;
-    const radius = 10;
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex];
+    const rowTileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (row.length - 1)) / row.length);
+    const rowTileHeight = calculateTileHeight(rowTileWidth);
+    const y = OUTER_PADDING + rowIndex * (rowHeight + ROW_GAP);
 
-    if (archetype.image_url) {
-      try {
-        const image = await loadImage(archetype.image_url);
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE, radius);
-        ctx.clip();
-        ctx.drawImage(image, swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE);
-        ctx.restore();
-      } catch (error) {
-        console.error(`Failed to load archetype image for "${archetype.name}":`, error);
-        drawPlaceholderTile(ctx, swatchX, swatchY, radius);
+    for (let index = 0; index < row.length; index++) {
+      const archetype = row[index];
+      const x = OUTER_PADDING + index * (rowTileWidth + TILE_GAP);
+      const radius = 14;
+
+      if (archetype.image_url) {
+        try {
+          const image = await loadImage(archetype.image_url);
+          drawRoundedImage(ctx, image, x, y, rowTileWidth, rowTileHeight, radius);
+        } catch (error) {
+          console.error(`Failed to load archetype image for "${archetype.name}":`, error);
+          drawPlaceholderTile(ctx, x, y, rowTileWidth, rowTileHeight, radius);
+        }
+      } else {
+        drawPlaceholderTile(ctx, x, y, rowTileWidth, rowTileHeight, radius);
       }
-    } else {
-      drawPlaceholderTile(ctx, swatchX, swatchY, radius);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, rowTileWidth, rowTileHeight, radius);
+      ctx.stroke();
+
+      ctx.fillStyle = TEXT_COLOR;
+      ctx.font = '700 20px sans-serif';
+      ctx.textAlign = 'center';
+      const label = truncateLabel(ctx, archetype.name, rowTileWidth - 20);
+      ctx.fillText(label, x + rowTileWidth / 2, y + rowTileHeight + 27);
+
+      if (archetype.min_role) {
+        ctx.fillStyle = MUTED_TEXT_COLOR;
+        ctx.font = '500 15px sans-serif';
+        const role = `Requires ${archetype.min_role.replace(/_/g, ' ')}`;
+        ctx.fillText(truncateLabel(ctx, role, rowTileWidth - 20), x + rowTileWidth / 2, y + rowTileHeight + 47);
+      }
     }
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE, radius);
-    ctx.stroke();
-
-    ctx.fillStyle = TEXT_COLOR;
-    ctx.font = '600 15px sans-serif';
-    ctx.textAlign = 'center';
-    const label = truncateLabel(ctx, archetype.name, TILE_WIDTH - 8);
-    ctx.fillText(label, tileX + TILE_WIDTH / 2, swatchY + SWATCH_SIZE + 24);
   }
 
   return canvas.toBuffer('image/png');
-}
-
-function drawPlaceholderTile(ctx: any, x: number, y: number, radius: number): void {
-  ctx.fillStyle = '#3f4147';
-  ctx.beginPath();
-  ctx.roundRect(x, y, SWATCH_SIZE, SWATCH_SIZE, radius);
-  ctx.fill();
 }
