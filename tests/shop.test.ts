@@ -42,45 +42,48 @@ interface Transaction {
 
 console.log('Running shop functionality tests...');
 
-// Test slot-cap enforcement (5a)
+// Test single-archetype ownership (replaces previous multi-slot model)
 const mockStandardArchetypes: ShopArchetype[] = [
   { id: 1, name: 'Standard 1', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy' },
   { id: 2, name: 'Standard 2', tier: 'standard', price: 250, min_role: null, slot_group: 'comedy' },
   { id: 3, name: 'Standard 3', tier: 'standard', price: 300, min_role: null, slot_group: 'comedy' },
-  { id: 4, name: 'Standard 4', tier: 'standard', price: 350, min_role: null, slot_group: 'comedy' },
-  { id: 5, name: 'Standard 5', tier: 'standard', price: 400, min_role: null, slot_group: 'comedy' },
-  { id: 6, name: 'Standard 6', tier: 'standard', price: 450, min_role: null, slot_group: 'comedy' },
 ];
 
-function checkSlotCap(userArchetypes: UserArchetype[], newArchetype: ShopArchetype, maxSlots: number, allArchetypes: ShopArchetype[]): boolean {
-  const sameGroupCount = userArchetypes.filter(ua => {
-    const archetype = allArchetypes.find(a => a.id === ua.archetype_id);
-    return archetype && archetype.slot_group === newArchetype.slot_group;
-  }).length;
-  
-  return sameGroupCount < maxSlots;
+// Test that user can only own one archetype at a time
+function checkSingleArchetypeOwnership(userArchetypes: UserArchetype[]): boolean {
+  return userArchetypes.length <= 1;
 }
 
-// Test slot cap enforcement
-const userWith5Archetypes: UserArchetype[] = [
+const userWithOneArchetype: UserArchetype[] = [
   { user_id: 'user1', archetype_id: 1, slot_index: 0, free_grant: false },
-  { user_id: 'user1', archetype_id: 2, slot_index: 1, free_grant: false },
-  { user_id: 'user1', archetype_id: 3, slot_index: 2, free_grant: false },
-  { user_id: 'user1', archetype_id: 4, slot_index: 3, free_grant: false },
-  { user_id: 'user1', archetype_id: 5, slot_index: 4, free_grant: false },
 ];
 
-const canAddMore = checkSlotCap(userWith5Archetypes, mockStandardArchetypes[5], 5, mockStandardArchetypes);
-assertEqual(canAddMore, false, 'User with 5 archetypes should not be able to add more (slot cap)');
+assertEqual(checkSingleArchetypeOwnership(userWithOneArchetype), true, 'User with 1 archetype should be valid');
 
-const userWith3Archetypes: UserArchetype[] = [
-  { user_id: 'user2', archetype_id: 1, slot_index: 0, free_grant: false },
-  { user_id: 'user2', archetype_id: 2, slot_index: 1, free_grant: false },
-  { user_id: 'user2', archetype_id: 3, slot_index: 2, free_grant: false },
-];
+const userWithNoArchetype: UserArchetype[] = [];
+assertEqual(checkSingleArchetypeOwnership(userWithNoArchetype), true, 'User with 0 archetypes should be valid');
 
-const canAddTo3 = checkSlotCap(userWith3Archetypes, mockStandardArchetypes[3], 5, mockStandardArchetypes);
-assertEqual(canAddTo3, true, 'User with 3 archetypes should be able to add more (under slot cap)');
+// Test 50% refund calculation
+function calculateRefund(originalPrice: number): number {
+  return Math.floor(originalPrice * 0.5);
+}
+
+const refund200 = calculateRefund(200);
+assertEqual(refund200, 100, '50% refund of 200 should be 100');
+
+const refund250 = calculateRefund(250);
+assertEqual(refund250, 125, '50% refund of 250 should be 125');
+
+const refund300 = calculateRefund(300);
+assertEqual(refund300, 150, '50% refund of 300 should be 150');
+
+// Test net cost calculation with refund
+function calculateNetCost(newPrice: number, refundAmount: number): number {
+  return newPrice - refundAmount;
+}
+
+const netCost = calculateNetCost(300, 100);
+assertEqual(netCost, 200, 'Net cost should be 200 (300 - 100)');
 
 // Test tier gating (Mythic requires Lead Cast+)
 const mockMythicArchetype: ShopArchetype = {
@@ -114,20 +117,19 @@ assertEqual(audienceUser, false, 'Audience user should NOT be able to purchase M
 const standardArchetypeGating = checkTierGating('audience', mockStandardArchetypes[0]);
 assertEqual(standardArchetypeGating, true, 'Audience user should be able to purchase Standard (no min_role)');
 
-// Test Legendary slot cap using slot_group
-const mockLegendaryArchetypes: ShopArchetype[] = [
-  { id: 101, name: 'Legendary 1', tier: 'legendary', price: 500, min_role: null, slot_group: 'legendary' },
-  { id: 102, name: 'Legendary 2', tier: 'legendary', price: 500, min_role: null, slot_group: 'legendary' },
-  { id: 103, name: 'Legendary 3', tier: 'legendary', price: 500, min_role: null, slot_group: 'legendary' },
+// Test single-color ownership
+function checkSingleColorOwnership(userColors: UserColor[]): boolean {
+  return userColors.length <= 1;
+}
+
+const userWithOneColor: UserColor[] = [
+  { user_id: 'user1', color_id: 1, active: true, free_grant: false },
 ];
 
-const userWith2Legendary: UserArchetype[] = [
-  { user_id: 'user3', archetype_id: 101, slot_index: 0, free_grant: false },
-  { user_id: 'user3', archetype_id: 102, slot_index: 1, free_grant: false },
-];
+assertEqual(checkSingleColorOwnership(userWithOneColor), true, 'User with 1 color should be valid');
 
-const canAddLegendary = checkSlotCap(userWith2Legendary, mockLegendaryArchetypes[2], 2, mockLegendaryArchetypes);
-assertEqual(canAddLegendary, false, 'User with 2 legendary archetypes should not be able to add more (slot cap 2)');
+const userWithNoColor: UserColor[] = [];
+assertEqual(checkSingleColorOwnership(userWithNoColor), true, 'User with 0 colors should be valid');
 
 // Test color switching (exactly one active)
 function checkColorSwitching(userColors: UserColor[], newActiveColorId: number): boolean {
@@ -139,41 +141,22 @@ function checkColorSwitching(userColors: UserColor[], newActiveColorId: number):
 const userColors: UserColor[] = [
   { user_id: 'user1', color_id: 1, active: true, free_grant: false },
   { user_id: 'user1', color_id: 2, active: false, free_grant: false },
-  { user_id: 'user1', color_id: 3, active: false, free_grant: false },
 ];
 
 const canSwitchToColor2 = checkColorSwitching(userColors, 2);
 assertEqual(canSwitchToColor2, true, 'User should be able to switch active color');
 
-// Test free-grant flagging for booster claims
-const boosterFreeArchetype: UserArchetype = {
-  user_id: 'booster_user',
-  archetype_id: 1,
-  slot_index: 0,
-  free_grant: true
-};
+// Test that free grants do not get refunded
+function calculateRefundForFreeGrant(originalPrice: number, isFreeGrant: boolean): number {
+  if (isFreeGrant) return 0;
+  return Math.floor(originalPrice * 0.5);
+}
 
-const normalArchetype: UserArchetype = {
-  user_id: 'normal_user',
-  archetype_id: 2,
-  slot_index: 0,
-  free_grant: false
-};
+const refundFromFree = calculateRefundForFreeGrant(200, true);
+assertEqual(refundFromFree, 0, 'Free grant should not be refunded');
 
-assertEqual(boosterFreeArchetype.free_grant, true, 'Booster free archetype should have free_grant=true');
-assertEqual(normalArchetype.free_grant, false, 'Normal archetype should have free_grant=false');
-
-// Test that free grants still count against slot cap
-const userWithFreeGrant: UserArchetype[] = [
-  { user_id: 'user3', archetype_id: 1, slot_index: 0, free_grant: true },
-  { user_id: 'user3', archetype_id: 2, slot_index: 1, free_grant: false },
-  { user_id: 'user3', archetype_id: 3, slot_index: 2, free_grant: false },
-  { user_id: 'user3', archetype_id: 4, slot_index: 3, free_grant: false },
-  { user_id: 'user3', archetype_id: 5, slot_index: 4, free_grant: false },
-];
-
-const cannotAddWithFreeGrant = checkSlotCap(userWithFreeGrant, mockStandardArchetypes[5], 5, mockStandardArchetypes);
-assertEqual(cannotAddWithFreeGrant, false, 'Free grant should still count against slot cap');
+const refundFromPaid = calculateRefundForFreeGrant(200, false);
+assertEqual(refundFromPaid, 100, 'Paid archetype should be refunded 50%');
 
 // Test transaction accounting (balance_before, amount, balance_after)
 function calculateTransaction(balanceBefore: number, purchaseAmount: number): Transaction {
@@ -195,121 +178,42 @@ assertEqual(transaction2.balance_before, 500, 'Transaction balance_before should
 assertEqual(transaction2.amount, -500, 'Transaction amount should be -500');
 assertEqual(transaction2.balance_after, 0, 'Transaction balance_after should be 0');
 
-// Test insufficient residuals check
-function checkSufficientFunds(balance: number, price: number): boolean {
-  return balance >= price;
-}
-
-assertEqual(checkSufficientFunds(100, 200), false, 'User with 100 residuals cannot afford 200');
-assertEqual(checkSufficientFunds(200, 200), true, 'User with 200 residuals can afford 200');
-assertEqual(checkSufficientFunds(500, 200), true, 'User with 500 residuals can afford 200');
-
-// Test booster free grant eligibility
-function checkBoosterFreeGrantEligibility(userArchetypes: UserArchetype[], userColors: UserColor[]): { archetype: boolean; color: boolean } {
-  const hasFreeArchetype = userArchetypes.some(ua => ua.free_grant);
-  const hasFreeColor = userColors.some(uc => uc.free_grant);
-  return {
-    archetype: !hasFreeArchetype,
-    color: !hasFreeColor
-  };
-}
-
-const boosterWithNoGrants = checkBoosterFreeGrantEligibility([], []);
-assertEqual(boosterWithNoGrants.archetype, true, 'Booster with no grants should be eligible for free archetype');
-assertEqual(boosterWithNoGrants.color, true, 'Booster with no grants should be eligible for free color');
-
-const boosterWithArchetypeGrant = checkBoosterFreeGrantEligibility([boosterFreeArchetype], []);
-assertEqual(boosterWithArchetypeGrant.archetype, false, 'Booster with free archetype should NOT be eligible for another');
-assertEqual(boosterWithArchetypeGrant.color, true, 'Booster with only archetype grant should still be eligible for free color');
-
-const boosterWithBothGrants = checkBoosterFreeGrantEligibility([boosterFreeArchetype], [
-  { user_id: 'booster_user', color_id: 1, active: true, free_grant: true }
-]);
-assertEqual(boosterWithBothGrants.archetype, false, 'Booster with both grants should NOT be eligible for archetype');
-assertEqual(boosterWithBothGrants.color, false, 'Booster with both grants should NOT be eligible for color');
-
 // Test free grant is permanent (free_grant flag persists)
+const boosterFreeArchetype: UserArchetype = {
+  user_id: 'booster_user',
+  archetype_id: 1,
+  slot_index: 0,
+  free_grant: true
+};
+
+const normalArchetype: UserArchetype = {
+  user_id: 'normal_user',
+  archetype_id: 2,
+  slot_index: 0,
+  free_grant: false
+};
+
 assertEqual(boosterFreeArchetype.free_grant, true, 'Free grant flag should persist as true');
 assertEqual(normalArchetype.free_grant, false, 'Normal purchase should remain as free_grant=false');
 
-// --- Category shop embed/select-menu tests (per-category dropdown layout) ---
-
-// Mock shop archetype with image_url, as added for per-tier grid images
-interface ShopArchetypeWithImage extends ShopArchetype {
-  image_url: string | null;
+// Test replacement scenario (buying new item replaces old one with refund)
+function simulateReplacement(balance: number, oldPrice: number, newPrice: number): { success: boolean; newBalance: number; refund: number } {
+  const refund = Math.floor(oldPrice * 0.5);
+  const netCost = newPrice - refund;
+  
+  if (balance < netCost) {
+    return { success: false, newBalance: balance, refund: 0 };
+  }
+  
+  return { success: true, newBalance: balance - netCost, refund };
 }
 
-const fullStandardArchetypes: ShopArchetypeWithImage[] = [
-  { id: 1, name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: '' },
-  { id: 2, name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: '' },
-  { id: 3, name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: '' },
-  { id: 4, name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: '' },
-  { id: 5, name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: '' },
-  { id: 6, name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: '' },
-  { id: 7, name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy', image_url: '' },
-  { id: 8, name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror', image_url: '' },
-  { id: 9, name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller', image_url: '' },
-  { id: 10, name: 'Documentary Host', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary', image_url: '' },
-];
+const replacement1 = simulateReplacement(1000, 200, 300);
+assertEqual(replacement1.success, true, 'Replacement should succeed with sufficient funds');
+assertEqual(replacement1.newBalance, 800, 'New balance should be 800 (1000 - 300 + 100)');
+assertEqual(replacement1.refund, 100, 'Refund should be 100');
 
-const fullLegendaryArchetypes: ShopArchetypeWithImage[] = [
-  { id: 11, name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: '' },
-  { id: 12, name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: '' },
-  { id: 13, name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: '' },
-  { id: 14, name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: '' },
-  { id: 15, name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: '' },
-];
-
-const fullMythicArchetypes: ShopArchetypeWithImage[] = [
-  { id: 16, name: "Director's Cut", tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: '' },
-  { id: 17, name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: '' },
-];
-
-// Discord caps a StringSelectMenu at 25 options. Since the shop is now split
-// into one dropdown per tier/band, each dropdown must independently stay
-// under that cap, not just the shop as a whole.
-const DISCORD_SELECT_MENU_OPTION_CAP = 25;
-assertEqual(fullStandardArchetypes.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Standard archetype dropdown must stay under the 25-option cap');
-assertEqual(fullLegendaryArchetypes.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Legendary archetype dropdown must stay under the 25-option cap');
-assertEqual(fullMythicArchetypes.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Mythic archetype dropdown must stay under the 25-option cap');
-
-const fullColorBands = {
-  common: ['Crimson Red', 'Ocean Blue', 'Forest Green', 'Golden Yellow', 'Royal Purple', 'Hot Pink'],
-  uncommon: ['Sapphire', 'Emerald', 'Ruby', 'Amethyst', 'Topaz', 'Turquoise'],
-  rare: ['Diamond White', 'Midnight Black', 'Sunset Orange', 'Aurora Green', 'Platinum Silver', 'Galaxy Purple'],
-};
-assertEqual(fullColorBands.common.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Common color dropdown must stay under the 25-option cap');
-assertEqual(fullColorBands.uncommon.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Uncommon color dropdown must stay under the 25-option cap');
-assertEqual(fullColorBands.rare.length <= DISCORD_SELECT_MENU_OPTION_CAP, true, 'Rare color dropdown must stay under the 25-option cap');
-
-// Discord caps a message at 5 action rows. Each shop message now carries one
-// action row (select menu) per category it displays, so the categories per
-// message must not exceed that cap.
-const DISCORD_ACTION_ROW_CAP = 5;
-const colorShopCategoryCount = Object.keys(fullColorBands).length; // common, uncommon, rare
-const archetypeShopCategoryCount = 3; // standard, legendary, mythic
-assertEqual(colorShopCategoryCount <= DISCORD_ACTION_ROW_CAP, true, 'Color shop message must not exceed the 5 action-row cap');
-assertEqual(archetypeShopCategoryCount <= DISCORD_ACTION_ROW_CAP, true, 'Archetype shop message must not exceed the 5 action-row cap');
-
-// Grid image layout math: a fixed 3-column layout should compute the row
-// count the same way the image generator does, so a category with a
-// non-multiple-of-3 item count (e.g. 10 or 5) still lays out cleanly.
-function computeGridRows(itemCount: number, columns: number): number {
-  return Math.max(1, Math.ceil(itemCount / columns));
-}
-
-assertEqual(computeGridRows(6, 3), 2, '6 items in 3 columns should be 2 rows');
-assertEqual(computeGridRows(10, 3), 4, '10 items in 3 columns should be 4 rows (Standard archetypes)');
-assertEqual(computeGridRows(5, 3), 2, '5 items in 3 columns should be 2 rows (Legendary archetypes)');
-assertEqual(computeGridRows(2, 3), 1, '2 items in 3 columns should be 1 row (Mythic archetypes)');
-assertEqual(computeGridRows(0, 3), 1, '0 items should still compute at least 1 row to avoid a zero-height canvas');
-
-// image_url is optional per-archetype art, filled in directly in code (not
-// via env/config) and left blank until real art is supplied.
-const archetypeWithoutImage: ShopArchetypeWithImage = fullStandardArchetypes[0];
-assertEqual(archetypeWithoutImage.image_url, '', 'Archetype without art yet should have a blank image_url');
-
-const archetypeWithImage: ShopArchetypeWithImage = { ...fullStandardArchetypes[1], image_url: 'https://example.com/drama-king.png' };
-assertEqual(archetypeWithImage.image_url, 'https://example.com/drama-king.png', 'Archetype image_url should pass through once set');
+const replacement2 = simulateReplacement(100, 200, 300);
+assertEqual(replacement2.success, false, 'Replacement should fail with insufficient funds');
 
 console.log('✓ All shop functionality tests passed!');

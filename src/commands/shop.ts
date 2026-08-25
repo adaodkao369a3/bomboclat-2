@@ -33,11 +33,6 @@ import { Command } from './index.js';
 const COLOR_PRICE_MAP: Record<string, number> = { common: 200, uncommon: 500, rare: 800 };
 const COLOR_BAND_TITLES: Record<string, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare' };
 const ARCHETYPE_TIER_TITLES: Record<string, string> = { standard: 'Standard', legendary: 'Legendary', mythic: 'Mythic' };
-const ARCHETYPE_SLOT_CAPS_BY_TIER: Record<string, string> = {
-  standard: '5 slots each',
-  legendary: '1-2 slots each',
-  mythic: '1 slot, Lead Cast+ only',
-};
 
 export const shopCommand: Command = {
   name: 'shop',
@@ -352,6 +347,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
       { name: 'Price Band', value: color.price_band, inline: true },
       { name: 'Price', value: isFreeGrant ? 'FREE' : price.toString(), inline: true },
       { name: 'Hex', value: color.hex, inline: true },
+      { name: 'Note', value: 'You can only own one color at a time. Purchasing a new one will replace your current color with a 50% refund.', inline: false },
     ]);
 
   await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch((error: unknown) => {
@@ -370,10 +366,35 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
         const result = await purchaseColor(userId, colorId, isFreeGrant);
         if (result.success) {
           const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
+          
+          // Remove old color roles if any
+          const userColors = await getUserColors(userId);
+          for (const userColor of userColors) {
+            if (userColor.color_id !== colorId) {
+              const oldColor = colors.find(c => c.id === userColor.color_id);
+              if (oldColor && oldColor.role_id && member) {
+                try {
+                  const role = await member.guild.roles.fetch(oldColor.role_id);
+                  if (role && member.roles.cache.has(role.id)) {
+                    await member.roles.remove(role, 'Color replacement');
+                  }
+                } catch (error) {
+                  console.error(`Failed to remove old color role ${oldColor.role_id}:`, error);
+                }
+              }
+            }
+          }
+          
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
           const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
+          let message = `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}`;
+          if (result.refund && result.refund > 0) {
+            message += `\n💰 Refunded ${result.refund} residuals (50% of previous color)`;
+          }
+          message += roleAssigned ? `\n🎨 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
+          
           await buttonInteraction.update({
-            content: `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}${roleAssigned ? `\n🎨 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'}`,
+            content: message,
             embeds: [],
             components: [],
           });
@@ -436,7 +457,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
 
     const embed = new EmbedBuilder()
       .setTitle(title)
-      .setDescription(`${ARCHETYPE_TIER_TITLES[tier]} archetypes — ${ARCHETYPE_SLOT_CAPS_BY_TIER[tier]}. Pick one below to buy it.`)
+      .setDescription(`${ARCHETYPE_TIER_TITLES[tier]} archetypes — Pick one below to buy it.`)
       .setColor(0x7B61FF)
       .setImage(`attachment://${filename}`);
 
@@ -521,6 +542,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
       { name: 'Price', value: isFreeGrant ? 'FREE' : archetype.price.toString(), inline: true },
       { name: 'Slot Group', value: archetype.slot_group, inline: true },
       { name: 'Requirements', value: archetype.min_role ? `Requires ${archetype.min_role.replace('_', ' ')}` : 'None', inline: false },
+      { name: 'Note', value: 'You can only own one archetype at a time. Purchasing a new one will replace your current archetype with a 50% refund.', inline: false },
     ]);
 
   if (archetype.image_url) {
@@ -543,10 +565,35 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
         const result = await purchaseArchetype(userId, archetypeId, isFreeGrant);
         if (result.success) {
           const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
+          
+          // Remove old archetype roles if any
+          const userArchetypes = await getUserArchetypes(userId);
+          for (const userArchetype of userArchetypes) {
+            if (userArchetype.archetype_id !== archetypeId) {
+              const oldArchetype = archetypes.find(a => a.id === userArchetype.archetype_id);
+              if (oldArchetype && oldArchetype.role_id && member) {
+                try {
+                  const role = await member.guild.roles.fetch(oldArchetype.role_id);
+                  if (role && member.roles.cache.has(role.id)) {
+                    await member.roles.remove(role, 'Archetype replacement');
+                  }
+                } catch (error) {
+                  console.error(`Failed to remove old archetype role ${oldArchetype.role_id}:`, error);
+                }
+              }
+            }
+          }
+          
           const roleAssigned = member && archetype.role_id ? await assignShopRole(member, archetype.role_id) : false;
           const roleName = member?.guild.roles.cache.get(archetype.role_id || '')?.name || archetypeRoleName(archetype.name);
+          let message = `${isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!'}`;
+          if (result.refund && result.refund > 0) {
+            message += `\n💰 Refunded ${result.refund} residuals (50% of previous archetype)`;
+          }
+          message += roleAssigned ? `\n🎭 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
+          
           await buttonInteraction.update({
-            content: `${isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!'}${roleAssigned ? `\n🎭 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'}`,
+            content: message,
             embeds: [],
             components: [],
           });

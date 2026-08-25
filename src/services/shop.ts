@@ -280,27 +280,73 @@ export async function purchaseArchetype(
   userId: string,
   archetypeId: number,
   freeGrant: boolean = false
-): Promise<{ success: boolean; reason?: string }> {
+): Promise<{ success: boolean; reason?: string; refund?: number }> {
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
-    // Check if user can purchase
-    const canPurchase = await checkCanPurchaseArchetype(client, userId, archetypeId);
-    if (!canPurchase.canPurchase) {
-      await client.query('ROLLBACK');
-      return { success: false, reason: canPurchase.reason };
-    }
-
-    // Get archetype price
+    // Get archetype details
     const archetypeResult = await client.query(
-      'SELECT price FROM shop_archetypes WHERE id = $1',
+      'SELECT price, tier, min_role FROM shop_archetypes WHERE id = $1',
       [archetypeId]
     );
-    const price = archetypeResult.rows[0].price;
+    if (archetypeResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'Archetype not found' };
+    }
+    const archetype = archetypeResult.rows[0];
+
+    // Check tier gating
+    if (archetype.min_role) {
+      const userResult = await client.query(
+        'SELECT current_progression_role FROM users WHERE user_id = $1',
+        [userId]
+      );
+      const userRole = userResult.rows[0]?.current_progression_role;
+      
+      const roleHierarchy = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
+      const userRoleIndex = roleHierarchy.indexOf(userRole);
+      const requiredRoleIndex = roleHierarchy.indexOf(archetype.min_role);
+      
+      if (userRoleIndex < requiredRoleIndex) {
+        await client.query('ROLLBACK');
+        return { success: false, reason: `Requires ${archetype.min_role.replace('_', ' ')} role or higher` };
+      }
+    }
+
+    // Check if user already owns this archetype
+    const existingResult = await client.query(
+      'SELECT archetype_id, free_grant FROM user_archetypes WHERE user_id = $1',
+      [userId]
+    );
+    
+    let refundAmount = 0;
+    let balanceBefore = 0;
+
+    // If user already has an archetype, remove it and refund 50%
+    if (existingResult.rows.length > 0) {
+      const existingArchetype = existingResult.rows[0];
+      
+      // Get price of existing archetype for refund
+      const existingPriceResult = await client.query(
+        'SELECT price FROM shop_archetypes WHERE id = $1',
+        [existingArchetype.archetype_id]
+      );
+      const existingPrice = existingPriceResult.rows[0].price;
+      
+      // Only refund if it wasn't a free grant
+      if (!existingArchetype.free_grant) {
+        refundAmount = Math.floor(existingPrice * 0.5);
+      }
+      
+      // Remove existing archetype
+      await client.query(
+        'DELETE FROM user_archetypes WHERE user_id = $1',
+        [userId]
+      );
+    }
 
     // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
-    let balanceBefore = 0;
     if (!freeGrant) {
       const balanceResult = await client.query(
         'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
@@ -308,19 +354,31 @@ export async function purchaseArchetype(
       );
       balanceBefore = balanceResult.rows[0].total_residuals_balance;
       
-      if (balanceBefore < price) {
+      const netCost = archetype.price - refundAmount;
+      
+      if (balanceBefore < netCost) {
         await client.query('ROLLBACK');
-        return { success: false, reason: 'Insufficient residuals' };
+        return { success: false, reason: `Insufficient residuals (need ${netCost}, have ${balanceBefore})` };
       }
 
-      // Deduct residuals
+      // Deduct residuals (net cost after refund)
       await client.query(
         `UPDATE users
          SET total_residuals_balance = total_residuals_balance - $1,
              lifetime_residuals_spent = lifetime_residuals_spent + $1
          WHERE user_id = $2`,
-        [price, userId]
+        [netCost, userId]
       );
+      
+      // Add refund if applicable
+      if (refundAmount > 0) {
+        await client.query(
+          `UPDATE users
+           SET total_residuals_balance = total_residuals_balance + $1
+           WHERE user_id = $2`,
+          [refundAmount, userId]
+        );
+      }
     } else {
       // For free grants, still lock the user row for consistency
       await client.query(
@@ -329,34 +387,37 @@ export async function purchaseArchetype(
       );
     }
 
-    // Get next available slot index
-    const slotResult = await client.query(
-      `SELECT COALESCE(MAX(slot_index), -1) + 1 as next_slot
-       FROM user_archetypes
-       WHERE user_id = $1`,
-      [userId]
-    );
-    const nextSlot = slotResult.rows[0].next_slot;
-
-    // Add archetype to user
+    // Add new archetype (always slot 0 since only one allowed)
     await client.query(
       `INSERT INTO user_archetypes (user_id, archetype_id, slot_index, free_grant)
-       VALUES ($1, $2, $3, $4)`,
-      [userId, archetypeId, nextSlot, freeGrant]
+       VALUES ($1, $2, 0, $3)`,
+      [userId, archetypeId, freeGrant]
     );
 
     // Log transaction
     if (!freeGrant) {
-      const balanceAfter = balanceBefore - price;
+      const netCost = archetype.price - refundAmount;
+      const balanceAfter = balanceBefore - netCost;
+      
+      // Log the purchase
       await client.query(
         `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
          VALUES ($1, $2, $3, $4, 'purchase', 'shop_purchase', 'Archetype purchase')`,
-        [userId, -price, balanceBefore, balanceAfter]
+        [userId, -archetype.price, balanceBefore, balanceBefore - archetype.price]
       );
+      
+      // Log the refund if applicable
+      if (refundAmount > 0) {
+        await client.query(
+          `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
+           VALUES ($1, $2, $3, $4, 'refund', 'shop_refund', '50% refund for archetype replacement')`,
+          [userId, refundAmount, balanceBefore - archetype.price, balanceAfter]
+        );
+      }
     }
 
     await client.query('COMMIT');
-    return { success: true };
+    return { success: true, refund: refundAmount };
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error purchasing archetype:', error);
@@ -371,12 +432,12 @@ export async function purchaseColor(
   userId: string,
   colorId: number,
   freeGrant: boolean = false
-): Promise<{ success: boolean; reason?: string }> {
+): Promise<{ success: boolean; reason?: string; refund?: number }> {
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
-    // Get color price
+    // Get color details
     const colorResult = await client.query(
       'SELECT * FROM shop_colors WHERE id = $1',
       [colorId]
@@ -387,16 +448,6 @@ export async function purchaseColor(
     }
     const color = colorResult.rows[0] as ShopColor;
 
-    // Check if already owned
-    const ownedResult = await client.query(
-      'SELECT id FROM user_colors WHERE user_id = $1 AND color_id = $2',
-      [userId, colorId]
-    );
-    if (ownedResult.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return { success: false, reason: 'Color already owned' };
-    }
-
     // Determine price based on band
     const priceMap: Record<string, number> = {
       common: 200,
@@ -405,8 +456,52 @@ export async function purchaseColor(
     };
     const price = priceMap[color.price_band] || 200;
 
-    // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
+    // Check if user already owns this specific color
+    const ownedResult = await client.query(
+      'SELECT id, free_grant FROM user_colors WHERE user_id = $1 AND color_id = $2',
+      [userId, colorId]
+    );
+    if (ownedResult.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'Color already owned' };
+    }
+
+    // Check if user has any existing color(s) for refund
+    const existingColorsResult = await client.query(
+      'SELECT color_id, free_grant FROM user_colors WHERE user_id = $1',
+      [userId]
+    );
+    
+    let refundAmount = 0;
     let balanceBefore = 0;
+
+    // If user already has a color, remove it and refund 50%
+    if (existingColorsResult.rows.length > 0) {
+      const existingColor = existingColorsResult.rows[0];
+      
+      // Get price of existing color for refund
+      const existingColorDetailsResult = await client.query(
+        'SELECT price_band FROM shop_colors WHERE id = $1',
+        [existingColor.color_id]
+      );
+      if (existingColorDetailsResult.rows.length > 0) {
+        const existingPriceBand = existingColorDetailsResult.rows[0].price_band;
+        const existingPrice = priceMap[existingPriceBand] || 200;
+        
+        // Only refund if it wasn't a free grant
+        if (!existingColor.free_grant) {
+          refundAmount = Math.floor(existingPrice * 0.5);
+        }
+      }
+      
+      // Remove all existing colors
+      await client.query(
+        'DELETE FROM user_colors WHERE user_id = $1',
+        [userId]
+      );
+    }
+
+    // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
     if (!freeGrant) {
       const balanceResult = await client.query(
         'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
@@ -414,19 +509,31 @@ export async function purchaseColor(
       );
       balanceBefore = balanceResult.rows[0].total_residuals_balance;
       
-      if (balanceBefore < price) {
+      const netCost = price - refundAmount;
+      
+      if (balanceBefore < netCost) {
         await client.query('ROLLBACK');
-        return { success: false, reason: 'Insufficient residuals' };
+        return { success: false, reason: `Insufficient residuals (need ${netCost}, have ${balanceBefore})` };
       }
 
-      // Deduct residuals
+      // Deduct residuals (net cost after refund)
       await client.query(
         `UPDATE users
          SET total_residuals_balance = total_residuals_balance - $1,
              lifetime_residuals_spent = lifetime_residuals_spent + $1
          WHERE user_id = $2`,
-        [price, userId]
+        [netCost, userId]
       );
+      
+      // Add refund if applicable
+      if (refundAmount > 0) {
+        await client.query(
+          `UPDATE users
+           SET total_residuals_balance = total_residuals_balance + $1
+           WHERE user_id = $2`,
+          [refundAmount, userId]
+        );
+      }
     } else {
       // For free grants, still lock the user row for consistency
       await client.query(
@@ -435,13 +542,7 @@ export async function purchaseColor(
       );
     }
 
-    // Deactivate all existing colors
-    await client.query(
-      'UPDATE user_colors SET active = FALSE WHERE user_id = $1',
-      [userId]
-    );
-
-    // Add color to user (active by default)
+    // Add new color (active by default)
     await client.query(
       `INSERT INTO user_colors (user_id, color_id, active, free_grant)
        VALUES ($1, $2, TRUE, $3)`,
@@ -450,16 +551,28 @@ export async function purchaseColor(
 
     // Log transaction
     if (!freeGrant) {
-      const balanceAfter = balanceBefore - price;
+      const netCost = price - refundAmount;
+      const balanceAfter = balanceBefore - netCost;
+      
+      // Log the purchase
       await client.query(
         `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
          VALUES ($1, $2, $3, $4, 'purchase', 'shop_purchase', 'Color purchase')`,
-        [userId, -price, balanceBefore, balanceAfter]
+        [userId, -price, balanceBefore, balanceBefore - price]
       );
+      
+      // Log the refund if applicable
+      if (refundAmount > 0) {
+        await client.query(
+          `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
+           VALUES ($1, $2, $3, $4, 'refund', 'shop_refund', '50% refund for color replacement')`,
+          [userId, refundAmount, balanceBefore - price, balanceAfter]
+        );
+      }
     }
 
     await client.query('COMMIT');
-    return { success: true };
+    return { success: true, refund: refundAmount };
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error purchasing color:', error);
