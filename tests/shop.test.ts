@@ -7,14 +7,6 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
   }
 }
 
-function assertDeepEqual<T>(actual: T, expected: T, message: string) {
-  const actualStr = JSON.stringify(actual);
-  const expectedStr = JSON.stringify(expected);
-  if (actualStr !== expectedStr) {
-    throw new Error(`${message}: Expected ${expectedStr}, got ${actualStr}`);
-  }
-}
-
 // Mock user archetype data structure
 interface UserArchetype {
   user_id: string;
@@ -39,14 +31,6 @@ interface ShopArchetype {
   price: number;
   min_role: string | null;
   slot_group: string;
-}
-
-// Mock shop color data structure
-interface ShopColor {
-  id: number;
-  name: string;
-  hex: string;
-  price_band: string;
 }
 
 // Mock transaction data structure
