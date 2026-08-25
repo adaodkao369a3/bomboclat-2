@@ -1,9 +1,13 @@
 import { Guild, EmbedBuilder } from 'discord.js';
-import { CHANNELS } from '../config/index.js';
+import { CHANNELS, XP_CONFIG } from '../config/index.js';
 import { getRoleFromLevel, type XPAwardResult } from './xp.js';
 
 function formatRole(role: string): string {
   return role.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function isRoleMilestone(level: number): boolean {
+  return Object.values(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS).includes(level as any);
 }
 
 function getUnlockedPerks(role: string): string[] {
@@ -38,6 +42,9 @@ export async function sendLevelUpNotification(
   result: XPAwardResult
 ): Promise<void> {
   if (!result.levelUpOccurred || result.newXP === null) return;
+
+  // Only send notifications for role milestones, not regular level ups
+  if (!result.roleChanged && !isRoleMilestone(result.newLevel)) return;
 
   try {
     const currentRole = result.newRole || getRoleFromLevel(result.newLevel);
