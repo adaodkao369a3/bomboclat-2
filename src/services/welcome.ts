@@ -60,7 +60,7 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
 
     const line = fillTemplate(randomFrom(WELCOME_MESSAGES), {
       ...WELCOME_REPLACEMENTS,
-      user: member.toString(),
+      user: `<@${member.id}>`,
       count: member.guild.memberCount.toString(),
     });
 
@@ -97,7 +97,7 @@ export async function sendBoosterThankYou(member: GuildMember): Promise<void> {
 
     const line = fillTemplate(randomFrom(BOOST_MESSAGES), {
       ...BOOST_REPLACEMENTS,
-      user: member.toString(),
+      user: `<@${member.id}>`,
     });
 
     const embed = new EmbedBuilder()
