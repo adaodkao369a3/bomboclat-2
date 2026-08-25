@@ -354,7 +354,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
       { name: 'Hex', value: color.hex, inline: true },
     ]);
 
-  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch(error => {
+  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch((error: unknown) => {
     console.error('Failed to reply to color selection interaction:', error);
   });
 
@@ -411,7 +411,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
     }
   });
 
-  buttonCollector?.on('end', (collected, reason) => {
+  buttonCollector?.on('end', (_collected: unknown, reason: string) => {
     if (reason === 'time') {
       console.log(`Color selection for user ${userId} timed out`);
     }
@@ -527,7 +527,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
     detailEmbed.setThumbnail(archetype.image_url);
   }
 
-  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch(error => {
+  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch((error: unknown) => {
     console.error('Failed to reply to archetype selection interaction:', error);
   });
 
@@ -569,7 +569,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
     }
   });
 
-  buttonCollector?.on('end', (collected, reason) => {
+  buttonCollector?.on('end', (_collected: unknown, reason: string) => {
     if (reason === 'time') {
       console.log(`Archetype selection for user ${userId} timed out`);
     }

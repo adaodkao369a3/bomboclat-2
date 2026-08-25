@@ -1,13 +1,9 @@
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import type { ShopArchetype, ShopColor } from './shop.js';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { join } from 'path';
 
 // Register font for text rendering
-const FONT_PATH = join(__dirname, '../../assets/fonts/Roboto-Bold.ttf');
+const FONT_PATH = join(process.cwd(), 'assets/fonts/Roboto-Bold.ttf');
 let fontRegistered = false;
 let fontChecked = false;
 
