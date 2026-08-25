@@ -8,7 +8,6 @@ const TILE_GAP = 16;
 const TILE_ASPECT_RATIO = 16 / 9;
 const BACKGROUND = '#2b2d31';
 const TEXT_COLOR = '#f2f3f5';
-const MUTED_TEXT_COLOR = '#b5bac1';
 
 function getRows<T>(items: T[], columns: number): T[][] {
   const rows: T[][] = [];
@@ -134,7 +133,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
   const rows = getRows(archetypes, columns);
   const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
   const baseTileHeight = calculateTileHeight(tileWidth);
-  const labelHeight = 58;
+  const labelHeight = 12;
   const rowHeight = baseTileHeight + labelHeight;
   const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rows.length) * rowHeight + Math.max(0, rows.length - 1) * ROW_GAP;
 
@@ -172,18 +171,21 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       ctx.roundRect(x, y, rowTileWidth, rowTileHeight, radius);
       ctx.stroke();
 
-      ctx.fillStyle = TEXT_COLOR;
+      // Archetype role name is written directly over its own artwork so each
+      // image is unambiguous even when the shop contains many items.
+      const label = truncateLabel(ctx, archetype.name, rowTileWidth - 36);
       ctx.font = '700 20px sans-serif';
+      const labelWidth = Math.min(rowTileWidth - 20, ctx.measureText(label).width + 28);
+      const labelHeight = 34;
+      const labelX = x + (rowTileWidth - labelWidth) / 2;
+      const labelY = y + rowTileHeight - labelHeight - 12;
+      ctx.fillStyle = 'rgba(0,0,0,0.68)';
+      ctx.beginPath();
+      ctx.roundRect(labelX, labelY, labelWidth, labelHeight, 10);
+      ctx.fill();
+      ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';
-      const label = truncateLabel(ctx, archetype.name, rowTileWidth - 20);
-      ctx.fillText(label, x + rowTileWidth / 2, y + rowTileHeight + 27);
-
-      if (archetype.min_role) {
-        ctx.fillStyle = MUTED_TEXT_COLOR;
-        ctx.font = '500 15px sans-serif';
-        const role = `Requires ${archetype.min_role.replace(/_/g, ' ')}`;
-        ctx.fillText(truncateLabel(ctx, role, rowTileWidth - 20), x + rowTileWidth / 2, y + rowTileHeight + 47);
-      }
+      ctx.fillText(label, x + rowTileWidth / 2, labelY + 23);
     }
   }
 
