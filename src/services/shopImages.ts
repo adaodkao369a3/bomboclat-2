@@ -20,6 +20,7 @@ function registerFont(): void {
   } catch (error) {
     console.log('Font registration failed (font file may not exist):', error, '- using system font');
     // Continue without custom font, system font will be used
+    fontRegistered = false;
   }
 }
 
@@ -85,6 +86,7 @@ function drawRoundedImage(
   ctx.clip();
 
   // Cover the tile without distorting the source artwork.
+  // This ensures all images appear at exactly the same size regardless of original dimensions.
   const sourceRatio = image.width / image.height;
   const targetRatio = width / height;
   let drawWidth = width;
@@ -93,10 +95,12 @@ function drawRoundedImage(
   let offsetY = y;
 
   if (sourceRatio > targetRatio) {
+    // Source is wider than target - scale by height
     drawHeight = height;
     drawWidth = height * sourceRatio;
     offsetX = x - (drawWidth - width) / 2;
   } else {
+    // Source is taller than target - scale by width
     drawWidth = width;
     drawHeight = width / sourceRatio;
     offsetY = y - (drawHeight - height) / 2;
@@ -235,13 +239,14 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // light text keeps it legible over the varied background color.
       const label = truncateLabel(ctx, archetype.name, rowTileWidth - 16);
 
-      const fontName = fontRegistered ? 'Roboto' : 'sans-serif';
+      const fontName = fontRegistered ? 'Roboto' : 'Arial';
       ctx.font = `bold 22px ${fontName}`;
 
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      // Strong shadow for better text visibility over any background
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
 
       ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';
@@ -250,13 +255,16 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       const textX = x + rowImageSize / 2;
       const textY = y + rowImageSize + labelHeight / 2;
 
+      // Draw shadow first
       ctx.fillText(label, textX, textY);
 
-      // Reset shadow for subsequent operations
+      // Reset shadow and draw clean text on top
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
+      
+      ctx.fillText(label, textX, textY);
     }
   }
 

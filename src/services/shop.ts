@@ -73,19 +73,18 @@ export async function seedShopArchetypes(): Promise<void> {
     );
 
     const archetypes: Omit<ShopArchetype, 'id'>[] = [
-      // Standard archetypes (10 types × 5 slots each = 50 total)
-      // Group 1
+      // Standard archetypes - Category 1 (5 types × 5 slots each = 25 total)
       { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: archetypeImage('Comedy Relief.jpg'), role_id: null },
       { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: archetypeImage('drama king.png'), role_id: null },
       { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: archetypeImage('action hero.jpg'), role_id: null },
       { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: archetypeImage('romantic lead.jpg'), role_id: null },
       { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: archetypeImage('mystery solver.jpg'), role_id: null },
-      // Group 2
-      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: archetypeImage('scifi.jpg'), role_id: null },
-      { name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy', image_url: archetypeImage('mage.jpg'), role_id: null },
-      { name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror', image_url: archetypeImage('horror survivor.jpg'), role_id: null },
-      { name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller', image_url: archetypeImage('thriller spy.jpg'), role_id: null },
-      { name: 'Ceo of Sex', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary', image_url: archetypeImage('ceo of sex.jpg'), role_id: null },
+      // Standard archetypes - Category 2 (5 types × 5 slots each = 25 total)
+      { name: 'Sci-Fi Explorer', tier: 'standard2', price: 220, min_role: null, slot_group: 'scifi', image_url: archetypeImage('scifi.jpg'), role_id: null },
+      { name: 'Fantasy Mage', tier: 'standard2', price: 280, min_role: null, slot_group: 'fantasy', image_url: archetypeImage('mage.jpg'), role_id: null },
+      { name: 'Horror Survivor', tier: 'standard2', price: 320, min_role: null, slot_group: 'horror', image_url: archetypeImage('horror survivor.jpg'), role_id: null },
+      { name: 'Thriller Spy', tier: 'standard2', price: 380, min_role: null, slot_group: 'thriller', image_url: archetypeImage('thriller spy.jpg'), role_id: null },
+      { name: 'Ceo of Sex', tier: 'standard2', price: 450, min_role: null, slot_group: 'documentary', image_url: archetypeImage('ceo of sex.jpg'), role_id: null },
       // Legendary archetypes (5 types × 1-2 slots each)
       { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: archetypeImage('cinematic legen.jpg'), role_id: null },
       { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: archetypeImage('box offic.jpg'), role_id: null },
@@ -727,8 +726,9 @@ export async function hasBoosterFreeGrants(userId: string): Promise<{ archetype:
   const client = await getClient();
   try {
     const archetypeResult = await client.query(
-      `SELECT COUNT(*) as count FROM user_archetypes 
-       WHERE user_id = $1 AND free_grant = TRUE`,
+      `SELECT COUNT(*) as count FROM user_archetypes ua
+       JOIN shop_archetypes sa ON ua.archetype_id = sa.id
+       WHERE ua.user_id = $1 AND ua.free_grant = TRUE AND (sa.tier = 'standard' OR sa.tier = 'standard2')`,
       [userId]
     );
     const colorResult = await client.query(

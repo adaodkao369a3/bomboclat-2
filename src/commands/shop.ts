@@ -32,7 +32,7 @@ import { Command } from './index.js';
 
 const COLOR_PRICE_MAP: Record<string, number> = { common: 200, uncommon: 500, rare: 800 };
 const COLOR_BAND_TITLES: Record<string, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare' };
-const ARCHETYPE_TIER_TITLES: Record<string, string> = { standard: 'Standard', legendary: 'Legendary', mythic: 'Mythic' };
+const ARCHETYPE_TIER_TITLES: Record<string, string> = { standard: 'Standard', standard2: 'Standard', legendary: 'Legendary', mythic: 'Mythic' };
 
 export const shopCommand: Command = {
   name: 'shop',
@@ -93,6 +93,7 @@ export const shopCommand: Command = {
       const archetypes = await getShopArchetypes();
       const archetypeTiers: Record<string, ShopArchetype[]> = {
         standard: archetypes.filter(a => a.tier === 'standard'),
+        standard2: archetypes.filter(a => a.tier === 'standard2'),
         legendary: archetypes.filter(a => a.tier === 'legendary'),
         mythic: archetypes.filter(a => a.tier === 'mythic'),
       };
@@ -471,11 +472,11 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Record<string, ShopArchetype[]>): Promise<void> {
-  for (const tier of ['standard', 'legendary', 'mythic'] as const) {
+  for (const tier of ['standard', 'standard2', 'legendary', 'mythic'] as const) {
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
-    const title = tier === 'standard' ? '🎭 Archetype Shop' : ARCHETYPE_TIER_TITLES[tier];
+    const title = tier === 'standard' ? '🎭 Archetype Shop' : tier === 'standard2' ? '🎭 More Archetypes' : ARCHETYPE_TIER_TITLES[tier];
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `archetypes_${tier}.png`;
@@ -545,7 +546,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
   const member = await interaction.guild?.members.fetch(userId).catch(() => null);
   const isBooster = member?.roles.cache.has(ROLES.BOOSTER) || false;
   const freeGrants = isBooster ? await hasBoosterFreeGrants(userId) : { archetype: false, color: false };
-  const isFreeGrant = freeGrants.archetype && archetype.tier === 'standard' && !owned;
+  const isFreeGrant = freeGrants.archetype && (archetype.tier === 'standard' || archetype.tier === 'standard2') && !owned;
 
   const confirmRow = new ActionRowBuilder<ButtonBuilder>()
     .addComponents(
