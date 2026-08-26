@@ -5,23 +5,23 @@ import { readFileSync, existsSync } from 'fs';
 
 // Register font for text rendering
 const FONT_PATH = join(process.cwd(), 'assets/fonts/Roboto-Bold.ttf');
-let fontRegistered = false;
-let fontChecked = false;
+let fontLoaded = false;
 
-function registerFont(): void {
-  if (fontChecked) return;
-  fontChecked = true;
-  
-  try {
-    // Try to register the font
-    GlobalFonts.registerFromPath(FONT_PATH);
-    fontRegistered = true;
-    console.log('Font registered successfully from:', FONT_PATH);
-  } catch (error) {
-    console.log('Font registration failed (font file may not exist):', error, '- using system font');
-    // Continue without custom font, system font will be used
-    fontRegistered = false;
+try {
+  if (existsSync(FONT_PATH)) {
+    const success = GlobalFonts.registerFromPath(FONT_PATH, 'Roboto');
+    
+    if (success) {
+      fontLoaded = true;
+      console.log('[ShopImages] Font loaded: assets/fonts/Roboto-Bold.ttf');
+    } else {
+      console.error('[ShopImages] Font registration failed');
+    }
+  } else {
+    console.error('[ShopImages] Font file not found: assets/fonts/Roboto-Bold.ttf');
   }
+} catch (error) {
+  console.error('[ShopImages] Failed to load font:', error);
 }
 
 const CANVAS_WIDTH = 1200;
@@ -156,6 +156,10 @@ function renderGridCanvas(
 }
 
 export function generateColorGridImage(colors: ShopColor[]): Buffer {
+  if (!fontLoaded) {
+    throw new Error('[ShopImages] Font not loaded - cannot render image');
+  }
+
   return renderGridCanvas(colors.length, (ctx, _row, rowItems, tileWidth, tileHeight, y) => {
     rowItems.forEach((itemIndex, index) => {
       const color = colors[itemIndex];
@@ -171,21 +175,33 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      ctx.save();
+      
       ctx.fillStyle = TEXT_COLOR;
-      ctx.font = '700 20px sans-serif';
+      ctx.font = 'bold 20px Roboto';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      // Add shadow for better text visibility
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
       
       // Display format: "color name #hex" - make sure hex code is included
       const displayText = `${color.name} ${color.hex}`;
       const label = truncateLabel(ctx, displayText, tileWidth - 20);
       ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
+      
+      ctx.restore();
     });
   }, COLOR_HEIGHT_SCALE);
 }
 
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
-  // Register font before image generation
-  registerFont();
+  if (!fontLoaded) {
+    throw new Error('[ShopImages] Font not loaded - cannot render image');
+  }
 
   const columns = Math.min(3, Math.max(1, archetypes.length));
   const rows = getRows(archetypes, columns);
@@ -239,8 +255,9 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // light text keeps it legible over the varied background color.
       const label = truncateLabel(ctx, archetype.name, rowTileWidth - 16);
 
-      const fontName = fontRegistered ? 'Roboto' : 'Arial';
-      ctx.font = `bold 22px ${fontName}`;
+      ctx.save();
+
+      ctx.font = 'bold 22px Roboto';
 
       // Strong shadow for better text visibility over any background
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
@@ -255,16 +272,9 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       const textX = x + rowImageSize / 2;
       const textY = y + rowImageSize + labelHeight / 2;
 
-      // Draw shadow first
       ctx.fillText(label, textX, textY);
-
-      // Reset shadow and draw clean text on top
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
       
-      ctx.fillText(label, textX, textY);
+      ctx.restore();
     }
   }
 
