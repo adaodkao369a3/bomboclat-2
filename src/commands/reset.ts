@@ -1,4 +1,3 @@
-import { Message, Guild } from 'discord.js';
 import { getClient } from '../database/client.js';
 import { getShopArchetypes, getShopColors } from '../services/shop.js';
 import { ROLES } from '../config/index.js';
