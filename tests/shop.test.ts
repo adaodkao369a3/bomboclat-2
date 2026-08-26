@@ -117,34 +117,52 @@ assertEqual(audienceUser, false, 'Audience user should NOT be able to purchase M
 const standardArchetypeGating = checkTierGating('audience', mockStandardArchetypes[0]);
 assertEqual(standardArchetypeGating, true, 'Audience user should be able to purchase Standard (no min_role)');
 
-// Test single-color ownership
-function checkSingleColorOwnership(userColors: UserColor[]): boolean {
-  return userColors.length <= 1;
+// Colors stack — a user can own any number of them at once (unlike
+// archetypes, which are capped at one). Buying never removes an existing
+// color, so ownership count has no upper bound to check here.
+function checkColorCanBePurchased(userColors: UserColor[], colorId: number): boolean {
+  // A color can be purchased as long as the user doesn't already own that
+  // specific one — owning other colors is never a blocker.
+  return !userColors.some(uc => uc.color_id === colorId);
 }
-
-const userWithOneColor: UserColor[] = [
-  { user_id: 'user1', color_id: 1, active: true, free_grant: false },
-];
-
-assertEqual(checkSingleColorOwnership(userWithOneColor), true, 'User with 1 color should be valid');
 
 const userWithNoColor: UserColor[] = [];
-assertEqual(checkSingleColorOwnership(userWithNoColor), true, 'User with 0 colors should be valid');
+assertEqual(checkColorCanBePurchased(userWithNoColor, 1), true, 'User with 0 colors should be able to buy any color');
 
-// Test color switching (exactly one active)
-function checkColorSwitching(userColors: UserColor[], newActiveColorId: number): boolean {
-  // Check that the user owns the color they want to switch to
-  const ownsColor = userColors.some(uc => uc.color_id === newActiveColorId);
-  return ownsColor;
-}
-
-const userColors: UserColor[] = [
+const userWithTwoColors: UserColor[] = [
   { user_id: 'user1', color_id: 1, active: true, free_grant: false },
-  { user_id: 'user1', color_id: 2, active: false, free_grant: false },
+  { user_id: 'user1', color_id: 2, active: true, free_grant: false },
 ];
 
-const canSwitchToColor2 = checkColorSwitching(userColors, 2);
-assertEqual(canSwitchToColor2, true, 'User should be able to switch active color');
+assertEqual(checkColorCanBePurchased(userWithTwoColors, 3), true, 'User owning 2 colors should still be able to buy a 3rd');
+assertEqual(checkColorCanBePurchased(userWithTwoColors, 1), false, 'User cannot re-buy a color they already own');
+
+// Test independent equip/unequip (.manage): any owned color can be toggled
+// on or off without affecting the equip state of the user's other colors.
+function checkCanToggleColor(userColors: UserColor[], colorId: number): boolean {
+  return userColors.some(uc => uc.color_id === colorId);
+}
+
+const canToggleColor2 = checkCanToggleColor(userWithTwoColors, 2);
+assertEqual(canToggleColor2, true, 'User should be able to equip/unequip an owned color');
+
+function toggleColorActive(userColors: UserColor[], colorId: number, active: boolean): UserColor[] {
+  return userColors.map(uc => uc.color_id === colorId ? { ...uc, active } : uc);
+}
+
+const afterUnequip = toggleColorActive(userWithTwoColors, 1, false);
+assertEqual(afterUnequip.find(uc => uc.color_id === 1)?.active, false, 'Color 1 should now be unequipped');
+assertEqual(afterUnequip.find(uc => uc.color_id === 2)?.active, true, 'Color 2 should remain equipped (independent toggle)');
+
+// Test that buying a color never refunds or removes existing colors
+function calculateColorPurchaseCost(price: number): number {
+  // No refund logic applies to colors — the buyer always pays full price
+  // regardless of what they already own.
+  return price;
+}
+
+assertEqual(calculateColorPurchaseCost(200), 200, 'Color purchase should always cost full price, no refund');
+assertEqual(calculateColorPurchaseCost(800), 800, 'Color purchase should always cost full price, no refund');
 
 // Test that free grants do not get refunded
 function calculateRefundForFreeGrant(originalPrice: number, isFreeGrant: boolean): number {

@@ -19,7 +19,7 @@ import {
   getUserColors,
   purchaseArchetype,
   purchaseColor,
-  switchActiveColor,
+  setColorActive,
   seedShopArchetypes,
   seedShopColors,
   hasBoosterFreeGrants,
@@ -121,6 +121,19 @@ async function ensureShopRole(guild: Guild, name: string, color?: string, existi
     try {
       const existing = await guild.roles.fetch(existingRoleId);
       if (existing) {
+        // Keep the Discord role name in sync if the underlying shop item was
+        // renamed (e.g. "Documentary Host" -> "Ceo of Sex") — otherwise the
+        // role would keep displaying its old name forever.
+        if (existing.name !== name) {
+          try {
+            const renamed = await existing.setName(name, 'Shop item renamed');
+            console.log(`Renamed existing role ${existing.id} to: ${renamed.name}`);
+            return renamed;
+          } catch (renameError) {
+            console.error(`Failed to rename role ${existing.id} to "${name}":`, renameError);
+            return existing;
+          }
+        }
         console.log(`Found existing role by ID: ${existing.name} (${existing.id})`);
         return existing;
       }
@@ -230,6 +243,9 @@ async function syncOwnedShopRoles(
     }
   }
   for (const owned of ownedColors) {
+    // Only sync roles for colors the user currently has equipped — an owned
+    // but unequipped color should stay off until they re-equip it.
+    if (!owned.active) continue;
     const color = colorById.get(owned.color_id);
     if (color && color.role_id) {
       await assignShopRole(member, color.role_id);
@@ -334,6 +350,11 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
         .setStyle(ButtonStyle.Primary)
         .setDisabled(!owned || active),
       new ButtonBuilder()
+        .setCustomId(`unequip_color_${colorId}`)
+        .setLabel('Unequip')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(!owned || !active),
+      new ButtonBuilder()
         .setCustomId('cancel_color')
         .setLabel('Cancel')
         .setStyle(ButtonStyle.Danger)
@@ -347,7 +368,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
       { name: 'Price Band', value: color.price_band, inline: true },
       { name: 'Price', value: isFreeGrant ? 'FREE' : price.toString(), inline: true },
       { name: 'Hex', value: color.hex, inline: true },
-      { name: 'Note', value: 'You can only own one color at a time. Purchasing a new one will replace your current color with a 50% refund.', inline: false },
+      { name: 'Note', value: 'You can own multiple colors at once. Buying a new one doesn\'t remove your others — use the Equip/Unequip buttons here (or `.manage`) to control which color roles are active.', inline: false },
     ]);
 
   await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch((error: unknown) => {
@@ -357,7 +378,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
   const buttonCollector = interaction.channel?.createMessageComponentCollector({
     componentType: ComponentType.Button,
     time: 120000, // Increased to 2 minutes
-    filter: (i: any) => i.user.id === userId && (i.customId === `purchase_color_${colorId}` || i.customId === `equip_color_${colorId}` || i.customId === 'cancel_color'),
+    filter: (i: any) => i.user.id === userId && (i.customId === `purchase_color_${colorId}` || i.customId === `equip_color_${colorId}` || i.customId === `unequip_color_${colorId}` || i.customId === 'cancel_color'),
   });
 
   buttonCollector?.on('collect', async (buttonInteraction: any) => {
@@ -366,33 +387,14 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
         const result = await purchaseColor(userId, colorId, isFreeGrant);
         if (result.success) {
           const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
-          
-          // Remove old color roles if any
-          const userColors = await getUserColors(userId);
-          for (const userColor of userColors) {
-            if (userColor.color_id !== colorId) {
-              const oldColor = colors.find(c => c.id === userColor.color_id);
-              if (oldColor && oldColor.role_id && member) {
-                try {
-                  const role = await member.guild.roles.fetch(oldColor.role_id);
-                  if (role && member.roles.cache.has(role.id)) {
-                    await member.roles.remove(role, 'Color replacement');
-                  }
-                } catch (error) {
-                  console.error(`Failed to remove old color role ${oldColor.role_id}:`, error);
-                }
-              }
-            }
-          }
-          
+
+          // Colors stack — the new color is equipped alongside anything the
+          // user already owns, so no other color roles are touched here.
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
           const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
           let message = `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}`;
-          if (result.refund && result.refund > 0) {
-            message += `\n💰 Refunded ${result.refund} residuals (50% of previous color)`;
-          }
           message += roleAssigned ? `\n🎨 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
-          
+
           await buttonInteraction.update({
             content: message,
             embeds: [],
@@ -403,13 +405,38 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
         }
         buttonCollector.stop();
       } else if (buttonInteraction.customId === `equip_color_${colorId}`) {
-        const result = await switchActiveColor(userId, colorId);
+        const result = await setColorActive(userId, colorId, true);
         if (result.success) {
           const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
           const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
           await buttonInteraction.update({
             content: roleAssigned ? `✅ Color equipped!\n🎨 Role confirmed: **${roleName}**` : '✅ Color equipped!\n⚠️ The color role could not be assigned.',
+            embeds: [],
+            components: [],
+          });
+        } else {
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+        }
+        buttonCollector.stop();
+      } else if (buttonInteraction.customId === `unequip_color_${colorId}`) {
+        const result = await setColorActive(userId, colorId, false);
+        if (result.success) {
+          const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
+          let roleRemoved = false;
+          if (member && color.role_id) {
+            try {
+              const role = await member.guild.roles.fetch(color.role_id);
+              if (role && member.roles.cache.has(role.id)) {
+                await member.roles.remove(role, 'Color unequipped');
+                roleRemoved = true;
+              }
+            } catch (error) {
+              console.error(`Failed to remove color role ${color.role_id}:`, error);
+            }
+          }
+          await buttonInteraction.update({
+            content: roleRemoved ? '✅ Color unequipped.\n🎨 Role removed — the color stays in your collection to re-equip anytime.' : '✅ Color unequipped.',
             embeds: [],
             components: [],
           });

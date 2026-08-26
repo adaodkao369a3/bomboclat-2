@@ -1,6 +1,7 @@
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import type { ShopArchetype, ShopColor } from './shop.js';
 import { join } from 'path';
+import { readFileSync, existsSync } from 'fs';
 
 // Register font for text rendering
 const FONT_PATH = join(process.cwd(), 'assets/fonts/Roboto-Bold.ttf');
@@ -29,6 +30,28 @@ const TILE_GAP = 16;
 const TILE_ASPECT_RATIO = 16 / 9;
 const BACKGROUND = '#2b2d31';
 const TEXT_COLOR = '#f2f3f5';
+// Colors are drawn as flat swatches, not photos, so they read fine at a
+// shorter height. 0.75 = 25% shorter than the landscape archetype ratio.
+const COLOR_HEIGHT_SCALE = 0.75;
+// Space reserved below each square archetype image for its name label.
+const ARCHETYPE_LABEL_HEIGHT = 40;
+
+/**
+ * Loads an archetype image whether it's a remote URL or a local file path
+ * (archetype artwork now lives under the project's `image/` folder). Local
+ * files are read into a Buffer ourselves rather than handed to loadImage as
+ * a bare path string, so behavior doesn't depend on how the canvas library
+ * chooses to interpret path-like strings.
+ */
+async function loadArchetypeImage(source: string): Promise<any> {
+  if (/^https?:\/\//i.test(source)) {
+    return loadImage(source);
+  }
+  if (existsSync(source)) {
+    return loadImage(readFileSync(source));
+  }
+  throw new Error(`Archetype image not found on disk: ${source}`);
+}
 
 function getRows<T>(items: T[], columns: number): T[][] {
   const rows: T[][] = [];
@@ -100,11 +123,15 @@ function calculateTileHeight(tileWidth: number): number {
  * Artwork tiles are landscape rather than square, and the canvas height is
  * calculated from the actual number of rows.
  */
-function renderGridCanvas(itemCount: number, renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void): Buffer {
+function renderGridCanvas(
+  itemCount: number,
+  renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void,
+  heightScale: number = 1,
+): Buffer {
   const columns = Math.min(3, Math.max(1, itemCount));
   const rowIndexes = getRows(Array.from({ length: itemCount }, (_, i) => i), columns);
   const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
-  const tileHeight = calculateTileHeight(tileWidth);
+  const tileHeight = Math.round(calculateTileHeight(tileWidth) * heightScale);
   const labelHeight = 54;
   const rowHeight = tileHeight + labelHeight;
   const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rowIndexes.length) * rowHeight + Math.max(0, rowIndexes.length - 1) * ROW_GAP;
@@ -116,7 +143,7 @@ function renderGridCanvas(itemCount: number, renderRow: (ctx: any, row: number, 
 
   rowIndexes.forEach((rowItems, row) => {
     const rowTileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (rowItems.length - 1)) / rowItems.length);
-    const rowTileHeight = calculateTileHeight(rowTileWidth);
+    const rowTileHeight = Math.round(calculateTileHeight(rowTileWidth) * heightScale);
     const y = OUTER_PADDING + row * (rowHeight + ROW_GAP);
     renderRow(ctx, row, rowItems, rowTileWidth, rowTileHeight, y);
   });
@@ -149,7 +176,7 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       const label = truncateLabel(ctx, displayText, tileWidth - 20);
       ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
     });
-  });
+  }, COLOR_HEIGHT_SCALE);
 }
 
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
@@ -159,9 +186,13 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
   const columns = Math.min(3, Math.max(1, archetypes.length));
   const rows = getRows(archetypes, columns);
   const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
-  const baseTileHeight = calculateTileHeight(tileWidth);
-  const labelHeight = 12;
-  const rowHeight = baseTileHeight + labelHeight;
+  // Artwork tiles are square (not the 16:9 landscape used elsewhere) so every
+  // archetype image is exactly the same size regardless of its original
+  // dimensions, and the cover-fit crop in drawRoundedImage guarantees nothing
+  // ever spills outside the tile.
+  const imageSize = tileWidth;
+  const labelHeight = ARCHETYPE_LABEL_HEIGHT;
+  const rowHeight = imageSize + labelHeight;
   const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rows.length) * rowHeight + Math.max(0, rows.length - 1) * ROW_GAP;
 
   const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
@@ -172,7 +203,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex];
     const rowTileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (row.length - 1)) / row.length);
-    const rowTileHeight = calculateTileHeight(rowTileWidth);
+    const rowImageSize = rowTileWidth;
     const y = OUTER_PADDING + rowIndex * (rowHeight + ROW_GAP);
 
     for (let index = 0; index < row.length; index++) {
@@ -182,47 +213,45 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
 
       if (archetype.image_url) {
         try {
-          const image = await loadImage(archetype.image_url);
-          drawRoundedImage(ctx, image, x, y, rowTileWidth, rowTileHeight, radius);
+          const image = await loadArchetypeImage(archetype.image_url);
+          drawRoundedImage(ctx, image, x, y, rowImageSize, rowImageSize, radius);
         } catch (error) {
           console.error(`Failed to load archetype image for "${archetype.name}":`, error);
-          drawPlaceholderTile(ctx, x, y, rowTileWidth, rowTileHeight, radius);
+          drawPlaceholderTile(ctx, x, y, rowImageSize, rowImageSize, radius);
         }
       } else {
-        drawPlaceholderTile(ctx, x, y, rowTileWidth, rowTileHeight, radius);
+        drawPlaceholderTile(ctx, x, y, rowImageSize, rowImageSize, radius);
       }
 
       ctx.strokeStyle = 'rgba(255,255,255,0.18)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(x, y, rowTileWidth, rowTileHeight, radius);
+      ctx.roundRect(x, y, rowImageSize, rowImageSize, radius);
       ctx.stroke();
 
-      // Archetype role name is written directly over its own artwork so each
-      // image is unambiguous even when the shop contains many items.
-      const label = truncateLabel(ctx, archetype.name, rowTileWidth - 36);
-      
-      // Use custom font if registered, otherwise fallback to system font
+      // Name label lives in its own strip below the square artwork (rather
+      // than overlaid on top of it), using the same shadowed-text technique
+      // as the smash/smashmax image generator: a soft dark shadow behind
+      // light text keeps it legible over the varied background color.
+      const label = truncateLabel(ctx, archetype.name, rowTileWidth - 16);
+
       const fontName = fontRegistered ? 'Roboto' : 'sans-serif';
-      const fontSize = 24;
-      ctx.font = `bold ${fontSize}px ${fontName}`;
-      
-      // Add shadow for better readability
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      
-      ctx.fillStyle = 'white';
+      ctx.font = `bold 22px ${fontName}`;
+
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
-      // Position text near the bottom of the image
-      const textX = x + rowTileWidth / 2;
-      const textY = y + rowTileHeight - 30;
-      
+
+      const textX = x + rowImageSize / 2;
+      const textY = y + rowImageSize + labelHeight / 2;
+
       ctx.fillText(label, textX, textY);
-      
+
       // Reset shadow for subsequent operations
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;

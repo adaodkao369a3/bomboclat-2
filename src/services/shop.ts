@@ -1,4 +1,19 @@
+import { join } from 'path';
 import { getClient } from '../database/client.js';
+
+// Local archetype artwork lives in the `image/` folder at the project root
+// (same place assets/fonts/Roboto-Bold.ttf lives) instead of being hotlinked
+// from random sites, which was fragile (dead links, rate limits, hotlink
+// blocks). Files are loaded straight off disk in shopImages.ts.
+const IMAGE_DIR = join(process.cwd(), 'image');
+const archetypeImage = (filename: string): string => join(IMAGE_DIR, filename);
+
+// Shared color pricing so purchase, sale, and display logic never drift
+// out of sync with each other.
+export const COLOR_PRICE_MAP: Record<string, number> = { common: 200, uncommon: 500, rare: 800 };
+export function getColorPrice(priceBand: string): number {
+  return COLOR_PRICE_MAP[priceBand] || 200;
+}
 
 export interface ShopArchetype {
   id: number;
@@ -47,29 +62,39 @@ export interface UserColor {
 export async function seedShopArchetypes(): Promise<void> {
   const client = await getClient();
   try {
+    // "Documentary Host" was renamed to "Ceo of Sex" (meme reference, not an
+    // NSFW role). Rename the row in place first so its id, role_id, and any
+    // existing owners carry over instead of leaving an orphaned old row and
+    // creating a brand new one on the ON CONFLICT (name) upsert below.
+    await client.query(
+      `UPDATE shop_archetypes SET name = 'Ceo of Sex'
+       WHERE name = 'Documentary Host'
+         AND NOT EXISTS (SELECT 1 FROM shop_archetypes WHERE name = 'Ceo of Sex')`
+    );
+
     const archetypes: Omit<ShopArchetype, 'id'>[] = [
       // Standard archetypes (10 types × 5 slots each = 50 total)
       // Group 1
-      { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: 'https://pbs.twimg.com/profile_images/1819065962160967684/k_Un-Pg1.jpg', role_id: null },
-      { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: 'https://www.pngitem.com/pimgs/m/84-845622_kanye-west-hd-png-download.png', role_id: null },
-      { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: 'https://media.gq.com/photos/590c8a5fee7e6447b1025be2/1:1/w_1999,h_1999,c_limit/spiderman-3.jpg', role_id: null },
-      { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: 'https://i.pinimg.com/736x/8e/44/fc/8e44fcfb4537a5bbeb9bfc21ca5e4775.jpg', role_id: null },
-      { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: 'https://i.pinimg.com/1200x/51/68/95/5168958d4a823c4370b03ad8c2b0cf92.jpg', role_id: null },
+      { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: archetypeImage('Comedy Relief.jpg'), role_id: null },
+      { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: archetypeImage('drama king.png'), role_id: null },
+      { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: archetypeImage('action hero.jpg'), role_id: null },
+      { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: archetypeImage('romantic lead.jpg'), role_id: null },
+      { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: archetypeImage('mystery solver.jpg'), role_id: null },
       // Group 2
-      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: 'https://i.pinimg.com/736x/57/bb/e4/57bbe47568735f71115a077544d86385.jpg', role_id: null },
-      { name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy', image_url: 'https://i.pinimg.com/736x/c2/4c/ec/c24cec3e9bcffefec1101a42efacfd3e.jpg', role_id: null },
-      { name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror', image_url: 'https://i.pinimg.com/736x/61/05/fe/6105fee8f28d5fc57615d6f718f5ca5b.jpg', role_id: null },
-      { name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller', image_url: 'https://i.pinimg.com/736x/da/d6/3b/dad63b90e9c9196a89fa62052ab2db81.jpg', role_id: null },
-      { name: 'Documentary Host', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary', image_url: 'https://i.pinimg.com/736x/63/b5/99/63b5991291e3c884543bbff82a6c7bec.jpg', role_id: null },
+      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: archetypeImage('scifi.jpg'), role_id: null },
+      { name: 'Fantasy Mage', tier: 'standard', price: 280, min_role: null, slot_group: 'fantasy', image_url: archetypeImage('mage.jpg'), role_id: null },
+      { name: 'Horror Survivor', tier: 'standard', price: 320, min_role: null, slot_group: 'horror', image_url: archetypeImage('horror survivor.jpg'), role_id: null },
+      { name: 'Thriller Spy', tier: 'standard', price: 380, min_role: null, slot_group: 'thriller', image_url: archetypeImage('thriller spy.jpg'), role_id: null },
+      { name: 'Ceo of Sex', tier: 'standard', price: 450, min_role: null, slot_group: 'documentary', image_url: archetypeImage('ceo of sex.jpg'), role_id: null },
       // Legendary archetypes (5 types × 1-2 slots each)
-      { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: 'https://media-cldnry.s-nbcnews.com/image/upload/t_fit-1500w,f_auto,q_auto:best/streams/2013/September/130911/8C8952203-130911-ent-saulgoodman-hmed.jpg', role_id: null },
-      { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: 'https://assets.sbs.com.au/dims4/default/426bed7/2147483647/strip/true/crop/640x360+0+0/resize/1280x720!/quality/90/?url=https%3A%2F%2Fsbs-au-brightspot.s3.ap-southeast-2.amazonaws.com%2Fdrupal%2Ffilm%2Fpublic%2Fimages%2F6%2F3%2F6311_the-wolf-of-wall-street-640-2.jpg&imwidth=1280', role_id: null },
-      { name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: 'https://images.stockcake.com/public/5/f/7/5f7dbedb-c2c9-4bfd-8b6e-6b90aa909461_large/victory-awaits-glory-stockcake.jpg', role_id: null },
-      { name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: 'https://64.media.tumblr.com/fababb2954021811072b391f73db1413/91b45c92c3c50f84-c7/s1280x1920/bbdba078377976b577e5f2e5882d16d59e336613.png', role_id: null },
-      { name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: 'https://i.pinimg.com/736x/9c/9d/6d/9c9d6d16269d46970a61b2e02088cb0c.jpg', role_id: null },
+      { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: archetypeImage('cinematic legen.jpg'), role_id: null },
+      { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: archetypeImage('box offic.jpg'), role_id: null },
+      { name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: archetypeImage('award winner.jpg'), role_id: null },
+      { name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: archetypeImage('cult classic.png'), role_id: null },
+      { name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: archetypeImage('festival favorite.jpg'), role_id: null },
       // Mythic archetypes (gate behind Lead Cast)
-      { name: 'Director\'s Cut', tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: 'https://images.stockcake.com/public/a/5/1/a511b368-8e38-4f45-827f-f34fde5963cd_large/cinematic-clapperboard-presence-stockcake.jpg', role_id: null },
-      { name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: 'https://images.moneycontrol.com/static-mcnews/2024/04/the-oscars.png?impolicy=website&width=1600&height=900', role_id: null },
+      { name: 'Director\'s Cut', tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: archetypeImage('directors cut.jpg'), role_id: null },
+      { name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: archetypeImage('oscar winner.jpg'), role_id: null },
     ];
 
     for (const archetype of archetypes) {
@@ -162,7 +187,7 @@ export async function getUserArchetypes(userId: string): Promise<UserArchetype[]
   const client = await getClient();
   try {
     const result = await client.query(
-      `SELECT ua.*, sa.name, sa.tier, sa.slot_group
+      `SELECT ua.*, sa.name, sa.tier, sa.slot_group, sa.price
        FROM user_archetypes ua
        JOIN shop_archetypes sa ON ua.archetype_id = sa.id
        WHERE ua.user_id = $1
@@ -427,12 +452,18 @@ export async function purchaseArchetype(
   }
 }
 
-// Purchase color
+// Purchase color.
+//
+// Unlike archetypes, colors STACK: a user can own as many color roles as
+// they want at once. Buying a new color never removes or refunds an old
+// one — it's simply added to the collection and equipped immediately.
+// Which owned colors are actually equipped (i.e. have the Discord role on)
+// is controlled independently afterward via setColorActive / `.manage`.
 export async function purchaseColor(
   userId: string,
   colorId: number,
   freeGrant: boolean = false
-): Promise<{ success: boolean; reason?: string; refund?: number }> {
+): Promise<{ success: boolean; reason?: string }> {
   const client = await getClient();
   try {
     await client.query('BEGIN');
@@ -449,16 +480,11 @@ export async function purchaseColor(
     const color = colorResult.rows[0] as ShopColor;
 
     // Determine price based on band
-    const priceMap: Record<string, number> = {
-      common: 200,
-      uncommon: 500,
-      rare: 800,
-    };
-    const price = priceMap[color.price_band] || 200;
+    const price = getColorPrice(color.price_band);
 
     // Check if user already owns this specific color
     const ownedResult = await client.query(
-      'SELECT id, free_grant FROM user_colors WHERE user_id = $1 AND color_id = $2',
+      'SELECT id FROM user_colors WHERE user_id = $1 AND color_id = $2',
       [userId, colorId]
     );
     if (ownedResult.rows.length > 0) {
@@ -466,40 +492,7 @@ export async function purchaseColor(
       return { success: false, reason: 'Color already owned' };
     }
 
-    // Check if user has any existing color(s) for refund
-    const existingColorsResult = await client.query(
-      'SELECT color_id, free_grant FROM user_colors WHERE user_id = $1',
-      [userId]
-    );
-    
-    let refundAmount = 0;
     let balanceBefore = 0;
-
-    // If user already has a color, remove it and refund 50%
-    if (existingColorsResult.rows.length > 0) {
-      const existingColor = existingColorsResult.rows[0];
-      
-      // Get price of existing color for refund
-      const existingColorDetailsResult = await client.query(
-        'SELECT price_band FROM shop_colors WHERE id = $1',
-        [existingColor.color_id]
-      );
-      if (existingColorDetailsResult.rows.length > 0) {
-        const existingPriceBand = existingColorDetailsResult.rows[0].price_band;
-        const existingPrice = priceMap[existingPriceBand] || 200;
-        
-        // Only refund if it wasn't a free grant
-        if (!existingColor.free_grant) {
-          refundAmount = Math.floor(existingPrice * 0.5);
-        }
-      }
-      
-      // Remove all existing colors
-      await client.query(
-        'DELETE FROM user_colors WHERE user_id = $1',
-        [userId]
-      );
-    }
 
     // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
     if (!freeGrant) {
@@ -508,32 +501,20 @@ export async function purchaseColor(
         [userId]
       );
       balanceBefore = balanceResult.rows[0].total_residuals_balance;
-      
-      const netCost = price - refundAmount;
-      
-      if (balanceBefore < netCost) {
+
+      if (balanceBefore < price) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Insufficient residuals (need ${netCost}, have ${balanceBefore})` };
+        return { success: false, reason: `Insufficient residuals (need ${price}, have ${balanceBefore})` };
       }
 
-      // Deduct residuals (net cost after refund)
+      // Deduct residuals
       await client.query(
         `UPDATE users
          SET total_residuals_balance = total_residuals_balance - $1,
              lifetime_residuals_spent = lifetime_residuals_spent + $1
          WHERE user_id = $2`,
-        [netCost, userId]
+        [price, userId]
       );
-      
-      // Add refund if applicable
-      if (refundAmount > 0) {
-        await client.query(
-          `UPDATE users
-           SET total_residuals_balance = total_residuals_balance + $1
-           WHERE user_id = $2`,
-          [refundAmount, userId]
-        );
-      }
     } else {
       // For free grants, still lock the user row for consistency
       await client.query(
@@ -542,7 +523,8 @@ export async function purchaseColor(
       );
     }
 
-    // Add new color (active by default)
+    // Add new color, equipped (active) right away — it joins whatever
+    // colors the user already owns rather than replacing them.
     await client.query(
       `INSERT INTO user_colors (user_id, color_id, active, free_grant)
        VALUES ($1, $2, TRUE, $3)`,
@@ -551,28 +533,15 @@ export async function purchaseColor(
 
     // Log transaction
     if (!freeGrant) {
-      const netCost = price - refundAmount;
-      const balanceAfter = balanceBefore - netCost;
-      
-      // Log the purchase
       await client.query(
         `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
          VALUES ($1, $2, $3, $4, 'purchase', 'shop_purchase', 'Color purchase')`,
         [userId, -price, balanceBefore, balanceBefore - price]
       );
-      
-      // Log the refund if applicable
-      if (refundAmount > 0) {
-        await client.query(
-          `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
-           VALUES ($1, $2, $3, $4, 'refund', 'shop_refund', '50% refund for color replacement')`,
-          [userId, refundAmount, balanceBefore - price, balanceAfter]
-        );
-      }
     }
 
     await client.query('COMMIT');
-    return { success: true, refund: refundAmount };
+    return { success: true };
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error purchasing color:', error);
@@ -582,15 +551,20 @@ export async function purchaseColor(
   }
 }
 
-// Switch active color
-export async function switchActiveColor(userId: string, colorId: number): Promise<{ success: boolean; reason?: string }> {
+// Equip or unequip a single owned color independently of any others the
+// user owns. This is what `.manage` (and the shop's Equip/Unequip buttons)
+// call — since colors stack, more than one can be active at the same time.
+export async function setColorActive(
+  userId: string,
+  colorId: number,
+  active: boolean
+): Promise<{ success: boolean; reason?: string }> {
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
-    // Check if user owns the color
     const ownedResult = await client.query(
-      'SELECT id FROM user_colors WHERE user_id = $1 AND color_id = $2',
+      'SELECT id, active FROM user_colors WHERE user_id = $1 AND color_id = $2',
       [userId, colorId]
     );
     if (ownedResult.rows.length === 0) {
@@ -598,24 +572,151 @@ export async function switchActiveColor(userId: string, colorId: number): Promis
       return { success: false, reason: 'Color not owned' };
     }
 
-    // Deactivate all colors
     await client.query(
-      'UPDATE user_colors SET active = FALSE WHERE user_id = $1',
-      [userId]
-    );
-
-    // Activate selected color
-    await client.query(
-      'UPDATE user_colors SET active = TRUE WHERE user_id = $1 AND color_id = $2',
-      [userId, colorId]
+      'UPDATE user_colors SET active = $1 WHERE user_id = $2 AND color_id = $3',
+      [active, userId, colorId]
     );
 
     await client.query('COMMIT');
     return { success: true };
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error switching color:', error);
-    return { success: false, reason: 'Switch failed' };
+    console.error('Error updating color equip state:', error);
+    return { success: false, reason: 'Update failed' };
+  } finally {
+    client.release();
+  }
+}
+
+// Sell one or more owned colors back for 50% of their original value.
+// Free-grant colors are removed but refund 0 (nothing was paid for them).
+// All requested colors must be owned or the whole sale is rejected — no
+// partial sells.
+export async function sellColors(
+  userId: string,
+  colorIds: number[]
+): Promise<{ success: boolean; reason?: string; refundTotal?: number; sold?: { colorId: number; name: string; refund: number }[] }> {
+  if (colorIds.length === 0) {
+    return { success: false, reason: 'No colors selected' };
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const ownedResult = await client.query(
+      `SELECT uc.color_id, uc.free_grant, sc.name, sc.price_band
+       FROM user_colors uc
+       JOIN shop_colors sc ON uc.color_id = sc.id
+       WHERE uc.user_id = $1 AND uc.color_id = ANY($2::int[])`,
+      [userId, colorIds]
+    );
+
+    if (ownedResult.rows.length !== colorIds.length) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'One or more selected colors are not owned' };
+    }
+
+    const sold = ownedResult.rows.map((row: any) => ({
+      colorId: row.color_id,
+      name: row.name,
+      refund: row.free_grant ? 0 : Math.floor(getColorPrice(row.price_band) * 0.5),
+    }));
+    const refundTotal = sold.reduce((sum: number, item: { refund: number }) => sum + item.refund, 0);
+
+    const balanceResult = await client.query(
+      'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    const balanceBefore = balanceResult.rows[0].total_residuals_balance;
+
+    await client.query(
+      'DELETE FROM user_colors WHERE user_id = $1 AND color_id = ANY($2::int[])',
+      [userId, colorIds]
+    );
+
+    if (refundTotal > 0) {
+      await client.query(
+        `UPDATE users SET total_residuals_balance = total_residuals_balance + $1 WHERE user_id = $2`,
+        [refundTotal, userId]
+      );
+    }
+
+    let runningBalance = balanceBefore;
+    for (const item of sold) {
+      const balanceAfter = runningBalance + item.refund;
+      await client.query(
+        `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
+         VALUES ($1, $2, $3, $4, 'refund', 'shop_sell', $5)`,
+        [userId, item.refund, runningBalance, balanceAfter, `Sold color: ${item.name}`]
+      );
+      runningBalance = balanceAfter;
+    }
+
+    await client.query('COMMIT');
+    return { success: true, refundTotal, sold };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error selling colors:', error);
+    return { success: false, reason: 'Sale failed' };
+  } finally {
+    client.release();
+  }
+}
+
+// Sell the user's current archetype back for 50% of its value. Only one
+// archetype can ever be owned, so there's nothing to select — this just
+// sells whichever one they have.
+export async function sellArchetype(
+  userId: string
+): Promise<{ success: boolean; reason?: string; refund?: number; name?: string }> {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const ownedResult = await client.query(
+      `SELECT ua.archetype_id, ua.free_grant, sa.name, sa.price
+       FROM user_archetypes ua
+       JOIN shop_archetypes sa ON ua.archetype_id = sa.id
+       WHERE ua.user_id = $1`,
+      [userId]
+    );
+
+    if (ownedResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'No archetype owned' };
+    }
+
+    const owned = ownedResult.rows[0];
+    const refund = owned.free_grant ? 0 : Math.floor(owned.price * 0.5);
+
+    const balanceResult = await client.query(
+      'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    const balanceBefore = balanceResult.rows[0].total_residuals_balance;
+
+    await client.query('DELETE FROM user_archetypes WHERE user_id = $1', [userId]);
+
+    if (refund > 0) {
+      await client.query(
+        `UPDATE users SET total_residuals_balance = total_residuals_balance + $1 WHERE user_id = $2`,
+        [refund, userId]
+      );
+
+      await client.query(
+        `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
+         VALUES ($1, $2, $3, $4, 'refund', 'shop_sell', $5)`,
+        [userId, refund, balanceBefore, balanceBefore + refund, `Sold archetype: ${owned.name}`]
+      );
+    }
+
+    await client.query('COMMIT');
+    return { success: true, refund, name: owned.name };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error selling archetype:', error);
+    return { success: false, reason: 'Sale failed' };
   } finally {
     client.release();
   }

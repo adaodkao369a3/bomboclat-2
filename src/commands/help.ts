@@ -18,6 +18,7 @@ export const helpCommand: Command = {
       { name: 'Profile & Progression', value: '`profile`, `level`, `res`, `leaderboard`', inline: true },
       { name: 'GIF Commands', value: '`rizz`, `larp`, `blush`, `cooked`, `fumble`, `cope`, `grass`, `aura`, `huh`, `cry`', inline: true },
       { name: 'Custom GIF', value: '`c <query>` (Featured Extra+ or Guest Star)', inline: true },
+      { name: 'Shop Items', value: '`manage` - equip/unequip your owned colors', inline: true },
     ]);
 
     await message.reply({ embeds: [embed] });
