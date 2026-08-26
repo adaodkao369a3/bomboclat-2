@@ -201,9 +201,9 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
       
-      // Display format: "symbol color name #hex" - use new naming convention
-      const formattedName = formatColorName(color.name, color.price_band);
-      const displayText = `${formattedName} ${color.hex}`;
+      // Display format: "color name #hex" - plain name for images (no symbols)
+      const plainName = color.name.toLowerCase();
+      const displayText = `${plainName} ${color.hex}`;
       const label = truncateLabel(ctx, displayText, tileWidth - 20);
       ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
       
@@ -267,8 +267,8 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // than overlaid on top of it), using the same shadowed-text technique
       // as the smash/smashmax image generator: a soft dark shadow behind
       // light text keeps it legible over the varied background color.
-      const formattedName = formatArchetypeName(archetype.name, archetype.tier);
-      const label = truncateLabel(ctx, formattedName, rowTileWidth - 16);
+      const plainName = archetype.name.toLowerCase();
+      const label = truncateLabel(ctx, plainName, rowTileWidth - 16);
 
       ctx.save();
 

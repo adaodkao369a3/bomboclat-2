@@ -73,24 +73,24 @@ export async function seedShopArchetypes(): Promise<void> {
     );
 
     const archetypes: Omit<ShopArchetype, 'id'>[] = [
-      // Standard archetypes - Category 1 (5 types × 5 slots each = 25 total)
+      // Standard archetypes - Category 1 (6 types × 5 slots each = 30 total)
       { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: archetypeImage('Comedy Relief.jpg'), role_id: null },
       { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: archetypeImage('drama king.png'), role_id: null },
       { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: archetypeImage('action hero.jpg'), role_id: null },
       { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: archetypeImage('romantic lead.jpg'), role_id: null },
       { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: archetypeImage('mystery solver.jpg'), role_id: null },
-      // Standard archetypes - Category 2 (5 types × 5 slots each = 25 total)
-      { name: 'Sci-Fi Explorer', tier: 'standard2', price: 220, min_role: null, slot_group: 'scifi', image_url: archetypeImage('scifi.jpg'), role_id: null },
+      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: archetypeImage('scifi.jpg'), role_id: null },
+      // Standard archetypes - Category 2 (4 types × 5 slots each = 20 total)
       { name: 'Fantasy Mage', tier: 'standard2', price: 280, min_role: null, slot_group: 'fantasy', image_url: archetypeImage('mage.jpg'), role_id: null },
       { name: 'Horror Survivor', tier: 'standard2', price: 320, min_role: null, slot_group: 'horror', image_url: archetypeImage('horror survivor.jpg'), role_id: null },
       { name: 'Thriller Spy', tier: 'standard2', price: 380, min_role: null, slot_group: 'thriller', image_url: archetypeImage('thriller spy.jpg'), role_id: null },
-      { name: 'Ceo of Sex', tier: 'standard2', price: 450, min_role: null, slot_group: 'documentary', image_url: archetypeImage('ceo of sex.jpg'), role_id: null },
-      // Legendary archetypes (5 types × 1-2 slots each)
+      // Legendary archetypes (6 types × 1-2 slots each)
       { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: archetypeImage('cinematic legen.jpg'), role_id: null },
       { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: archetypeImage('box offic.jpg'), role_id: null },
       { name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: archetypeImage('award winner.jpg'), role_id: null },
       { name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: archetypeImage('cult classic.png'), role_id: null },
       { name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: archetypeImage('festival favorite.jpg'), role_id: null },
+      { name: 'Ceo of Sex', tier: 'legendary', price: 450, min_role: null, slot_group: 'documentary', image_url: archetypeImage('ceo of sex.jpg'), role_id: null },
       // Mythic archetypes (gate behind Lead Cast)
       { name: 'Director\'s Cut', tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: archetypeImage('directors cut.jpg'), role_id: null },
       { name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: archetypeImage('oscar winner.jpg'), role_id: null },
@@ -227,12 +227,12 @@ const SHOP_SLOT_CAPS: Record<string, number> = {
   fantasy: 5,
   horror: 5,
   thriller: 5,
-  documentary: 5,
   legendary: 2,
   boxoffice: 2,
   awards: 2,
   cult: 2,
   festival: 2,
+  documentary: 2,
   mythic: 1,
 };
 
