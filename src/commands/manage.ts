@@ -127,7 +127,7 @@ export const manageCommand: Command = {
       const latestUserColors = await getUserColors(userId);
       const owned = latestUserColors.find((uc: any) => uc.color_id === colorId) as any;
       if (!owned) {
-        await interaction.reply({ content: '❌ You no longer own that color.', ephemeral: true });
+        await interaction.reply({ content: '❌ You no longer own that color.', flags: [1 << 6] });
         return;
       }
       const color = colorRoleById.get(colorId);
@@ -149,7 +149,7 @@ export const manageCommand: Command = {
       await interaction.reply({
         content: `**${owned.name}** \`${owned.hex}\` — currently ${owned.active ? 'equipped 🔹' : 'unequipped ⬜'}.`,
         components: [actionRow],
-        ephemeral: true,
+        flags: [1 << 6],
       });
 
       const buttonCollector = interaction.channel?.createMessageComponentCollector({
@@ -163,7 +163,7 @@ export const manageCommand: Command = {
           const equip = buttonInteraction.customId === `manage_equip_${colorId}`;
           const result = await setColorActive(userId, colorId, equip);
           if (!result.success) {
-            await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+            await buttonInteraction.reply({ content: `❌ ${result.reason}`, flags: [1 << 6] });
             buttonCollector.stop();
             return;
           }
@@ -195,7 +195,7 @@ export const manageCommand: Command = {
         } catch (error) {
           console.error('Error handling manage button interaction:', error);
           try {
-            await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', ephemeral: true });
+            await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', flags: [1 << 6] });
           } catch (replyError) {
             console.error('Failed to send error reply:', replyError);
           }
@@ -241,7 +241,7 @@ async function handleSellColors(interaction: any, userId: string, userColors: an
   await interaction.reply({
     content: 'Select the colors you want to sell. You will receive 50% of the original value for each (free grants refund 0).',
     components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
-    ephemeral: true,
+    flags: [1 << 6],
   });
 
   const selectCollector = interaction.channel?.createMessageComponentCollector({
@@ -316,7 +316,7 @@ async function handleSellColors(interaction: any, userId: string, userColors: an
 
 async function handleSellArchetype(interaction: any, userId: string, userArchetypes: any[]) {
   if (userArchetypes.length === 0) {
-    await interaction.reply({ content: '❌ You do not own an archetype to sell.', ephemeral: true });
+    await interaction.reply({ content: '❌ You do not own an archetype to sell.', flags: [1 << 6] });
     return;
   }
 
@@ -337,7 +337,7 @@ async function handleSellArchetype(interaction: any, userId: string, userArchety
   await interaction.reply({
     content: `You are about to sell your archetype: **${archetype.name}**\n\n**Refund: ${refundText}**\n\nAre you sure?`,
     components: [new ActionRowBuilder<ButtonBuilder>().addComponents(confirmButton, cancelButton)],
-    ephemeral: true,
+    flags: [1 << 6],
   });
 
   const confirmCollector = interaction.channel?.createMessageComponentCollector({

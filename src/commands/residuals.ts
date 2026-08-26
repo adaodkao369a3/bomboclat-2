@@ -83,7 +83,7 @@ export const residualsCommand: Command = {
         // Show history
         const history = await ResidualsService.getResidualHistory(target.user.id, 10);
         if (!history || history.length === 0) {
-          await interaction.reply({ content: 'No transaction history found.', ephemeral: true });
+          await interaction.reply({ content: 'No transaction history found.', flags: [1 << 6] });
         } else {
           const historyEmbed = new EmbedBuilder()
             .setTitle('📜 Residuals History')
@@ -99,7 +99,7 @@ export const residualsCommand: Command = {
             });
           });
 
-          await interaction.reply({ embeds: [historyEmbed], ephemeral: true });
+          await interaction.reply({ embeds: [historyEmbed], flags: [1 << 6] });
         }
 
         // Disable buttons
@@ -166,19 +166,19 @@ export const residualsCommand: Command = {
       const reason = modalInteraction.fields.getTextInputValue('reason') || `Manual ${action} by ${message.author.displayName}`;
 
       if (isNaN(amount) || amount < 0) {
-        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', ephemeral: true });
+        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', flags: [1 << 6] });
         return;
       }
 
       // Add reasonable bounds to prevent abuse
       const MAX_RESIDUALS_CHANGE = 1000000; // 1 million residuals max per change
       if (amount > MAX_RESIDUALS_CHANGE) {
-        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_RESIDUALS_CHANGE.toLocaleString()} residuals.`, ephemeral: true });
+        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_RESIDUALS_CHANGE.toLocaleString()} residuals.`, flags: [1 << 6] });
         return;
       }
 
       if ((action === 'add_residuals' || action === 'remove_residuals') && amount === 0) {
-        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', ephemeral: true });
+        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', flags: [1 << 6] });
         return;
       }
 
@@ -193,7 +193,7 @@ export const residualsCommand: Command = {
             reason
           );
           if (persistedBalance === null) {
-            await modalInteraction.reply({ content: '❌ Failed to set Residuals.', ephemeral: true });
+            await modalInteraction.reply({ content: '❌ Failed to set Residuals.', flags: [1 << 6] });
             return;
           }
           newBalance = persistedBalance;
@@ -206,7 +206,7 @@ export const residualsCommand: Command = {
             message.author.id
           );
           if (persistedBalance === null) {
-            await modalInteraction.reply({ content: '❌ Failed to add Residuals.', ephemeral: true });
+            await modalInteraction.reply({ content: '❌ Failed to add Residuals.', flags: [1 << 6] });
             return;
           }
           newBalance = persistedBalance;
@@ -219,13 +219,13 @@ export const residualsCommand: Command = {
             message.author.id
           );
           if (persistedBalance === null) {
-            await modalInteraction.reply({ content: '❌ Insufficient Residuals or update failed.', ephemeral: true });
+            await modalInteraction.reply({ content: '❌ Insufficient Residuals or update failed.', flags: [1 << 6] });
             return;
           }
           newBalance = persistedBalance;
         }
 
-        await modalInteraction.reply({ content: `✅ Residuals updated successfully. New balance: ${newBalance?.toLocaleString() || 'Unknown'}`, ephemeral: true });
+        await modalInteraction.reply({ content: `✅ Residuals updated successfully. New balance: ${newBalance?.toLocaleString() || 'Unknown'}`, flags: [1 << 6] });
 
         // Disable buttons
         const disabledRow = new ActionRowBuilder<ButtonBuilder>()
@@ -256,7 +256,7 @@ export const residualsCommand: Command = {
 
       } catch (error) {
         console.error('Error updating Residuals:', error);
-        await modalInteraction.reply({ content: '❌ Failed to update Residuals. Please try again.', ephemeral: true });
+        await modalInteraction.reply({ content: '❌ Failed to update Residuals. Please try again.', flags: [1 << 6] });
       }
 
     } catch (error) {

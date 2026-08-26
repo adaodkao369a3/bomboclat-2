@@ -114,28 +114,28 @@ export const xpCommand: Command = {
       const reason = modalInteraction.fields.getTextInputValue('reason') || `Manual ${action} by ${message.author.displayName}`;
 
       if (isNaN(amount) || amount < 0) {
-        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', ephemeral: true });
+        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', flags: [1 << 6] });
         return;
       }
 
       // Add reasonable bounds to prevent abuse
       const MAX_XP_CHANGE = 1000000; // 1 million XP max per change
       if (amount > MAX_XP_CHANGE) {
-        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_XP_CHANGE.toLocaleString()} XP.`, ephemeral: true });
+        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_XP_CHANGE.toLocaleString()} XP.`, flags: [1 << 6] });
         return;
       }
 
       // Additional validation for specific actions
       if (action === 'set_level') {
         if (amount < 1 || amount > 100) {
-          await modalInteraction.reply({ content: '❌ Level must be between 1 and 100.', ephemeral: true });
+          await modalInteraction.reply({ content: '❌ Level must be between 1 and 100.', flags: [1 << 6] });
           return;
         }
       }
 
       // Add/remove should not be zero
       if ((action === 'add_xp' || action === 'remove_xp') && amount === 0) {
-        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', ephemeral: true });
+        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', flags: [1 << 6] });
         return;
       }
 
@@ -177,7 +177,7 @@ export const xpCommand: Command = {
         const newRole = getRoleFromLevel(newLevel);
         const syncResult = await synchronizeProgressionRoles(target, newLevel);
         if (!syncResult.success) {
-          await modalInteraction.reply({ content: '❌ Failed to update progression roles. XP was saved; please retry synchronization.', ephemeral: true });
+          await modalInteraction.reply({ content: '❌ Failed to update progression roles. XP was saved; please retry synchronization.', flags: [1 << 6] });
           return;
         }
 
@@ -189,7 +189,7 @@ export const xpCommand: Command = {
           calculatePromotionEligibility(newXP, newLevel, newRole)
         );
 
-        await modalInteraction.reply({ content: `✅ XP updated successfully. New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`, ephemeral: true });
+        await modalInteraction.reply({ content: `✅ XP updated successfully. New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`, flags: [1 << 6] });
 
         // Disable buttons
         const disabledRow = new ActionRowBuilder<ButtonBuilder>()
@@ -220,7 +220,7 @@ export const xpCommand: Command = {
 
       } catch (error) {
         console.error('Error updating XP:', error);
-        await modalInteraction.reply({ content: '❌ Failed to update XP. Please try again.', ephemeral: true });
+        await modalInteraction.reply({ content: '❌ Failed to update XP. Please try again.', flags: [1 << 6] });
       }
 
     } catch (error) {

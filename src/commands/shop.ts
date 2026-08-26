@@ -316,14 +316,14 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
   const userId = interaction.user.id;
   const userData = await getUser(userId);
   if (!userData) {
-    await interaction.reply({ content: '❌ You need to send at least one message first so the bot can create your profile.', ephemeral: true });
+    await interaction.reply({ content: '❌ You need to send at least one message first so the bot can create your profile.', flags: [1 << 6] });
     return;
   }
 
   const colors = await getShopColors();
   const color = colors.find(c => c.id === colorId);
   if (!color) {
-    await interaction.reply({ content: '❌ Color not found.', ephemeral: true });
+    await interaction.reply({ content: '❌ Color not found.', flags: [1 << 6] });
     return;
   }
 
@@ -372,7 +372,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
       { name: 'Note', value: 'You can own multiple colors at once. Buying a new one doesn\'t remove your others — use the Equip/Unequip buttons here (or `.manage`) to control which color roles are active.', inline: false },
     ]);
 
-  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch((error: unknown) => {
+  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], flags: [1 << 6] }).catch((error: unknown) => {
     console.error('Failed to reply to color selection interaction:', error);
   });
 
@@ -402,7 +402,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
             components: [],
           });
         } else {
-          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, flags: [1 << 6] });
         }
         buttonCollector.stop();
       } else if (buttonInteraction.customId === `equip_color_${colorId}`) {
@@ -417,7 +417,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
             components: [],
           });
         } else {
-          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, flags: [1 << 6] });
         }
         buttonCollector.stop();
       } else if (buttonInteraction.customId === `unequip_color_${colorId}`) {
@@ -442,7 +442,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
             components: [],
           });
         } else {
-          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, flags: [1 << 6] });
         }
         buttonCollector.stop();
       } else if (buttonInteraction.customId === 'cancel_color') {
@@ -452,7 +452,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
     } catch (error) {
       console.error('Error handling color button interaction:', error);
       try {
-        await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', ephemeral: true });
+        await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', flags: [1 << 6] });
       } catch (replyError) {
         console.error('Failed to send error reply:', replyError);
       }
@@ -528,14 +528,14 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
   const userId = interaction.user.id;
   const userData = await getUser(userId);
   if (!userData) {
-    await interaction.reply({ content: '❌ You need to send at least one message first so the bot can create your profile.', ephemeral: true });
+    await interaction.reply({ content: '❌ You need to send at least one message first so the bot can create your profile.', flags: [1 << 6] });
     return;
   }
 
   const archetypes = await getShopArchetypes();
   const archetype = archetypes.find(a => a.id === archetypeId);
   if (!archetype) {
-    await interaction.reply({ content: '❌ Archetype not found.', ephemeral: true });
+    await interaction.reply({ content: '❌ Archetype not found.', flags: [1 << 6] });
     return;
   }
 
@@ -573,11 +573,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
       { name: 'Note', value: 'You can only own one archetype at a time. Purchasing a new one will replace your current archetype with a 50% refund.', inline: false },
     ]);
 
-  if (archetype.image_url) {
-    detailEmbed.setThumbnail(archetype.image_url);
-  }
-
-  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], ephemeral: true }).catch((error: unknown) => {
+  await interaction.reply({ embeds: [detailEmbed], components: [confirmRow], flags: [1 << 6] }).catch((error: unknown) => {
     console.error('Failed to reply to archetype selection interaction:', error);
   });
 
@@ -626,7 +622,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
             components: [],
           });
         } else {
-          await buttonInteraction.reply({ content: `❌ ${result.reason}`, ephemeral: true });
+          await buttonInteraction.reply({ content: `❌ ${result.reason}`, flags: [1 << 6] });
         }
         buttonCollector.stop();
       } else if (buttonInteraction.customId === 'cancel_archetype') {
@@ -636,7 +632,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
     } catch (error) {
       console.error('Error handling archetype button interaction:', error);
       try {
-        await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', ephemeral: true });
+        await buttonInteraction.reply({ content: '❌ An error occurred while processing your request.', flags: [1 << 6] });
       } catch (replyError) {
         console.error('Failed to send error reply:', replyError);
       }
