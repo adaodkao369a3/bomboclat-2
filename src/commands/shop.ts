@@ -26,7 +26,7 @@ import {
   type ShopArchetype,
   type ShopColor,
 } from '../services/shop.js';
-import { generateColorGridImage, generateArchetypeGridImage } from '../services/shopImages.js';
+import { generateColorGridImage, generateArchetypeGridImage, COLOR_BAND_SYMBOLS, ARCHETYPE_TIER_SYMBOLS } from '../services/shopImages.js';
 import { isBotOwner } from '../utils/permissions.js';
 import { Command } from './index.js';
 
@@ -108,12 +108,14 @@ export const shopCommand: Command = {
 // Discord shop roles
 // ---------------------------------------------------------------------------
 
-function archetypeRoleName(name: string): string {
-  return `Archetype • ${name}`;
+function archetypeRoleName(name: string, tier: string): string {
+  const symbol = ARCHETYPE_TIER_SYMBOLS[tier] || '';
+  return `${symbol} ${name.toLowerCase()}`;
 }
 
-function colorRoleName(name: string): string {
-  return `Color • ${name}`;
+function colorRoleName(name: string, priceBand: string): string {
+  const symbol = COLOR_BAND_SYMBOLS[priceBand] || '';
+  return `${symbol} ${name.toLowerCase()}`;
 }
 
 async function ensureShopRole(guild: Guild, name: string, color?: string, existingRoleId?: string | null): Promise<Role | null> {
@@ -176,7 +178,8 @@ async function ensureAllShopRoles(
   try {
     // Handle archetypes
     for (const archetype of archetypes) {
-      const role = await ensureShopRole(guild, archetypeRoleName(archetype.name), undefined, archetype.role_id);
+      const roleName = archetypeRoleName(archetype.name, archetype.tier);
+      const role = await ensureShopRole(guild, roleName, undefined, archetype.role_id);
       if (role) {
         // Update the database with the role ID
         await client.query(
@@ -184,13 +187,14 @@ async function ensureAllShopRoles(
           [role.id, archetype.id]
         );
       } else {
-        errors.push(archetypeRoleName(archetype.name));
+        errors.push(roleName);
       }
     }
 
     // Handle colors
     for (const color of colors) {
-      const role = await ensureShopRole(guild, colorRoleName(color.name), color.hex, color.role_id);
+      const roleName = colorRoleName(color.name, color.price_band);
+      const role = await ensureShopRole(guild, roleName, color.hex, color.role_id);
       if (role) {
         // Update the database with the role ID
         await client.query(
@@ -198,7 +202,7 @@ async function ensureAllShopRoles(
           [role.id, color.id]
         );
       } else {
-        errors.push(colorRoleName(color.name));
+        errors.push(roleName);
       }
     }
   } finally {
@@ -263,7 +267,7 @@ async function postColorShop(shopChannel: TextChannel, colorBands: Record<string
     const bandColors = colorBands[band];
     if (bandColors.length === 0) continue;
 
-    const title = band === 'common' ? '🎨 Color Shop' : COLOR_BAND_TITLES[band];
+    const title = band === 'common' ? '🎨 Color Shop' : `${COLOR_BAND_SYMBOLS[band] || ''} ${COLOR_BAND_TITLES[band]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `colors_${band}.png`;
@@ -283,9 +287,10 @@ async function postColorShop(shopChannel: TextChannel, colorBands: Record<string
       .setMaxValues(1);
 
     for (const color of bandColors) {
+      const formattedName = colorRoleName(color.name, color.price_band);
       selectMenu.addOptions(
         new StringSelectMenuOptionBuilder()
-          .setLabel(`${color.name} - ${COLOR_PRICE_MAP[band]} residuals`)
+          .setLabel(`${formattedName} - ${COLOR_PRICE_MAP[band]} residuals`)
           .setValue(color.id.toString())
           .setDescription(color.hex)
       );
@@ -392,7 +397,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
           // Colors stack — the new color is equipped alongside anything the
           // user already owns, so no other color roles are touched here.
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
-          const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
+          const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name, color.price_band);
           let message = `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}`;
           message += roleAssigned ? `\n🎨 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
 
@@ -410,7 +415,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
         if (result.success) {
           const member = await buttonInteraction.guild?.members.fetch(userId).catch(() => null);
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
-          const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name);
+          const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name, color.price_band);
           await buttonInteraction.update({
             content: roleAssigned ? `✅ Color equipped!\n🎨 Role confirmed: **${roleName}**` : '✅ Color equipped!\n⚠️ The color role could not be assigned.',
             embeds: [],
@@ -476,7 +481,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
-    const title = tier === 'standard' ? '🎭 Archetype Shop' : tier === 'standard2' ? '🎭 More Archetypes' : ARCHETYPE_TIER_TITLES[tier];
+    const title = tier === 'standard' ? '🎭 Archetype Shop' : tier === 'standard2' ? '🎭 More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `archetypes_${tier}.png`;
@@ -496,9 +501,10 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
       .setMaxValues(1);
 
     for (const archetype of tierArchetypes) {
+      const formattedName = archetypeRoleName(archetype.name, archetype.tier);
       selectMenu.addOptions(
         new StringSelectMenuOptionBuilder()
-          .setLabel(`${archetype.name} - ${archetype.price} residuals`)
+          .setLabel(`${formattedName} - ${archetype.price} residuals`)
           .setValue(archetype.id.toString())
           .setDescription(archetype.min_role ? `Requires ${archetype.min_role.replace(/_/g, ' ')}` : archetype.slot_group)
       );
@@ -562,7 +568,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
     );
 
   const detailEmbed = new EmbedBuilder()
-    .setTitle(`${archetype.name} (${archetype.tier})`)
+    .setTitle(`${archetypeRoleName(archetype.name, archetype.tier)} (${archetype.tier})`)
     .setDescription(owned ? '✅ You already own this archetype!' : (isFreeGrant ? '🎁 Free Booster Grant - No cost!' : `Price: ${archetype.price} residuals`))
     .setColor(0x7B61FF)
     .addFields([
@@ -609,7 +615,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
           }
           
           const roleAssigned = member && archetype.role_id ? await assignShopRole(member, archetype.role_id) : false;
-          const roleName = member?.guild.roles.cache.get(archetype.role_id || '')?.name || archetypeRoleName(archetype.name);
+          const roleName = member?.guild.roles.cache.get(archetype.role_id || '')?.name || archetypeRoleName(archetype.name, archetype.tier);
           let message = `${isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!'}`;
           if (result.refund && result.refund > 0) {
             message += `\n💰 Refunded ${result.refund} residuals (50% of previous archetype)`;

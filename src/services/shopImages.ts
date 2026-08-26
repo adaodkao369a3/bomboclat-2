@@ -3,6 +3,19 @@ import type { ShopArchetype, ShopColor } from './shop.js';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 
+export const COLOR_BAND_SYMBOLS: Record<string, string> = { common: '', uncommon: '❈', rare: '❂' };
+export const ARCHETYPE_TIER_SYMBOLS: Record<string, string> = { standard: '⟡', standard2: '⟐', legendary: '⚜', mythic: '⁂' };
+
+export function formatColorName(name: string, priceBand: string): string {
+  const symbol = COLOR_BAND_SYMBOLS[priceBand] || '';
+  return `${symbol} ${name.toLowerCase()}`;
+}
+
+export function formatArchetypeName(name: string, tier: string): string {
+  const symbol = ARCHETYPE_TIER_SYMBOLS[tier] || '';
+  return `${symbol} ${name.toLowerCase()}`;
+}
+
 // Register font for text rendering
 const FONT_PATH = join(process.cwd(), 'assets/fonts/Roboto-Bold.ttf');
 let fontLoaded = false;
@@ -188,8 +201,9 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
       
-      // Display format: "color name #hex" - make sure hex code is included
-      const displayText = `${color.name} ${color.hex}`;
+      // Display format: "symbol color name #hex" - use new naming convention
+      const formattedName = formatColorName(color.name, color.price_band);
+      const displayText = `${formattedName} ${color.hex}`;
       const label = truncateLabel(ctx, displayText, tileWidth - 20);
       ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
       
@@ -253,7 +267,8 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // than overlaid on top of it), using the same shadowed-text technique
       // as the smash/smashmax image generator: a soft dark shadow behind
       // light text keeps it legible over the varied background color.
-      const label = truncateLabel(ctx, archetype.name, rowTileWidth - 16);
+      const formattedName = formatArchetypeName(archetype.name, archetype.tier);
+      const label = truncateLabel(ctx, formattedName, rowTileWidth - 16);
 
       ctx.save();
 
