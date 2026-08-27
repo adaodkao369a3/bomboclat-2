@@ -50,7 +50,7 @@ export const profileCommand: Command = {
 
     // Create progress bar
     const progressBars = Math.floor(xpProgress / 10);
-    const progressBar = '█'.repeat(progressBars) + '░'.repeat(10 - progressBars);
+    const progressBar = '<:glossystaremoji:1541974836861993101>'.repeat(progressBars) + '☆'.repeat(10 - progressBars);
 
     // Format role name
     const roleDisplay = currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
