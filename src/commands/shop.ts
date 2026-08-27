@@ -265,7 +265,7 @@ async function syncOwnedShopRoles(
 // ---------------------------------------------------------------------------
 
 async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:designpalette:1542338996217184356> Color Shop Intro';
+  const introTitle = '<:designpalette:1542338996217184356> Colors Shop';
   await deleteExistingShopMessages(shopChannel, introTitle);
 
   const introEmbed = new EmbedBuilder()
@@ -283,7 +283,7 @@ async function postColorShop(shopChannel: TextChannel, colorBands: Record<string
     const bandColors = colorBands[band];
     if (bandColors.length === 0) continue;
 
-    const title = band === 'common' ? '<a:shoppingcart:1542322214303699095> Color Shop' : `${COLOR_BAND_SYMBOLS[band] || ''} ${COLOR_BAND_TITLES[band]}`;
+    const title = band === 'common' ? 'Common' : `${COLOR_BAND_SYMBOLS[band] || ''} ${COLOR_BAND_TITLES[band]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `colors_${band}.png`;
@@ -493,7 +493,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:3dmovie:1542345279070806067> Archetype Shop Intro';
+  const introTitle = '<:3dmovie:1542345279070806067> Archetype Roles Shop';
   await deleteExistingShopMessages(shopChannel, introTitle);
 
   const introEmbed = new EmbedBuilder()
@@ -511,7 +511,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
-    const title = tier === 'standard' ? '<:3dmovie:1542345279070806067> Archetype Shop' : tier === 'standard2' ? '<:3dmovie:1542345279070806067> More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
+    const title = tier === 'standard' ? 'Standard' : tier === 'standard2' ? 'More Standard' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `archetypes_${tier}.png`;
