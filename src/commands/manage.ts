@@ -41,7 +41,7 @@ export const manageCommand: Command = {
     ]);
 
     if (userColors.length === 0 && userArchetypes.length === 0) {
-      await message.reply('<:crown:1529443082406461521> You don\'t own any shop items yet — check out the shop channel to buy a color or archetype.');
+      await message.reply('Damn you got nothing.');
       return;
     }
 
@@ -59,7 +59,7 @@ export const manageCommand: Command = {
       .setTitle('<a:settings:1542343011600568320> Manage Your Items')
       .setColor(0x4900ff)
       .addFields([
-        { name: '<:crown:1529443082406461521> Archetype', value: archetypeLine, inline: false },
+        { name: '<:3dmovie:1542345279070806067> Archetype', value: archetypeLine, inline: false },
         { name: '<:designpalette:1542338996217184356> Colors', value: colorLines, inline: false },
       ])
       .setFooter({ text: 'Use the buttons below to manage your items.' });

@@ -82,6 +82,7 @@ export const shopCommand: Command = {
         uncommon: colors.filter(c => c.price_band === 'uncommon'),
         rare: colors.filter(c => c.price_band === 'rare'),
       };
+      await postColorShopIntro(shopChannel as TextChannel);
       await postColorShop(shopChannel as TextChannel, colorBands);
     }
 
@@ -97,6 +98,7 @@ export const shopCommand: Command = {
         legendary: archetypes.filter(a => a.tier === 'legendary'),
         mythic: archetypes.filter(a => a.tier === 'mythic'),
       };
+      await postArchetypeShopIntro(shopChannel as TextChannel);
       await postArchetypeShop(shopChannel as TextChannel, archetypeTiers);
     }
 
@@ -261,6 +263,41 @@ async function syncOwnedShopRoles(
 // ---------------------------------------------------------------------------
 // Posting: colors
 // ---------------------------------------------------------------------------
+
+async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
+  const introTitle = '<:designpalette:1542338996217184356> Color Shop';
+  await deleteExistingShopMessages(shopChannel, introTitle);
+
+  const introEmbed = new EmbedBuilder()
+    .setTitle(introTitle)
+    .setDescription('Give your profile some personality with collectible colors.\n\nColors are divided into different rarities, with higher rarities costing more **residuals**.\n\n**Common** — 200 residuals\n**Uncommon** — 500 residuals\n**Rare** — 800 residuals\n\nSelect a category below to browse its colors.')
+    .setColor(0x4900ff);
+
+  const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId('shop_color_category_select')
+    .setPlaceholder('Select a color category')
+    .setMinValues(1)
+    .setMaxValues(1)
+    .addOptions(
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Common')
+        .setValue('common')
+        .setDescription('200 residuals each'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Uncommon')
+        .setValue('uncommon')
+        .setDescription('500 residuals each'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Rare')
+        .setValue('rare')
+        .setDescription('800 residuals each')
+    );
+
+  await shopChannel.send({
+    embeds: [introEmbed],
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
+  });
+}
 
 async function postColorShop(shopChannel: TextChannel, colorBands: Record<string, ShopColor[]>): Promise<void> {
   for (const band of ['common', 'uncommon', 'rare'] as const) {
@@ -476,12 +513,47 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
 // Posting: archetypes
 // ---------------------------------------------------------------------------
 
+async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
+  const introTitle = '<:3dmovie:1542345279070806067> Archetype Shop';
+  await deleteExistingShopMessages(shopChannel, introTitle);
+
+  const introEmbed = new EmbedBuilder()
+    .setTitle(introTitle)
+    .setDescription('Collect archetypes to give your profile its own identity.\n\nArchetypes range from everyday **Standard** personalities to the rarest **Mythic** archetypes.\n\n**Standard**\n**Legendary**\n**Mythic**\n\nSelect a category below to browse the collection.')
+    .setColor(0x4900ff);
+
+  const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId('shop_archetype_category_select')
+    .setPlaceholder('Select an archetype category')
+    .setMinValues(1)
+    .setMaxValues(1)
+    .addOptions(
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Standard')
+        .setValue('standard')
+        .setDescription('Everyday personalities'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Legendary')
+        .setValue('legendary')
+        .setDescription('Rare and powerful archetypes'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Mythic')
+        .setValue('mythic')
+        .setDescription('The rarest archetypes')
+    );
+
+  await shopChannel.send({
+    embeds: [introEmbed],
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
+  });
+}
+
 async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Record<string, ShopArchetype[]>): Promise<void> {
   for (const tier of ['standard', 'standard2', 'legendary', 'mythic'] as const) {
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
-    const title = tier === 'standard' ? '<:crown:1529443082406461521> Archetype Shop' : tier === 'standard2' ? '<:crown:1529443082406461521> More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
+    const title = tier === 'standard' ? '<:3dmovie:1542345279070806067> Archetype Shop' : tier === 'standard2' ? '<:3dmovie:1542345279070806067> More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `archetypes_${tier}.png`;
@@ -620,7 +692,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
           if (result.refund && result.refund > 0) {
             message += `\n💰 Refunded ${result.refund} residuals (50% of previous archetype)`;
           }
-          message += roleAssigned ? `\n<:crown:1529443082406461521> Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
+          message += roleAssigned ? `\n<:3dmovie:1542345279070806067> Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
           
           await buttonInteraction.update({
             content: message,
