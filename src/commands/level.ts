@@ -1,6 +1,6 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { getUser } from '../database/client.js';
-import { calculateXPForLevel, calculateXPRemaining, calculateProgressPercentage, PROGRESSION_ROLE_KEYS } from '../services/xp.js';
+import { calculateProgressPercentage, PROGRESSION_ROLE_KEYS } from '../services/xp.js';
 import { XP_CONFIG, EMOJIS } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
@@ -41,11 +41,8 @@ export const levelCommand: Command = {
     }
 
     // Calculate XP progress using centralized functions
-    const currentXP = userData.current_xp;
     const currentLevel = userData.current_level;
-    const nextLevelXP = calculateXPForLevel(currentLevel + 1);
-    const xpRemaining = calculateXPRemaining(currentXP, currentLevel);
-    const xpProgress = calculateProgressPercentage(currentXP, currentLevel);
+    const xpProgress = calculateProgressPercentage(userData.current_xp, currentLevel);
 
     // Create progress bar
     const progressBars = Math.floor(xpProgress / 10);
@@ -73,10 +70,6 @@ export const levelCommand: Command = {
       .setColor(0x7B61FF)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields([
-        { name: 'Current Level', value: currentLevel.toString(), inline: true },
-        { name: 'Current XP', value: `\`${currentXP.toLocaleString()}\``, inline: true },
-        { name: 'XP Required for Next Level', value: `\`${nextLevelXP.toLocaleString()}\``, inline: true },
-        { name: 'XP Remaining', value: `\`${xpRemaining.toLocaleString()}\``, inline: true },
         { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%`, inline: false },
         { name: '<:crown:1529443082406461521> Role Progression', value: roleLadder, inline: false },
       ])

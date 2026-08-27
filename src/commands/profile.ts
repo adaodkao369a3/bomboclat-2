@@ -1,7 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
-import { calculateXPRemaining, calculateProgressPercentage, getNextProgressionThreshold } from '../services/xp.js';
+import { getNextProgressionThreshold } from '../services/xp.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
 
@@ -37,10 +37,7 @@ export const profileCommand: Command = {
     }
 
     // Calculate XP progress using centralized functions
-    const currentXP = userData.current_xp;
     const currentLevel = userData.current_level;
-    const xpRemaining = calculateXPRemaining(currentXP, currentLevel);
-    const xpProgress = calculateProgressPercentage(currentXP, currentLevel);
     const currentRole = userData.current_progression_role;
     const nextRoleThreshold = getNextProgressionThreshold(currentRole);
 
@@ -48,18 +45,12 @@ export const profileCommand: Command = {
     const residualData = await getResidualsInfo(target.user.id);
     const residualsBalance = residualData?.balance || 0;
 
-    // Create progress bar
-    const progressBars = Math.floor(xpProgress / 10);
-    const progressBar = '<:glossystaremoji:1541974836861993101>'.repeat(progressBars) + '☆'.repeat(10 - progressBars);
-
     // Format role name
     const roleDisplay = currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
     // Build embed fields
     const fields = [
       { name: 'Level', value: currentLevel.toString(), inline: true },
-      { name: 'Current XP', value: `\`${currentXP.toLocaleString()}\``, inline: true },
-      { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%\n\`${xpRemaining.toLocaleString()} XP to Level ${currentLevel + 1}\``, inline: false },
       { name: '<a:doginaldollar:1541974906252828672> Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
     ];
 
