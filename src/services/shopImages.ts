@@ -17,21 +17,19 @@ export function formatArchetypeName(name: string, tier: string): string {
 }
 
 // Register font for text rendering
-const FONT_PATH = join(process.cwd(), 'assets/fonts/AMORIA.otf');
+const REGULAR_FONT_PATH = join(process.cwd(), 'assets/fonts/LEMONMILK-Regular.otf');
+const ITALIC_FONT_PATH = join(process.cwd(), 'assets/fonts/LEMONMILK-RegularItalic.otf');
 let fontLoaded = false;
 
 try {
-  if (existsSync(FONT_PATH)) {
-    const success = GlobalFonts.registerFromPath(FONT_PATH, 'AMORIA');
-    
-    if (success) {
-      fontLoaded = true;
-      console.log('[ShopImages] Font loaded: assets/fonts/AMORIA.otf');
-    } else {
-      console.error('[ShopImages] Font registration failed');
-    }
+  const regularSuccess = GlobalFonts.registerFromPath(REGULAR_FONT_PATH, 'LEMONMILK');
+  const italicSuccess = GlobalFonts.registerFromPath(ITALIC_FONT_PATH, 'LEMONMILK-Italic');
+  
+  if (regularSuccess && italicSuccess) {
+    fontLoaded = true;
+    console.log('[ShopImages] Fonts loaded: LEMONMILK-Regular.otf, LEMONMILK-RegularItalic.otf');
   } else {
-    console.error('[ShopImages] Font file not found: assets/fonts/AMORIA.otf');
+    console.error('[ShopImages] Font registration failed');
   }
 } catch (error) {
   console.error('[ShopImages] Failed to load font:', error);
@@ -191,15 +189,21 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.save();
       
       ctx.fillStyle = TEXT_COLOR;
-      ctx.font = '25px AMORIA';
+      ctx.font = '25px LEMONMILK';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       
       // Display format: "color name #hex" - plain name for images (no symbols)
       const plainName = color.name.toUpperCase();
-      const displayText = `${plainName} ${color.hex}`;
-      const label = truncateLabel(ctx, displayText, tileWidth - 20);
-      ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
+      const hexCode = color.hex;
+      
+      // Draw color name in regular font
+      const nameWidth = ctx.measureText(plainName).width;
+      ctx.fillText(plainName, x + tileWidth / 2, y + tileHeight + 32);
+      
+      // Draw hex code in italic font
+      ctx.font = 'italic 25px LEMONMILK-Italic';
+      ctx.fillText(hexCode, x + tileWidth / 2 + nameWidth + 10, y + tileHeight + 32);
       
       ctx.restore();
     });
@@ -266,7 +270,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
 
       ctx.save();
 
-      ctx.font = '25px AMORIA';
+      ctx.font = '25px LEMONMILK';
 
       ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';

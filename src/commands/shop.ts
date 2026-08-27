@@ -273,29 +273,8 @@ async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
     .setDescription('Give your profile some personality with collectible colors.\n\nColors are divided into different rarities, with higher rarities costing more **residuals**.\n\n**Common** — 200 residuals\n**Uncommon** — 500 residuals\n**Rare** — 800 residuals\n\nSelect a category below to browse its colors.')
     .setColor(0x4900ff);
 
-  const selectMenu = new StringSelectMenuBuilder()
-    .setCustomId('shop_color_category_select')
-    .setPlaceholder('Select a color category')
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Common')
-        .setValue('common')
-        .setDescription('200 residuals each'),
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Uncommon')
-        .setValue('uncommon')
-        .setDescription('500 residuals each'),
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Rare')
-        .setValue('rare')
-        .setDescription('800 residuals each')
-    );
-
   await shopChannel.send({
     embeds: [introEmbed],
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
   });
 }
 
@@ -522,29 +501,8 @@ async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
     .setDescription('Collect archetypes to give your profile its own identity.\n\nArchetypes range from everyday **Standard** personalities to the rarest **Mythic** archetypes.\n\n**Standard**\n**Legendary**\n**Mythic**\n\nSelect a category below to browse the collection.')
     .setColor(0x4900ff);
 
-  const selectMenu = new StringSelectMenuBuilder()
-    .setCustomId('shop_archetype_category_select')
-    .setPlaceholder('Select an archetype category')
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Standard')
-        .setValue('standard')
-        .setDescription('Everyday personalities'),
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Legendary')
-        .setValue('legendary')
-        .setDescription('Rare and powerful archetypes'),
-      new StringSelectMenuOptionBuilder()
-        .setLabel('Mythic')
-        .setValue('mythic')
-        .setDescription('The rarest archetypes')
-    );
-
   await shopChannel.send({
     embeds: [introEmbed],
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)],
   });
 }
 
