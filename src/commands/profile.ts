@@ -60,13 +60,13 @@ export const profileCommand: Command = {
       { name: 'Level', value: currentLevel.toString(), inline: true },
       { name: 'Current XP', value: `\`${currentXP.toLocaleString()}\``, inline: true },
       { name: 'XP Progress', value: `\`${progressBar} ${Math.floor(xpProgress)}%\`\n\`${xpRemaining.toLocaleString()} XP to Level ${currentLevel + 1}\``, inline: false },
-      { name: '◈ Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
+      { name: '<a:doginaldollar:1541974906252828672> Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
     ];
 
     // Add promotion eligibility if not at max role
     if (nextRoleThreshold > 0) {
       const eligibility = userData.promotion_eligibility_percentage || 0;
-      fields.push({ name: 'Promotion Eligibility', value: `\`${Math.floor(eligibility)}%\` (Level ${nextRoleThreshold})`, inline: true });
+      fields.push({ name: '<:glossystaremoji:1541974836861993101> Promotion Eligibility', value: `\`${Math.floor(eligibility)}%\` (Level ${nextRoleThreshold})`, inline: true });
     }
 
     // Create embed
