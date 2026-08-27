@@ -265,7 +265,7 @@ async function syncOwnedShopRoles(
 // ---------------------------------------------------------------------------
 
 async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:designpalette:1542338996217184356> Color Shop';
+  const introTitle = '<:designpalette:1542338996217184356> Color Shop Intro';
   await deleteExistingShopMessages(shopChannel, introTitle);
 
   const introEmbed = new EmbedBuilder()
@@ -493,7 +493,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:3dmovie:1542345279070806067> Archetype Shop';
+  const introTitle = '<:3dmovie:1542345279070806067> Archetype Shop Intro';
   await deleteExistingShopMessages(shopChannel, introTitle);
 
   const introEmbed = new EmbedBuilder()

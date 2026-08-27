@@ -82,6 +82,23 @@ function truncateLabel(ctx: any, label: string, maxWidth: number): string {
   return `${truncated}…`;
 }
 
+function setScaledFont(
+  ctx: any,
+  text: string,
+  maxWidth: number,
+  maxFontSize: number = 25,
+  fontFamily: string = 'LEMONMILK'
+): number {
+  let fontSize = maxFontSize;
+  ctx.font = `${fontSize}px ${fontFamily}`;
+
+  while (ctx.measureText(text).width > maxWidth && fontSize > 8) {
+    fontSize--;
+    ctx.font = `${fontSize}px ${fontFamily}`;
+  }
+  return fontSize;
+}
+
 function drawRoundedImage(
   ctx: any,
   image: any,
@@ -189,29 +206,33 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.save();
       
       ctx.fillStyle = TEXT_COLOR;
-      ctx.font = '25px LEMONMILK';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       
       // Display format: "color name #hex" - plain name for images (no symbols)
       const plainName = color.name.toUpperCase();
       const hexCode = color.hex;
+      const label = `${plainName} ${hexCode}`;
+      
+      // Auto-scale font to fit within tile width with padding
+      const maxTextWidth = tileWidth - 20; // 10px padding on each side
+      const fontSize = setScaledFont(ctx, label, maxTextWidth, 25, 'LEMONMILK');
       
       // Calculate total width to center both parts
-      ctx.font = '25px LEMONMILK';
+      ctx.font = `${fontSize}px LEMONMILK`;
       const nameWidth = ctx.measureText(plainName).width;
-      ctx.font = 'italic 25px LEMONMILK-Italic';
+      ctx.font = `italic ${fontSize}px LEMONMILK-Italic`;
       const hexWidth = ctx.measureText(hexCode).width;
       const totalWidth = nameWidth + hexWidth + 10; // 10px spacing
       
       const startX = x + tileWidth / 2 - totalWidth / 2;
       
       // Draw color name in regular font
-      ctx.font = '25px LEMONMILK';
+      ctx.font = `${fontSize}px LEMONMILK`;
       ctx.fillText(plainName, startX, y + tileHeight + 32);
       
       // Draw hex code in italic font
-      ctx.font = 'italic 25px LEMONMILK-Italic';
+      ctx.font = `italic ${fontSize}px LEMONMILK-Italic`;
       ctx.fillText(hexCode, startX + nameWidth + 10, y + tileHeight + 32);
       
       ctx.restore();
@@ -275,11 +296,15 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // as the smash/smashmax image generator: a soft dark shadow behind
       // light text keeps it legible over the varied background color.
       const plainName = archetype.name.toUpperCase();
-      const label = truncateLabel(ctx, plainName, rowTileWidth - 16);
+      
+      // Auto-scale font to fit within tile width with padding
+      const maxTextWidth = rowTileWidth - 16; // 8px padding on each side
+      const fontSize = setScaledFont(ctx, plainName, maxTextWidth, 25, 'LEMONMILK');
+      const label = truncateLabel(ctx, plainName, maxTextWidth);
 
       ctx.save();
 
-      ctx.font = '25px LEMONMILK';
+      ctx.font = `${fontSize}px LEMONMILK`;
 
       ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';
