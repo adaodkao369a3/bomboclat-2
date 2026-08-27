@@ -204,37 +204,28 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.stroke();
 
       ctx.save();
-      
+
       ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      
-      // Display format: "color name #hex" - plain name for images (no symbols)
+      ctx.textBaseline = 'middle';
+
       const plainName = color.name.toUpperCase();
       const hexCode = color.hex;
-      const label = `${plainName} ${hexCode}`;
-      
-      // Auto-scale font to fit within tile width with padding
-      const maxTextWidth = tileWidth - 20; // 10px padding on each side
-      const fontSize = setScaledFont(ctx, label, maxTextWidth, 25, 'LEMONMILK');
-      
-      // Calculate total width to center both parts
-      ctx.font = `${fontSize}px LEMONMILK`;
-      const nameWidth = ctx.measureText(plainName).width;
-      ctx.font = `italic ${fontSize}px LEMONMILK-Italic`;
-      const hexWidth = ctx.measureText(hexCode).width;
-      const totalWidth = nameWidth + hexWidth + 10; // 10px spacing
-      
-      const startX = x + tileWidth / 2 - totalWidth / 2;
-      
-      // Draw color name in regular font
-      ctx.font = `${fontSize}px LEMONMILK`;
-      ctx.fillText(plainName, startX, y + tileHeight + 32);
-      
-      // Draw hex code in italic font
-      ctx.font = `italic ${fontSize}px LEMONMILK-Italic`;
-      ctx.fillText(hexCode, startX + nameWidth + 10, y + tileHeight + 32);
-      
+
+      // Color name: 20px, scaled down only if needed to fit.
+      const maxTextWidth = tileWidth - 20;
+      const nameFontSize = setScaledFont(ctx, plainName, maxTextWidth, 20, 'LEMONMILK');
+
+      // Center both lines independently.
+      const nameY = y + tileHeight + 20;
+      const hexY = y + tileHeight + 44;
+
+      ctx.font = `${nameFontSize}px LEMONMILK`;
+      ctx.fillText(plainName, x + tileWidth / 2, nameY);
+
+      ctx.font = `italic 20px LEMONMILK-Italic`;
+      ctx.fillText(hexCode, x + tileWidth / 2, hexY);
+
       ctx.restore();
     });
   }, COLOR_HEIGHT_SCALE);
