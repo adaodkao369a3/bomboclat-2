@@ -115,30 +115,30 @@ export const GIF_CONFIG = {
 
 // GIF Commands
 export const GIF_COMMANDS = {
-  rizz: 'rizz',
-  larp: 'larp',
+  rizz: 'rizz anime',
+  larp: 'larp anime',
   blush: 'anime blush',
-  cooked: 'cooked meme',
-  fumble: 'fumble meme',
-  cope: 'cope meme',
-  grass: 'touch grass',
-  aura: 'aura meme',
-  huh: 'huh meme',
-  cry: 'crying meme',
+  cooked: 'cooked anime',
+  fumble: 'fumble anime',
+  cope: 'cope anime',
+  grass: 'touch grass anime',
+  aura: 'aura anime',
+  huh: 'huh anime',
+  cry: 'crying anime',
 };
 
 // GIF Captions
 export const GIF_CAPTIONS: Record<string, string> = {
-  rizz: 'has activated the rizz technique.',
-  larp: 'has entered full roleplay mode.',
-  blush: 'is feeling shy.',
-  cooked: 'is completely cooked.',
-  fumble: 'has fumbled the moment.',
-  cope: 'has entered the cope zone.',
-  grass: 'has been ordered to touch grass.',
-  aura: 'has gained aura.',
-  huh: 'is confused.',
-  cry: 'is crying.',
+  rizz: 'hi lol <:smirk:1529450331371733003>',
+  larp: 'erp mode on <:zamn:1541974903438446702>',
+  blush: 'shy uwu <a:scuffledflustered:1541974799742673067>',
+  cooked: 'ts cooked <:worriedbuttersstotch:1536398315086675978>',
+  fumble: 'mad fumble <:yukogivesthel:1541974899952848936>',
+  cope: 'keep coping buddy <:ttongue:1529450341643583588>',
+  grass: 'touching grass <:duobbl:1541974831178711102>',
+  aura: 'ts so aura <a:aura:1529443067529003108>',
+  huh: 'i am confusion <:confusedbread:1536398345755435018>',
+  cry: 'crine <:cryingsparkles:1529495144745930852>',
 };
 
 // Art Styles for $clip
