@@ -58,17 +58,17 @@ export const customGifCommand: Command = {
     // Fetch GIF
     const gifUrl = await fetchGIF(query);
     if (!gifUrl) {
-      await message.reply(`Couldn't find any GIFs for:\n${query}`);
+      await message.reply(`bro i can't find this shit:\n${query}`);
       return;
     }
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('🎬 Custom GIF')
+      .setTitle('<:glossystaremoji:1541974836861993101> custom gif')
       .setDescription(`${message.author.toString()} "${query}" ${targets ? targets : ''}`)
       .setColor(0x9b5de5)
       .setImage(gifUrl)
-      .setFooter({ text: 'Powered by Klipy' });
+      .setFooter({ text: 'mi bombo studios' });
 
     await message.reply({ embeds: [embed] });
   },

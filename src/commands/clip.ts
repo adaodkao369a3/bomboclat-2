@@ -38,7 +38,7 @@ export const clipCommand: Command = {
       : [CHANNELS.BOMBO_TIMES];
 
     if (!effectiveChannels.includes(message.channel.id)) {
-      await message.reply('❌ This command can only be used in allowed channels. Use $settings clip_channels list to see allowed channels.');
+      await message.reply('<:glossyredcancelx:1541974834370842654> This command can only be used in allowed channels.');
       return;
     }
 
@@ -51,7 +51,7 @@ export const clipCommand: Command = {
       const remaining = getRemaining(message.author.id, 'clip_admin');
       if (remaining > 0) {
         const minutesRemaining = Math.ceil(remaining / 60);
-        await message.reply(`⏱️ Please wait ${minutesRemaining} minute(s) before generating another $clip summary.`);
+        await message.reply(`<a:typing:1529443144901464205> Please wait ${minutesRemaining} minute(s) before generating another $clip summary.`);
         return;
       }
     }
@@ -61,11 +61,11 @@ export const clipCommand: Command = {
     if (fromMessageId && toMessageId) {
       try {
         if (BigInt(fromMessageId) >= BigInt(toMessageId)) {
-          await message.reply('❌ Invalid message range. The starting message ID must be older than the ending message ID.');
+          await message.reply('<:glossyredcancelx:1541974834370842654> Invalid message range. The starting message ID must be older than the ending message ID.');
           return;
         }
       } catch {
-        await message.reply('❌ Invalid message ID range.');
+        await message.reply('<:glossyredcancelx:1541974834370842654> Invalid message ID range.');
         return;
       }
     }
@@ -80,7 +80,7 @@ export const clipCommand: Command = {
             await message.channel.messages.fetch(toMessageId);
           }
         } catch {
-          await message.reply('❌ One or more message IDs were not found in this channel.');
+          await message.reply('<:glossyredcancelx:1541974834370842654> One or more message IDs were not found in this channel.');
           return;
         }
       }
@@ -121,7 +121,7 @@ export const clipCommand: Command = {
 
             fetchedCount++;
             if (fetchedCount > MAX_MESSAGES) {
-              await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
+              await message.reply(`<:glossyredcancelx:1541974834370842654> Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
               return;
             }
 
@@ -150,7 +150,7 @@ export const clipCommand: Command = {
         );
 
         if (ordered.length >= MAX_MESSAGES) {
-          await message.reply(`❌ Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
+          await message.reply(`<:glossyredcancelx:1541974834370842654> Message range too large. Maximum ${MAX_MESSAGES} messages allowed.`);
           return;
         }
 
@@ -179,14 +179,14 @@ export const clipCommand: Command = {
       }
 
       if (messages.length < 5) {
-        await message.reply('❌ Not enough messages to generate a clip. Need at least 5 messages.');
+        await message.reply('<:glossyredcancelx:1541974834370842654> Not enough messages to generate a clip. Need at least 5 messages.');
         return;
       }
 
       // Generate AI summary (Groq)
       const summary = await generateClipSummary(messages);
       if (!summary || !summary.title || !summary.summary) {
-        await message.reply('❌ AI summarization failed. Please try again later.');
+        await message.reply('<:glossyredcancelx:1541974834370842654> AI summarization failed. Please try again later.');
         return;
       }
 
@@ -208,7 +208,7 @@ export const clipCommand: Command = {
       // Send to Bombo Times channel
       const bomboTimesChannel = message.guild?.channels.cache.get(CHANNELS.BOMBO_TIMES);
       if (!bomboTimesChannel || !bomboTimesChannel.isTextBased()) {
-        await message.reply('❌ Failed to find Bombo Times channel.');
+        await message.reply('<:glossyredcancelx:1541974834370842654> Failed to find Bombo Times channel.');
         return;
       }
 
@@ -235,7 +235,7 @@ export const clipCommand: Command = {
 
     } catch (error) {
       console.error('Error generating clip:', error);
-      await message.reply('❌ Failed to generate clip. Please try again later.');
+      await message.reply('<:glossyredcancelx:1541974834370842654> Failed to generate clip. Please try again later.');
     }
   },
 };

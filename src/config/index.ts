@@ -178,7 +178,7 @@ export const CHANNELS = {
 export const WELCOME_GIF_QUERIES = [
   'welcome',
   'welcome party',
-  'red carpet welcome',
+  'welcome to',
   'excited welcome wave',
   'hooray celebration',
   'applause cheering',
@@ -191,7 +191,7 @@ export const BOOST_GIF_QUERIES = [
   'vip red carpet',
   'guest star',
   'movie premiere',
-  'star studded celebration',
+  'star red carpet',
 ];
 
 // Residuals gifted automatically when someone boosts (becomes Guest Star)

@@ -69,7 +69,7 @@ export const levelCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('📊 LEVEL PROGRESS')
+      .setTitle('<a:typing:1529443144901464205> LEVEL PROGRESS')
       .setDescription(`**${target.displayName}**\n\`${roleDisplay}\` ${EMOJIS.CROWN}`)
       .setColor(0x7B61FF)
       .setThumbnail(target.user.displayAvatarURL())
@@ -79,7 +79,7 @@ export const levelCommand: Command = {
         { name: 'XP Required for Next Level', value: `\`${nextLevelXP.toLocaleString()}\``, inline: true },
         { name: 'XP Remaining', value: `\`${xpRemaining.toLocaleString()}\``, inline: true },
         { name: 'XP Progress', value: `\`${progressBar} ${Math.floor(xpProgress)}%\``, inline: false },
-        { name: '🎭 Role Progression', value: roleLadder, inline: false },
+        { name: '<:crown:1529443082406461521> Role Progression', value: roleLadder, inline: false },
       ])
       .setFooter({ text: 'MI BOM3O Studios' });
 

@@ -13,7 +13,7 @@ export const resCommand: Command = {
     // Cooldown check
     const remaining = getRemaining(message.author.id, 'res');
     if (remaining > 0) {
-      await message.reply(`⏱️ Please wait ${remaining} seconds before using .res again.`);
+      await message.reply(`<a:typing:1529443144901464205> Please wait ${remaining} seconds before using .res again.`);
       return;
     }
     setCooldown(message.author.id, 'res', 15);
@@ -45,7 +45,7 @@ export const resCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle(`${EMOJIS.MONEY} RESIDUALS`)
+      .setTitle(`${EMOJIS.MONEY} Residuals`)
       .setDescription(`**${target.displayName}**`)
       .setColor(0xFFD700)
       .setThumbnail(target.user.displayAvatarURL())

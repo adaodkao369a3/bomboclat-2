@@ -13,19 +13,19 @@ function isRoleMilestone(level: number): boolean {
 function getUnlockedPerks(role: string): string[] {
   switch (role) {
     case 'featured_extra':
-      return ['✨ Custom GIF search unlocked'];
+      return ['<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked'];
     case 'supporting_cast':
-      return ['✨ Custom GIF search unlocked', '🎨 Additional media permissions'];
+      return ['<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked', '<a:happystar:1541974913781338273> Additional media permissions'];
     case 'principal_cast':
       return [
-        '✨ Custom GIF search unlocked',
-        '🎨 Additional media permissions',
+        '<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked',
+        '<a:happystar:1541974913781338273> Additional media permissions',
         '👑 Principal Cast privileges',
       ];
     case 'lead_cast':
       return [
-        '✨ Custom GIF search unlocked',
-        '🎨 Additional media permissions',
+        '<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked',
+        '<a:happystar:1541974913781338273> Additional media permissions',
         '👑 Lead Cast privileges',
         '💎 Mythic shop access',
       ];
@@ -54,17 +54,17 @@ export async function sendLevelUpNotification(
       : 'Keep going to unlock the next progression perk.';
 
     const embed = new EmbedBuilder()
-      .setTitle(result.roleChanged ? '🎬 PROMOTION ALERT!' : '📈 LEVEL UP!')
+      .setTitle(result.roleChanged ? '<a:oldtelephone:1529443123602653225> PROMOTION ALERT!' : '<:greenglossytickcheckmark:1541974842398482472> LEVEL UP!')
       .setDescription(
         result.roleChanged
-          ? `**${displayName}** has been promoted to **${formatRole(currentRole)}**!`
+          ? `**${displayName}** has been promoted to <:glossystaremoji:1541974836861993101> **${formatRole(currentRole)}**!`
           : `**${displayName}** has reached level **${result.newLevel}**!`
       )
       .setColor(0x7B61FF)
       .addFields(
         { name: 'New Level', value: result.newLevel.toString(), inline: true },
         { name: 'Total XP', value: result.newXP.toLocaleString(), inline: true },
-        { name: 'Residuals Earned', value: `+${result.levelUpResiduals}`, inline: true },
+        { name: '<a:doginaldollar:1541974906252828672> Residuals Earned', value: `+${result.levelUpResiduals}`, inline: true },
         { name: 'Current Role', value: formatRole(currentRole), inline: true },
         { name: 'Perks Unlocked', value: perksText, inline: false },
       )

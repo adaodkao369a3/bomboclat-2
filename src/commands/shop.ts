@@ -267,7 +267,7 @@ async function postColorShop(shopChannel: TextChannel, colorBands: Record<string
     const bandColors = colorBands[band];
     if (bandColors.length === 0) continue;
 
-    const title = band === 'common' ? '🎨 Color Shop' : `${COLOR_BAND_SYMBOLS[band] || ''} ${COLOR_BAND_TITLES[band]}`;
+    const title = band === 'common' ? '<a:shoppingcart:1542322214303699095> Color Shop' : `${COLOR_BAND_SYMBOLS[band] || ''} ${COLOR_BAND_TITLES[band]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `colors_${band}.png`;
@@ -481,7 +481,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
-    const title = tier === 'standard' ? '🎭 Archetype Shop' : tier === 'standard2' ? '🎭 More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
+    const title = tier === 'standard' ? '<:crown:1529443082406461521> Archetype Shop' : tier === 'standard2' ? '🎭 More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `archetypes_${tier}.png`;

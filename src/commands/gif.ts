@@ -14,7 +14,7 @@ function createGIFCommand(name: string): Command {
       // Check target limit
       const mentions = message.mentions.members;
       if (mentions && mentions.size > GIF_CONFIG.MAX_TARGETS) {
-        await message.reply(`❌ Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
+        await message.reply(`<:glossyredcancelx:1541974834370842654> Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
         return;
       }
 
@@ -46,7 +46,7 @@ function createGIFCommand(name: string): Command {
       // Fetch GIF
       const gifUrl = await fetchGIF(GIF_COMMANDS[name as keyof typeof GIF_COMMANDS]);
       if (!gifUrl) {
-        await message.reply('❌ No GIF found.');
+        await message.reply('<:glossyredcancelx:1541974834370842654> No GIF found.');
         return;
       }
 
