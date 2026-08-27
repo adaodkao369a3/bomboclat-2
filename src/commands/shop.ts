@@ -277,7 +277,7 @@ async function postColorShop(shopChannel: TextChannel, colorBands: Record<string
     const embed = new EmbedBuilder()
       .setTitle(title)
       .setDescription(`${COLOR_BAND_TITLES[band]} colors — ${COLOR_PRICE_MAP[band]} residuals each. Pick one below to buy or equip it.`)
-      .setColor(0xFFD700)
+      .setColor(0x4900ff)
       .setImage(`attachment://${filename}`);
 
     const selectMenu = new StringSelectMenuBuilder()
@@ -491,7 +491,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
     const embed = new EmbedBuilder()
       .setTitle(title)
       .setDescription(`${ARCHETYPE_TIER_TITLES[tier]} archetypes — Pick one below to buy it.`)
-      .setColor(0x7B61FF)
+      .setColor(0x4900ff)
       .setImage(`attachment://${filename}`);
 
     const selectMenu = new StringSelectMenuBuilder()
@@ -570,7 +570,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
   const detailEmbed = new EmbedBuilder()
     .setTitle(`${archetypeRoleName(archetype.name, archetype.tier)} (${archetype.tier})`)
     .setDescription(owned ? '✅ You already own this archetype!' : (isFreeGrant ? '🎁 Free Booster Grant - No cost!' : `Price: ${archetype.price} residuals`))
-    .setColor(0x7B61FF)
+    .setColor(0x4900ff)
     .addFields([
       { name: 'Tier', value: archetype.tier, inline: true },
       { name: 'Price', value: isFreeGrant ? 'FREE' : archetype.price.toString(), inline: true },

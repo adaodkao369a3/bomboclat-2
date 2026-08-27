@@ -67,7 +67,7 @@ export const levelCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle('<a:pinkarrowright:1542330072839749662> LEVEL PROGRESS')
       .setDescription(`**${target.displayName}**\n\`${roleDisplay}\` ${EMOJIS.CROWN}`)
-      .setColor(0x7B61FF)
+      .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields([
         { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%`, inline: false },

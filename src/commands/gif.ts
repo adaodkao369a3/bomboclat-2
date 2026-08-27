@@ -55,7 +55,7 @@ function createGIFCommand(name: string): Command {
       const embed = new EmbedBuilder()
         .setTitle(`✨ ${name.toUpperCase()} ✨`)
         .setDescription(`${targets} ${caption}`)
-        .setColor(0x9b5de5)
+        .setColor(0x4900ff)
         .setImage(gifUrl)
         .setFooter({ text: 'Powered by Klipy' });
 

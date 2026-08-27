@@ -40,7 +40,7 @@ export const residualsCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle('💰 Residuals Management')
       .setDescription(`Managing Residuals for **${target.displayName}**`)
-      .setColor(0xFFD700)
+      .setColor(0x4900ff)
       .addFields([
         { name: 'Current Balance', value: residualData.balance.toLocaleString(), inline: true },
         { name: 'Lifetime Earned', value: residualData.lifetime_earned.toLocaleString(), inline: true },
@@ -88,7 +88,7 @@ export const residualsCommand: Command = {
           const historyEmbed = new EmbedBuilder()
             .setTitle('📜 Residuals History')
             .setDescription(`Recent transactions for **${target.displayName}**`)
-            .setColor(0xFFD700);
+            .setColor(0x4900ff);
 
           history.forEach((tx: ResidualTransaction) => {
             const sign = tx.amount >= 0 ? '+' : '';

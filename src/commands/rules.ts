@@ -28,7 +28,7 @@ export const rulesCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle('<:mspaward:1542331249690026074> WELCOME TO MI BOMBO STUDIOS 🎥')
       .setDescription('Welcome to the set.\n\nEveryone here is part of the cast — show up, talk, have fun, and make the place worth coming back to.\n\nBomboclat helps keep the studio moving, but you\'re the cast that actually makes the place alive.\n\n<:botkun_smile:1529443061581611120>')
-      .setColor(0x7B61FF)
+      .setColor(0x4900ff)
       .addFields([
         { 
           name: '<:crown:1529443082406461521> PROGRESSION', 

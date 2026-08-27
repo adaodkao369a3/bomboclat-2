@@ -16,7 +16,7 @@ export const adminHelpCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle('🔧 Admin Commands')
       .setDescription('Commands available to admins (Executive Producer & Director)')
-      .setColor(0xFF0000)
+      .setColor(0x4900ff)
       .setFooter({ text: `Admin Prefix: ${ADMIN_PREFIX} | User Prefix: ${PREFIX}` });
 
     const artStylesList = ART_STYLES.map(s => `\`${s}\` - ${ART_STYLE_INFO[s] || ''}`).join('\n');

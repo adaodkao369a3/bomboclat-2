@@ -19,7 +19,7 @@ export const leaderboardCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle('<:glossystaremoji:1541974836861993101> TOP CAST')
       .setDescription('The most active members of MI BOMBO Studios')
-      .setColor(0xFFD700)
+      .setColor(0x4900ff)
       .setFooter({ text: 'MI BOM3O Studios' });
 
     // Add leaderboard entries

@@ -47,7 +47,7 @@ export const resCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.MONEY} Residuals`)
       .setDescription(`**${target.displayName}**`)
-      .setColor(0xFFD700)
+      .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields([
         { name: `${EMOJIS.MONEY} Current Balance`, value: `\`${residualData.balance.toLocaleString()}\``, inline: true },

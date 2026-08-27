@@ -57,7 +57,7 @@ export const manageCommand: Command = {
 
     const embed = new EmbedBuilder()
       .setTitle('🛠️ Manage Your Items')
-      .setColor(0x7B61FF)
+      .setColor(0x4900ff)
       .addFields([
         { name: '🎭 Archetype', value: archetypeLine, inline: false },
         { name: '🎨 Colors', value: colorLines, inline: false },

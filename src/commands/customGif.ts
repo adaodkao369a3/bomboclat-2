@@ -66,9 +66,9 @@ export const customGifCommand: Command = {
     const embed = new EmbedBuilder()
       .setTitle('<:glossystaremoji:1541974836861993101> custom gif')
       .setDescription(`${message.author.toString()} "${query}" ${targets ? targets : ''}`)
-      .setColor(0x9b5de5)
+      .setColor(0x4900ff)
       .setImage(gifUrl)
-      .setFooter({ text: 'mi bombo studios' });
+      
 
     await message.reply({ embeds: [embed] });
   },

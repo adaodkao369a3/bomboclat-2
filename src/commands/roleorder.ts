@@ -270,7 +270,7 @@ export const roleorderCommand: Command = {
       // Build result embed
       const resultEmbed = new EmbedBuilder()
         .setTitle('✅ Role Reorder Complete')
-        .setColor(0x7B61FF)
+        .setColor(0x4900ff)
         .setDescription(`Reordered ${successCount} roles successfully${failCount > 0 ? `, ${failCount} failed` : ''}.`)
         .addFields([
           { name: 'Categories Processed', value: categories.filter(c => c.roles.length > 0).map(c => `${c.name} (${c.roles.length})`).join('\n') || 'None', inline: false },

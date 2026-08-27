@@ -197,7 +197,7 @@ export const clipCommand: Command = {
       const embed = new EmbedBuilder()
         .setTitle(summary.title)
         .setDescription(summary.summary)
-        .setColor(0x7B61FF);
+        .setColor(0x4900ff);
 
       if (directorsNote) {
         embed.addFields({ name: "Director's Note", value: directorsNote, inline: false });
