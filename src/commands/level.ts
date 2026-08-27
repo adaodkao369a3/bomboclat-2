@@ -64,7 +64,7 @@ export const levelCommand: Command = {
       const icon = achieved ? '<:greenglossytickcheckmark:1541974842398482472>' : '<:glossyredcancelx:1541974834370842654>';
       const isCurrent = roleKey === userData.current_progression_role;
       const marker = isCurrent ? ` ${EMOJIS.CROWN}` : '';
-      return `${icon} **${formatRoleName(roleKey)}** \`Lvl ${requiredLevel}+\` — \`${requiredXP.toLocaleString()}\` XP${marker}`;
+      return `${icon} **${formatRoleName(roleKey)}**`;
     }).join('\n');
 
     // Create embed
