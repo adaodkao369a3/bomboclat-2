@@ -26,7 +26,7 @@ export const rulesCommand: Command = {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('🎬 WELCOME TO MI BOMBO STUDIOS 🎥')
+      .setTitle('<:mspaward:1542331249690026074> WELCOME TO MI BOMBO STUDIOS 🎥')
       .setDescription('Welcome to the set.\n\nEveryone here is part of the cast — show up, talk, have fun, and make the place worth coming back to.\n\nBomboclat helps keep the studio moving, but you\'re the cast that actually makes the place alive.\n\n<:botkun_smile:1529443061581611120>')
       .setColor(0x7B61FF)
       .addFields([
@@ -121,11 +121,11 @@ export const rulesCommand: Command = {
                  '**9. Use common sense.**\n' +
                  'If something is obviously intended to ruin everyone else\'s experience, don\'t do it.\n\n' +
                  'Basically:\n\n' +
-                 '**🎬 Have fun. Don\'t be an asshole. Let everyone enjoy the production.**',
+                 '**<:mspaward:1542331249690026074> Have fun. Don\'t be an asshole. Let everyone enjoy the production.**',
           inline: false 
         },
       ])
-      .setFooter({ text: '🎬 CAMERAS ARE ROLLING. Welcome to MI BOMBO Studios. Now go make something worth putting in the outtakes. 🎬' });
+      .setFooter({ text: '<:mspaward:1542331249690026074> CAMERAS ARE ROLLING. Welcome to MI BOMBO Studios. Now go make something worth putting in the outtakes. <:mspaward:1542331249690026074>' });
 
     // Set image from attachment if successfully fetched, otherwise use external URL
     if (gifAttachment) {

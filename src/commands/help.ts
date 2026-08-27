@@ -1,5 +1,4 @@
 import { EmbedBuilder } from 'discord.js';
-import { PREFIX } from '../config/index.js';
 import { Command } from './index.js';
 
 export const helpCommand: Command = {
@@ -8,17 +7,16 @@ export const helpCommand: Command = {
   async execute(message, _args, _prefix) {
 
     const embed = new EmbedBuilder()
-      .setTitle('🎬 Bomboclat Commands')
-      .setDescription('Use these commands in chat.')
-      .setColor(0x9b5de5)
-      .setFooter({ text: `Prefix: ${PREFIX}` });
+      .setTitle('<:mspaward:1542331249690026074> Bomboclat Commands')
+      .setDescription('Use these commands in chat. (prefix ".")')
+      .setColor(0x4900ff);
 
     // Public commands
     embed.addFields([
-      { name: 'Profile & Progression', value: '`.profile`, `.level`, `.res`, `.leaderboard`', inline: true },
-      { name: 'fun commands', value: '`.rizz`, `.larp`, `.blush`, `.cooked`, `.fumble`, `.cope`, `.grass`, `.aura`, `.huh`, `.cry`', inline: true },
-      { name: 'Custom GIF', value: '`.c <query>` (Featured Extra+ or Guest Star)', inline: true },
-      { name: 'Manage shop items', value: '`.manage` - equip/unequip your owned colors', inline: true },
+      { name: '<:glossystaremoji:1541974836861993101> Profile & Progression', value: '`.profile` `.level` `.res` `.leaderboard`', inline: true },
+      { name: '<a:rainbowdaftpunk:1536398335651352657> Fun Commands', value: '`.rizz` `.larp` `.blush` `.cooked` `.fumble` `.cope` `.grass` `.aura` `.huh` `.cry`', inline: true },
+      { name: '<:sunglas:1536398312448589884> Custom GIF', value: '`.c <query>`', inline: true },
+      { name: '<a:shoppingcart:1542322214303699095> Manage shop items', value: '`.manage` - manage roles', inline: true },
     ]);
 
     await message.reply({ embeds: [embed] });
