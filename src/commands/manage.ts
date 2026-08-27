@@ -41,7 +41,7 @@ export const manageCommand: Command = {
     ]);
 
     if (userColors.length === 0 && userArchetypes.length === 0) {
-      await message.reply('🎭 You don\'t own any shop items yet — check out the shop channel to buy a color or archetype.');
+      await message.reply('<:crown:1529443082406461521> You don\'t own any shop items yet — check out the shop channel to buy a color or archetype.');
       return;
     }
 
@@ -59,8 +59,8 @@ export const manageCommand: Command = {
       .setTitle('🛠️ Manage Your Items')
       .setColor(0x4900ff)
       .addFields([
-        { name: '🎭 Archetype', value: archetypeLine, inline: false },
-        { name: '🎨 Colors', value: colorLines, inline: false },
+        { name: '<:crown:1529443082406461521> Archetype', value: archetypeLine, inline: false },
+        { name: '<:designpalette:1542338996217184356> Colors', value: colorLines, inline: false },
       ])
       .setFooter({ text: 'Use the buttons below to manage your items.' });
 
@@ -176,10 +176,10 @@ export const manageCommand: Command = {
               if (role) {
                 if (equip && !member.roles.cache.has(role.id)) {
                   await member.roles.add(role, 'Color equipped via .manage');
-                  roleMessage = `\n🎨 Role assigned: **${role.name}**`;
+                  roleMessage = `\n<:designpalette:1542338996217184356> Role assigned: **${role.name}**`;
                 } else if (!equip && member.roles.cache.has(role.id)) {
                   await member.roles.remove(role, 'Color unequipped via .manage');
-                  roleMessage = `\n🎨 Role removed: **${role.name}**`;
+                  roleMessage = `\n<:designpalette:1542338996217184356> Role removed: **${role.name}**`;
                 }
               }
             } catch (error) {

@@ -17,21 +17,21 @@ export function formatArchetypeName(name: string, tier: string): string {
 }
 
 // Register font for text rendering
-const FONT_PATH = join(process.cwd(), 'assets/fonts/Roboto-Bold.ttf');
+const FONT_PATH = join(process.cwd(), 'assets/fonts/AMORIA.otf');
 let fontLoaded = false;
 
 try {
   if (existsSync(FONT_PATH)) {
-    const success = GlobalFonts.registerFromPath(FONT_PATH, 'Roboto');
+    const success = GlobalFonts.registerFromPath(FONT_PATH, 'AMORIA');
     
     if (success) {
       fontLoaded = true;
-      console.log('[ShopImages] Font loaded: assets/fonts/Roboto-Bold.ttf');
+      console.log('[ShopImages] Font loaded: assets/fonts/AMORIA.otf');
     } else {
       console.error('[ShopImages] Font registration failed');
     }
   } else {
-    console.error('[ShopImages] Font file not found: assets/fonts/Roboto-Bold.ttf');
+    console.error('[ShopImages] Font file not found: assets/fonts/AMORIA.otf');
   }
 } catch (error) {
   console.error('[ShopImages] Failed to load font:', error);
@@ -191,7 +191,7 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.save();
       
       ctx.fillStyle = TEXT_COLOR;
-      ctx.font = 'bold 20px Roboto';
+      ctx.font = 'bold 20px AMORIA';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
 
@@ -272,7 +272,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
 
       ctx.save();
 
-      ctx.font = 'bold 22px Roboto';
+      ctx.font = 'bold 22px AMORIA';
 
       // Strong shadow for better text visibility over any background
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';

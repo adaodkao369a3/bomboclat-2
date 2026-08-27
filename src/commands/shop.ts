@@ -399,7 +399,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
           const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name, color.price_band);
           let message = `${isFreeGrant ? '✅ Free color claimed and equipped!' : '✅ Color purchased and equipped!'}`;
-          message += roleAssigned ? `\n🎨 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
+          message += roleAssigned ? `\n<:designpalette:1542338996217184356> Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
 
           await buttonInteraction.update({
             content: message,
@@ -417,7 +417,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
           const roleAssigned = member && color.role_id ? await assignShopRole(member, color.role_id) : false;
           const roleName = member?.guild.roles.cache.get(color.role_id || '')?.name || colorRoleName(color.name, color.price_band);
           await buttonInteraction.update({
-            content: roleAssigned ? `✅ Color equipped!\n🎨 Role confirmed: **${roleName}**` : '✅ Color equipped!\n⚠️ The color role could not be assigned.',
+            content: roleAssigned ? `✅ Color equipped!\n<:designpalette:1542338996217184356> Role confirmed: **${roleName}**` : '✅ Color equipped!\n⚠️ The color role could not be assigned.',
             embeds: [],
             components: [],
           });
@@ -442,7 +442,7 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
             }
           }
           await buttonInteraction.update({
-            content: roleRemoved ? '✅ Color unequipped.\n🎨 Role removed — the color stays in your collection to re-equip anytime.' : '✅ Color unequipped.',
+            content: roleRemoved ? '✅ Color unequipped.\n<:designpalette:1542338996217184356> Role removed — the color stays in your collection to re-equip anytime.' : '✅ Color unequipped.',
             embeds: [],
             components: [],
           });
@@ -481,7 +481,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
     const tierArchetypes = archetypeTiers[tier];
     if (tierArchetypes.length === 0) continue;
 
-    const title = tier === 'standard' ? '<:crown:1529443082406461521> Archetype Shop' : tier === 'standard2' ? '🎭 More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
+    const title = tier === 'standard' ? '<:crown:1529443082406461521> Archetype Shop' : tier === 'standard2' ? '<:crown:1529443082406461521> More Archetypes' : `${ARCHETYPE_TIER_SYMBOLS[tier]} ${ARCHETYPE_TIER_TITLES[tier]}`;
     await deleteExistingShopMessages(shopChannel, title);
 
     const filename = `archetypes_${tier}.png`;
@@ -620,7 +620,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
           if (result.refund && result.refund > 0) {
             message += `\n💰 Refunded ${result.refund} residuals (50% of previous archetype)`;
           }
-          message += roleAssigned ? `\n🎭 Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
+          message += roleAssigned ? `\n<:crown:1529443082406461521> Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
           
           await buttonInteraction.update({
             content: message,
