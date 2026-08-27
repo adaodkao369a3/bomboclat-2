@@ -176,12 +176,12 @@ export const CHANNELS = {
 
 // Randomized GIF search queries (via Klipy) - a different one is rolled every time
 export const WELCOME_GIF_QUERIES = [
-  'welcome',
-  'welcome party',
+  'welcome anime',
+  'anime welcome to',
   'welcome to',
-  'excited welcome wave',
-  'hooray celebration',
-  'applause cheering',
+  'excited welcome wave anime',
+  'hooray celebration anime',
+  'applause cheering anime',
 ];
 
 // Guest Star (booster) shoutouts pull from guest star / red carpet themed GIFs
