@@ -56,7 +56,7 @@ export const manageCommand: Command = {
       : '_None owned_';
 
     const embed = new EmbedBuilder()
-      .setTitle('🛠️ Manage Your Items')
+      .setTitle('<a:settings:1542343011600568320> Manage Your Items')
       .setColor(0x4900ff)
       .addFields([
         { name: '<:crown:1529443082406461521> Archetype', value: archetypeLine, inline: false },

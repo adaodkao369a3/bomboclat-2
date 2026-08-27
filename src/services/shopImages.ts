@@ -191,18 +191,12 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.save();
       
       ctx.fillStyle = TEXT_COLOR;
-      ctx.font = 'bold 20px AMORIA';
+      ctx.font = '25px AMORIA';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-
-      // Add shadow for better text visibility
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
       
       // Display format: "color name #hex" - plain name for images (no symbols)
-      const plainName = color.name.toLowerCase();
+      const plainName = color.name.toUpperCase();
       const displayText = `${plainName} ${color.hex}`;
       const label = truncateLabel(ctx, displayText, tileWidth - 20);
       ctx.fillText(label, x + tileWidth / 2, y + tileHeight + 32);
@@ -267,18 +261,12 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // than overlaid on top of it), using the same shadowed-text technique
       // as the smash/smashmax image generator: a soft dark shadow behind
       // light text keeps it legible over the varied background color.
-      const plainName = archetype.name.toLowerCase();
+      const plainName = archetype.name.toUpperCase();
       const label = truncateLabel(ctx, plainName, rowTileWidth - 16);
 
       ctx.save();
 
-      ctx.font = 'bold 22px AMORIA';
-
-      // Strong shadow for better text visibility over any background
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
+      ctx.font = '25px AMORIA';
 
       ctx.fillStyle = TEXT_COLOR;
       ctx.textAlign = 'center';
