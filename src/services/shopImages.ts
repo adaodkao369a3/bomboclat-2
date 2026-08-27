@@ -197,13 +197,22 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       const plainName = color.name.toUpperCase();
       const hexCode = color.hex;
       
-      // Draw color name in regular font
+      // Calculate total width to center both parts
+      ctx.font = '25px LEMONMILK';
       const nameWidth = ctx.measureText(plainName).width;
-      ctx.fillText(plainName, x + tileWidth / 2, y + tileHeight + 32);
+      ctx.font = 'italic 25px LEMONMILK-Italic';
+      const hexWidth = ctx.measureText(hexCode).width;
+      const totalWidth = nameWidth + hexWidth + 10; // 10px spacing
+      
+      const startX = x + tileWidth / 2 - totalWidth / 2;
+      
+      // Draw color name in regular font
+      ctx.font = '25px LEMONMILK';
+      ctx.fillText(plainName, startX, y + tileHeight + 32);
       
       // Draw hex code in italic font
       ctx.font = 'italic 25px LEMONMILK-Italic';
-      ctx.fillText(hexCode, x + tileWidth / 2 + nameWidth + 10, y + tileHeight + 32);
+      ctx.fillText(hexCode, startX + nameWidth + 10, y + tileHeight + 32);
       
       ctx.restore();
     });
