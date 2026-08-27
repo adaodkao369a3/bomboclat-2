@@ -59,7 +59,7 @@ export const profileCommand: Command = {
     const fields = [
       { name: 'Level', value: currentLevel.toString(), inline: true },
       { name: 'Current XP', value: `\`${currentXP.toLocaleString()}\``, inline: true },
-      { name: 'XP Progress', value: `\`${progressBar} ${Math.floor(xpProgress)}%\`\n\`${xpRemaining.toLocaleString()} XP to Level ${currentLevel + 1}\``, inline: false },
+      { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%\n\`${xpRemaining.toLocaleString()} XP to Level ${currentLevel + 1}\``, inline: false },
       { name: '<a:doginaldollar:1541974906252828672> Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
     ];
 

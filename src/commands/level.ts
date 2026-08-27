@@ -77,7 +77,7 @@ export const levelCommand: Command = {
         { name: 'Current XP', value: `\`${currentXP.toLocaleString()}\``, inline: true },
         { name: 'XP Required for Next Level', value: `\`${nextLevelXP.toLocaleString()}\``, inline: true },
         { name: 'XP Remaining', value: `\`${xpRemaining.toLocaleString()}\``, inline: true },
-        { name: 'XP Progress', value: `\`${progressBar} ${Math.floor(xpProgress)}%\``, inline: false },
+        { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%`, inline: false },
         { name: '<:crown:1529443082406461521> Role Progression', value: roleLadder, inline: false },
       ])
       .setFooter({ text: 'MI BOM3O Studios' });
