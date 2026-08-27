@@ -594,7 +594,7 @@ export async function setColorActive(
 export async function sellColors(
   userId: string,
   colorIds: number[]
-): Promise<{ success: boolean; reason?: string; refundTotal?: number; sold?: { colorId: number; name: string; refund: number }[] }> {
+): Promise<{ success: boolean; reason?: string; refundTotal?: number; sold?: { colorId: number; name: string; refund: number; roleId?: string }[] }> {
   if (colorIds.length === 0) {
     return { success: false, reason: 'No colors selected' };
   }
@@ -604,7 +604,7 @@ export async function sellColors(
     await client.query('BEGIN');
 
     const ownedResult = await client.query(
-      `SELECT uc.color_id, uc.free_grant, sc.name, sc.price_band
+      `SELECT uc.color_id, uc.free_grant, sc.name, sc.price_band, sc.role_id
        FROM user_colors uc
        JOIN shop_colors sc ON uc.color_id = sc.id
        WHERE uc.user_id = $1 AND uc.color_id = ANY($2::int[])`,
@@ -620,6 +620,7 @@ export async function sellColors(
       colorId: row.color_id,
       name: row.name,
       refund: row.free_grant ? 0 : Math.floor(getColorPrice(row.price_band) * 0.5),
+      roleId: row.role_id,
     }));
     const refundTotal = sold.reduce((sum: number, item: { refund: number }) => sum + item.refund, 0);
 
@@ -668,13 +669,13 @@ export async function sellColors(
 // sells whichever one they have.
 export async function sellArchetype(
   userId: string
-): Promise<{ success: boolean; reason?: string; refund?: number; name?: string }> {
+): Promise<{ success: boolean; reason?: string; refund?: number; name?: string; roleId?: string }> {
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
     const ownedResult = await client.query(
-      `SELECT ua.archetype_id, ua.free_grant, sa.name, sa.price
+      `SELECT ua.archetype_id, ua.free_grant, sa.name, sa.price, sa.role_id
        FROM user_archetypes ua
        JOIN shop_archetypes sa ON ua.archetype_id = sa.id
        WHERE ua.user_id = $1`,
@@ -711,7 +712,7 @@ export async function sellArchetype(
     }
 
     await client.query('COMMIT');
-    return { success: true, refund, name: owned.name };
+    return { success: true, refund, name: owned.name, roleId: owned.role_id };
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error selling archetype:', error);

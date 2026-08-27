@@ -291,8 +291,30 @@ async function handleSellColors(interaction: any, userId: string, userColors: an
       if (confirmInteraction.customId === 'confirm_sell_colors') {
         const result = await sellColors(userId, selectedColorIds);
         if (result.success) {
+          // Remove Discord roles for sold colors
+          const member = await confirmInteraction.guild?.members.fetch(userId).catch(() => null);
+          let rolesRemoved = 0;
+          
+          if (member && result.sold) {
+            for (const sold of result.sold) {
+              if (sold.roleId) {
+                try {
+                  await member.roles.remove(sold.roleId, 'Color sold');
+                  rolesRemoved++;
+                } catch (error) {
+                  console.error(`Failed to remove role ${sold.roleId}:`, error);
+                }
+              }
+            }
+          }
+          
+          let message = `✅ Successfully sold ${result.sold?.length || 0} color(s) for **${result.refundTotal} residuals**!`;
+          if (rolesRemoved > 0) {
+            message += `\n<:designpalette:1542338996217184356> Removed ${rolesRemoved} role(s) from your profile.`;
+          }
+          
           await confirmInteraction.update({
-            content: `✅ Successfully sold ${result.sold?.length || 0} color(s) for **${result.refundTotal} residuals**!`,
+            content: message,
             components: [],
           });
         } else {
@@ -350,8 +372,26 @@ async function handleSellArchetype(interaction: any, userId: string, userArchety
     if (confirmInteraction.customId === 'confirm_sell_archetype') {
       const result = await sellArchetype(userId);
       if (result.success) {
+        // Remove Discord role for sold archetype
+        const member = await confirmInteraction.guild?.members.fetch(userId).catch(() => null);
+        let roleRemoved = false;
+        
+        if (member && result.roleId) {
+          try {
+            await member.roles.remove(result.roleId, 'Archetype sold');
+            roleRemoved = true;
+          } catch (error) {
+            console.error(`Failed to remove role ${result.roleId}:`, error);
+          }
+        }
+        
+        let message = `✅ Successfully sold **${result.name}** for **${result.refund} residuals**!`;
+        if (roleRemoved) {
+          message += `\n<:crown:1529443082406461521> Role removed from your profile.`;
+        }
+        
         await confirmInteraction.update({
-          content: `✅ Successfully sold **${result.name}** for **${result.refund} residuals**!`,
+          content: message,
           components: [],
         });
       } else {
