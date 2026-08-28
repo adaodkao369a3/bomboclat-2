@@ -30,6 +30,9 @@ export const customGifCommand: Command = {
       return;
     }
 
+    // Add anime suffix for search (but don't show it in embed)
+    const searchQuery = `${query} anime`;
+
     // Calculate cooldown based on targets
     let cooldownTime = GIF_CONFIG.NORMAL_COOLDOWN_SECONDS;
     if (mentions && mentions.size >= 2) {
@@ -56,7 +59,7 @@ export const customGifCommand: Command = {
     }
 
     // Fetch GIF
-    const gifUrl = await fetchGIF(query);
+    const gifUrl = await fetchGIF(searchQuery);
     if (!gifUrl) {
       await message.reply(`bro i can't find this shit:\n${query}`);
       return;
