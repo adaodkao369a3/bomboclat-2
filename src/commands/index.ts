@@ -20,6 +20,7 @@ import { shopCommand } from './shop.js';
 import { roleorderCommand } from './roleorder.js';
 import { manageCommand } from './manage.js';
 import { resetCommand } from './reset.js';
+import { setupRolesCommand } from './setupRoles.js';
 
 export interface Command {
   name: string;
@@ -55,6 +56,7 @@ export async function registerCommands(client: Client): Promise<void> {
     roleorderCommand,
     manageCommand,
     resetCommand,
+    setupRolesCommand,
   ];
 
   for (const command of commands) {
