@@ -33,11 +33,11 @@ export const PROGRESSION_ROLE_KEYS = [
 ] as const;
 
 // Arc definitions for cleanup logic
-export const ARCS = {
+export const ARCS: Record<string, ProgressionRoleName[]> = {
   CAST: ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'],
   ANTI_HERO: ['rogue', 'mercenary', 'vigilante', 'renegade'],
   VILLAIN: ['villain', 'nemesis', 'mastermind', 'overlord'],
-} as const;
+};
 
 // Arc thresholds - which role marks the start of each arc
 export const ARC_START_ROLES = {
@@ -58,8 +58,6 @@ export function calculateLevelUpResiduals(newLevel: number): number {
   const maxResiduals = 100;
   return Math.floor(minResiduals + (maxResiduals - minResiduals) * normalizedLevel);
 }
-
-export type ProgressionRoleName = (typeof PROGRESSION_ROLE_KEYS)[number];
 
 export function calculateMessageXP(): number {
   const min = XP_CONFIG.MESSAGE_XP_MIN;

@@ -28,7 +28,7 @@ console.log('Running XP calculation tests...');
 assertEqual(calculateLevelFromXP(0), 0, '0 XP should give level 0');
 assertEqual(calculateLevelFromXP(-1), 0, 'Negative XP should give level 0');
 assertEqual(calculateLevelFromXP(Number.NaN), 0, 'NaN XP should give level 0');
-assertEqual(calculateLevelFromXP(Number.POSITIVE_INFINITY), 25, 'Infinite XP should reach the maximum configured level');
+assertEqual(calculateLevelFromXP(Number.POSITIVE_INFINITY), 60, 'Infinite XP should reach the maximum configured level');
 
 for (const [index, threshold] of XP_CONFIG.LEVEL_XP_REQUIREMENTS.entries()) {
   assertEqual(
@@ -46,7 +46,7 @@ for (const [index, threshold] of XP_CONFIG.LEVEL_XP_REQUIREMENTS.entries()) {
 }
 
 assertEqual(calculateLevelFromXP(200), 2, 'XP between levels 2 and 3 should remain level 2');
-assertEqual(calculateLevelFromXP(20000), 25, 'XP above the maximum threshold should remain at level 25');
+assertEqual(calculateLevelFromXP(200000), 60, 'XP above the maximum threshold should remain at level 60');
 
 // XP remaining calculation
 const currentXP = 275;
@@ -58,12 +58,10 @@ const percentage = calculateProgressPercentage(currentXP, currentLevel);
 assertApproximate(percentage, 83.33, 0.1, '275 XP at level 3 should be ~83.33% progress');
 
 const xpForLevel10 = calculateXPForLevel(10);
-assertEqual(xpForLevel10, 2750, 'Level 10 should require 2750 XP');
+assertEqual(xpForLevel10, 3600, 'Level 10 should require 3600 XP');
 
 const xpForLevel30 = calculateXPForLevel(30);
-const lastXP = 16250; // Level 25 threshold
-const expected30 = lastXP + (30 - 25) * Math.floor(lastXP * 0.5);
-assertApproximate(xpForLevel30, expected30, 1, 'Level 30 should extrapolate correctly');
+assertEqual(xpForLevel30, 39300, 'Level 30 should require 39300 XP');
 
 const demotionPlan = getProgressionRolePlan(4, new Set([
   'audience',
@@ -90,22 +88,25 @@ assertEqual(
 
 // Test level-up residual curve (4a)
 const level1Residuals = calculateLevelUpResiduals(1);
-assertApproximate(level1Residuals, 12, 1, 'Level 1 should award ~12 residuals (low end of 10-50 range)');
+assertApproximate(level1Residuals, 11, 1, 'Level 1 should award ~11 residuals (low end of 10-100 range)');
 
 const level13Residuals = calculateLevelUpResiduals(13);
-assertApproximate(level13Residuals, 31, 1, 'Level 13 should award ~31 residuals (mid range)');
+assertApproximate(level13Residuals, 30, 1, 'Level 13 should award ~30 residuals (mid range)');
 
 const level25Residuals = calculateLevelUpResiduals(25);
-assertApproximate(level25Residuals, 50, 1, 'Level 25 should award ~50 residuals (high end of 10-50 range)');
+assertApproximate(level25Residuals, 47, 1, 'Level 25 should award ~47 residuals');
 
 const level30Residuals = calculateLevelUpResiduals(30);
-assertApproximate(level30Residuals, 50, 1, 'Level 30 (beyond max) should award max 50 residuals');
+assertApproximate(level30Residuals, 55, 1, 'Level 30 should award ~55 residuals');
+
+const level60Residuals = calculateLevelUpResiduals(60);
+assertApproximate(level60Residuals, 100, 1, 'Level 60 should award max 100 residuals');
 
 // Test residuals are within bounds
-for (let level = 1; level <= 30; level++) {
+for (let level = 1; level <= 60; level++) {
   const residuals = calculateLevelUpResiduals(level);
-  if (residuals < 10 || residuals > 50) {
-    throw new Error(`Level ${level} residuals ${residuals} outside 10-50 range`);
+  if (residuals < 10 || residuals > 100) {
+    throw new Error(`Level ${level} residuals ${residuals} outside 10-100 range`);
   }
 }
 
@@ -120,15 +121,15 @@ const highBaseXP = 15;
 const highBoostedXP = Math.floor(highBaseXP * boosterMultiplier);
 assertEqual(highBoostedXP, 18, 'Booster should get +25% XP (15 -> 18)');
 
-// Test that daily XP can exceed 500 (hard cap removed)
-const highDailyXP = 20000;
+// Test that daily XP can exceed 1000 (hard cap removed)
+const highDailyXP = 200000;
 const levelAtHighXP = calculateLevelFromXP(highDailyXP);
-assertEqual(levelAtHighXP, 25, '20000 XP should reach level 25 (proving daily XP can exceed 500)');
+assertEqual(levelAtHighXP, 60, '200000 XP should reach level 60 (proving daily XP can exceed 1000)');
 
 // Test multiple level crossing scenario
-// Level 7 (1800 XP) to Level 10 (2750 XP) - should cross levels 8, 9, 10
+// Level 7 (1800 XP) to Level 10 (3600 XP) - should cross levels 8, 9, 10
 const level7XP = XP_CONFIG.LEVEL_XP_REQUIREMENTS[6]; // 1800
-const level10XP = XP_CONFIG.LEVEL_XP_REQUIREMENTS[9]; // 2750
+const level10XP = XP_CONFIG.LEVEL_XP_REQUIREMENTS[9]; // 3600
 const level7 = calculateLevelFromXP(level7XP);
 const level10 = calculateLevelFromXP(level10XP);
 assertEqual(level7, 7, 'Level 7 threshold should give level 7');
@@ -148,14 +149,14 @@ const level9Residuals = calculateLevelUpResiduals(9);
 const level10Residuals = calculateLevelUpResiduals(10);
 
 // Verify each level's residuals are within bounds and increasing
-if (level8Residuals < 10 || level8Residuals > 50) {
-  throw new Error(`Level 8 residuals ${level8Residuals} outside 10-50 range`);
+if (level8Residuals < 10 || level8Residuals > 100) {
+  throw new Error(`Level 8 residuals ${level8Residuals} outside 10-100 range`);
 }
-if (level9Residuals < 10 || level9Residuals > 50) {
-  throw new Error(`Level 9 residuals ${level9Residuals} outside 10-50 range`);
+if (level9Residuals < 10 || level9Residuals > 100) {
+  throw new Error(`Level 9 residuals ${level9Residuals} outside 10-100 range`);
 }
-if (level10Residuals < 10 || level10Residuals > 50) {
-  throw new Error(`Level 10 residuals ${level10Residuals} outside 10-50 range`);
+if (level10Residuals < 10 || level10Residuals > 100) {
+  throw new Error(`Level 10 residuals ${level10Residuals} outside 10-100 range`);
 }
 
 // Verify residuals increase with level
