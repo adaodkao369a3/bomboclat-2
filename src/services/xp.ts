@@ -13,20 +13,49 @@ import {
 import { ResidualsService } from './residuals.js';
 
 export const PROGRESSION_ROLE_KEYS = [
+  // CAST ARC
   'audience',
   'extra',
   'featured_extra',
   'supporting_cast',
   'principal_cast',
   'lead_cast',
+  // ANTI-HERO ARC
+  'rogue',
+  'mercenary',
+  'vigilante',
+  'renegade',
+  // VILLAIN ARC
+  'villain',
+  'nemesis',
+  'mastermind',
+  'overlord',
 ] as const;
 
-// Calculate residuals awarded on level-up (10-50 range, scaling with level)
+// Arc definitions for cleanup logic
+export const ARCS = {
+  CAST: ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'],
+  ANTI_HERO: ['rogue', 'mercenary', 'vigilante', 'renegade'],
+  VILLAIN: ['villain', 'nemesis', 'mastermind', 'overlord'],
+} as const;
+
+// Arc thresholds - which role marks the start of each arc
+export const ARC_START_ROLES = {
+  CAST: 'audience',
+  ANTI_HERO: 'rogue',
+  VILLAIN: 'villain',
+} as const;
+
+export type ArcName = keyof typeof ARCS;
+export type ProgressionRoleName = (typeof PROGRESSION_ROLE_KEYS)[number];
+
+// Calculate residuals awarded on level-up (10-100 range, scaling with level)
+// Increased max to 100 to accommodate the extended 60-level progression
 export function calculateLevelUpResiduals(newLevel: number): number {
   const maxLevel = XP_CONFIG.LEVEL_XP_REQUIREMENTS.length;
   const normalizedLevel = Math.min(newLevel, maxLevel) / maxLevel;
   const minResiduals = 10;
-  const maxResiduals = 50;
+  const maxResiduals = 100;
   return Math.floor(minResiduals + (maxResiduals - minResiduals) * normalizedLevel);
 }
 
@@ -112,6 +141,24 @@ export function getRoleFromLevel(level: number): string {
   return highestRole;
 }
 
+// Helper function to determine which arc a role belongs to
+export function getArcForRole(roleName: string): ArcName | null {
+  for (const [arcName, roles] of Object.entries(ARCS)) {
+    if (roles.includes(roleName as ProgressionRoleName)) {
+      return arcName as ArcName;
+    }
+  }
+  return null;
+}
+
+// Helper function to get all roles in an arc up to and including a target role
+export function getRolesInArcUpTo(arcName: ArcName, targetRole: ProgressionRoleName): ProgressionRoleName[] {
+  const arcRoles = ARCS[arcName];
+  const targetIndex = arcRoles.indexOf(targetRole);
+  if (targetIndex === -1) return [];
+  return arcRoles.slice(0, targetIndex + 1);
+}
+
 export interface ProgressionRolePlan {
   targetRole: ProgressionRoleName;
   expectedRoles: ProgressionRoleName[];
@@ -124,9 +171,32 @@ export function getProgressionRolePlan(
   assignedRoles: ReadonlySet<string>
 ): ProgressionRolePlan {
   const targetRole = getRoleFromLevel(level) as ProgressionRoleName;
-  const targetIndex = PROGRESSION_ROLE_KEYS.indexOf(targetRole);
-  const expectedRoles = PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
+  const targetArc = getArcForRole(targetRole);
+  
+  // Determine expected roles based on arc logic
+  let expectedRoles: ProgressionRoleName[];
+  
+  if (targetArc === 'CAST') {
+    // In Cast arc: keep Audience + all Cast roles up to target
+    expectedRoles = getRolesInArcUpTo('CAST', targetRole);
+  } else if (targetArc === 'ANTI_HERO') {
+    // In Anti-Hero arc: keep Audience + all Anti-Hero roles up to target
+    const antiHeroRoles = getRolesInArcUpTo('ANTI_HERO', targetRole);
+    expectedRoles = ['audience', ...antiHeroRoles];
+  } else if (targetArc === 'VILLAIN') {
+    // In Villain arc: keep Audience + all Villain roles up to target
+    const villainRoles = getRolesInArcUpTo('VILLAIN', targetRole);
+    expectedRoles = ['audience', ...villainRoles];
+  } else {
+    // Fallback to original logic
+    const targetIndex = PROGRESSION_ROLE_KEYS.indexOf(targetRole);
+    expectedRoles = PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
+  }
+  
   const missingRoles = expectedRoles.filter(role => !assignedRoles.has(role));
+  
+  // Outdated roles are those assigned but not in expected roles
+  // This handles arc cleanup by removing previous arc roles
   const outdatedRoles = PROGRESSION_ROLE_KEYS.filter(
     role => assignedRoles.has(role) && !expectedRoles.includes(role)
   );
@@ -386,9 +456,10 @@ export async function awardXP(
       );
     }
 
-    // Check for daily XP bonus (first time crossing 200 XP in a day)
-    const DAILY_BONUS_THRESHOLD = 200;
-    const DAILY_BONUS_AMOUNT = 30;
+    // Check for daily XP bonus (first time crossing 400 XP in a day)
+    // Increased from 200 to 400 to match the increased daily cap (500->1000)
+    const DAILY_BONUS_THRESHOLD = 400;
+    const DAILY_BONUS_AMOUNT = 50; // Increased from 30 to 50 for higher progression
     const dailyXPBeforeAward = userData.daily_xp_earned;
     const dailyXPAfterAward = dailyXPBeforeAward + xpToAward;
     

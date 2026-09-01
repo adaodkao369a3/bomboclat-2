@@ -166,4 +166,133 @@ if (level10Residuals < level9Residuals) {
   throw new Error(`Level 10 residuals ${level10Residuals} should be >= level 9 residuals ${level9Residuals}`);
 }
 
+// ARC CLEANUP TESTS
+console.log('Testing arc role cleanup logic...');
+
+// Test 1: Cast arc stacking (should keep all Cast roles)
+const castPlan = getProgressionRolePlan(19, new Set([
+  'audience',
+  'extra',
+  'featured_extra',
+  'supporting_cast',
+  'principal_cast',
+]));
+assertEqual(
+  castPlan.expectedRoles.join(','),
+  'audience,extra,featured_extra,supporting_cast,principal_cast',
+  'Cast arc should keep all Cast roles up to Principal Cast'
+);
+assertEqual(
+  castPlan.outdatedRoles.length,
+  0,
+  'Cast arc should have no outdated roles when all are within Cast arc'
+);
+
+// Test 2: Cast to Anti-Hero transition (should remove all Cast roles)
+const antiHeroPlan = getProgressionRolePlan(30, new Set([
+  'audience',
+  'extra',
+  'featured_extra',
+  'supporting_cast',
+  'principal_cast',
+  'lead_cast',
+]));
+assertEqual(
+  antiHeroPlan.expectedRoles.join(','),
+  'audience,rogue',
+  'Anti-Hero arc should keep only Audience + Rogue (remove all Cast roles)'
+);
+assertEqual(
+  antiHeroPlan.outdatedRoles.join(','),
+  'extra,featured_extra,supporting_cast,principal_cast,lead_cast',
+  'Anti-Hero arc should remove all previous Cast progression roles'
+);
+
+// Test 3: Anti-Hero arc stacking (should keep all Anti-Hero roles)
+const antiHeroStackPlan = getProgressionRolePlan(34, new Set([
+  'audience',
+  'rogue',
+  'mercenary',
+]));
+assertEqual(
+  antiHeroStackPlan.expectedRoles.join(','),
+  'audience,rogue,mercenary',
+  'Anti-Hero arc should keep all Anti-Hero roles up to Mercenary'
+);
+assertEqual(
+  antiHeroStackPlan.outdatedRoles.length,
+  0,
+  'Anti-Hero arc should have no outdated roles when all are within Anti-Hero arc'
+);
+
+// Test 4: Anti-Hero to Villain transition (should remove all Anti-Hero roles)
+const villainPlan = getProgressionRolePlan(48, new Set([
+  'audience',
+  'rogue',
+  'mercenary',
+  'vigilante',
+  'renegade',
+]));
+assertEqual(
+  villainPlan.expectedRoles.join(','),
+  'audience,villain',
+  'Villain arc should keep only Audience + Villain (remove all Anti-Hero roles)'
+);
+assertEqual(
+  villainPlan.outdatedRoles.join(','),
+  'rogue,mercenary,vigilante,renegade',
+  'Villain arc should remove all previous Anti-Hero progression roles'
+);
+
+// Test 5: Villain arc stacking (should keep all Villain roles)
+const villainStackPlan = getProgressionRolePlan(52, new Set([
+  'audience',
+  'villain',
+  'nemesis',
+]));
+assertEqual(
+  villainStackPlan.expectedRoles.join(','),
+  'audience,villain,nemesis',
+  'Villain arc should keep all Villain roles up to Nemesis'
+);
+assertEqual(
+  villainStackPlan.outdatedRoles.length,
+  0,
+  'Villain arc should have no outdated roles when all are within Villain arc'
+);
+
+// Test 6: Direct Cast to Villain transition (should remove all Cast roles)
+const castToVillainPlan = getProgressionRolePlan(48, new Set([
+  'audience',
+  'extra',
+  'featured_extra',
+  'supporting_cast',
+  'principal_cast',
+  'lead_cast',
+]));
+assertEqual(
+  castToVillainPlan.expectedRoles.join(','),
+  'audience,villain',
+  'Direct Cast to Villain should keep only Audience + Villain (remove all Cast roles)'
+);
+assertEqual(
+  castToVillainPlan.outdatedRoles.join(','),
+  'extra,featured_extra,supporting_cast,principal_cast,lead_cast',
+  'Direct Cast to Villain should remove all Cast progression roles'
+);
+
+// Test 7: Audience is always permanent
+const audienceOnlyPlan = getProgressionRolePlan(0, new Set(['audience']));
+assertEqual(
+  audienceOnlyPlan.expectedRoles.join(','),
+  'audience',
+  'Audience should always be kept'
+);
+assertEqual(
+  audienceOnlyPlan.outdatedRoles.length,
+  0,
+  'Audience should never be marked as outdated'
+);
+
+console.log('✓ Arc cleanup tests passed!');
 console.log('✓ All XP calculation tests passed!');

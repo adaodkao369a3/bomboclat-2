@@ -21,13 +21,27 @@ export const HF_API_TOKEN = process.env.HF_API_TOKEN || '';
 
 // Role IDs (as strings for Discord.js compatibility)
 export const ROLES = {
-  // Progression Roles
+  // CAST ARC Progression Roles
   AUDIENCE: '1526865658955038721',
   EXTRA: '1535285274832277514',
   FEATURED_EXTRA: '1535285299410771988',
   SUPPORTING_CAST: '1535285344952651829',
   PRINCIPAL_CAST: '1535285379283026050',
   LEAD_CAST: '1535285425697194045',
+  
+  // ANTI-HERO ARC Progression Roles
+  // TODO: Replace these placeholder IDs with actual Discord role IDs after creating the roles
+  ROGUE: 'PLACEHOLDER_ROGUE_ROLE_ID',
+  MERCENARY: 'PLACEHOLDER_MERCENARY_ROLE_ID',
+  VIGILANTE: 'PLACEHOLDER_VIGILANTE_ROLE_ID',
+  RENEGADE: 'PLACEHOLDER_RENEGADE_ROLE_ID',
+  
+  // VILLAIN ARC Progression Roles
+  // TODO: Replace these placeholder IDs with actual Discord role IDs after creating the roles
+  VILLAIN: 'PLACEHOLDER_VILLAIN_ROLE_ID',
+  NEMESIS: 'PLACEHOLDER_NEMESIS_ROLE_ID',
+  MASTERMIND: 'PLACEHOLDER_MASTERMIND_ROLE_ID',
+  OVERLORD: 'PLACEHOLDER_OVERLORD_ROLE_ID',
   
   // Special Roles
   HALL_OF_FAME: '1535285223980531832',
@@ -62,46 +76,99 @@ export const XP_CONFIG = {
   MESSAGE_XP_MIN: 5,
   MESSAGE_XP_MAX: 15,
   MESSAGE_COOLDOWN_SECONDS: 30,
-  DAILY_XP_CAP: 500,
+  DAILY_XP_CAP: 1000, // Increased from 500 to accommodate extended 60-level progression
   MIN_MESSAGE_LENGTH: 3,
   DUPLICATE_MESSAGE_THRESHOLD: 3,
   SPAM_DETECTION_WINDOW_SECONDS: 60,
   
   LEVEL_XP_REQUIREMENTS: [
+    // CAST ARC - Normal progression
     50,     // Level 1
     150,    // Level 2
     300,    // Level 3
-    500,    // Level 4
+    500,    // Level 4 (Extra)
     750,    // Level 5
     1050,   // Level 6
     1400,   // Level 7
-    1800,   // Level 8
-    2250,   // Level 9
-    2750,   // Level 10
-    3300,   // Level 11
-    3900,   // Level 12
-    4550,   // Level 13
-    5250,   // Level 14
-    6000,   // Level 15
-    6800,   // Level 16
-    7650,   // Level 17
-    8550,   // Level 18
-    9500,   // Level 19
-    10500,  // Level 20
-    11550,  // Level 21
-    12650,  // Level 22
-    13800,  // Level 23
-    15000,  // Level 24
-    16250,  // Level 25 (Lead Cast threshold)
+    1800,   // Level 8 (Featured Extra)
+    // 2× harder transition to Supporting Cast
+    2700,   // Level 9 (gap 900 vs 450)
+    3600,   // Level 10 (gap 900 vs 500)
+    4600,   // Level 11 (gap 1000 vs 600)
+    5700,   // Level 12 (gap 1100 vs 700)
+    7300,   // Level 13 (Supporting Cast, gap 1600 vs 850)
+    // Normal progression resumes
+    8350,   // Level 14 (gap 1050)
+    9500,   // Level 15 (gap 1150)
+    10750,  // Level 16 (gap 1250)
+    12100,  // Level 17 (gap 1350)
+    13550,  // Level 18 (gap 1450)
+    15100,  // Level 19 (Principal Cast, gap 1550)
+    16750,  // Level 20 (gap 1650)
+    18500,  // Level 21 (gap 1750)
+    20350,  // Level 22 (gap 1850)
+    22300,  // Level 23 (gap 1950)
+    24350,  // Level 24 (gap 2050)
+    26500,  // Level 25 (Lead Cast, gap 2150)
+    // ANTI-HERO ARC - 2× harder transition from Lead Cast
+    28800,  // Level 26 (gap 2300 vs 2150)
+    31200,  // Level 27 (gap 2400)
+    33700,  // Level 28 (gap 2500)
+    36300,  // Level 29 (gap 2600)
+    39300,  // Level 30 (Rogue, gap 3000 vs 2700)
+    // Normal progression resumes in Anti-Hero arc
+    41900,  // Level 31 (gap 2600)
+    44600,  // Level 32 (gap 2700)
+    47400,  // Level 33 (gap 2800)
+    50300,  // Level 34 (Mercenary, gap 2900)
+    53300,  // Level 35 (gap 3000)
+    56400,  // Level 36 (gap 3100)
+    59600,  // Level 37 (gap 3200)
+    62900,  // Level 38 (Vigilante, gap 3300)
+    66300,  // Level 39 (gap 3400)
+    69800,  // Level 40 (gap 3500)
+    73400,  // Level 41 (gap 3600)
+    77100,  // Level 42 (Renegade, gap 3700)
+    // VILLAIN ARC - 2× harder transition from Renegade
+    80800,  // Level 43 (gap 3700 vs 3700)
+    84600,  // Level 44 (gap 3800)
+    88500,  // Level 45 (gap 3900)
+    92500,  // Level 46 (gap 4000)
+    96600,  // Level 47 (gap 4100)
+    101800, // Level 48 (Villain, gap 5200 vs 4100)
+    // Normal progression resumes in Villain arc
+    106100, // Level 49 (gap 4300)
+    110500, // Level 50 (gap 4400)
+    115000, // Level 51 (gap 4500)
+    119600, // Level 52 (Nemesis, gap 4600)
+    124300, // Level 53 (gap 4700)
+    129100, // Level 54 (gap 4800)
+    134000, // Level 55 (gap 4900)
+    139000, // Level 56 (Mastermind, gap 5000)
+    144100, // Level 57 (gap 5100)
+    149300, // Level 58 (gap 5200)
+    154600, // Level 59 (gap 5300)
+    160000, // Level 60 (Overlord, gap 5400)
   ],
   
   ROLE_LEVEL_REQUIREMENTS: {
+    // CAST ARC
     audience: 0,
     extra: 4,
     featured_extra: 8,
     supporting_cast: 13,
     principal_cast: 19,
-    lead_cast: 25, // Explicit threshold
+    lead_cast: 25,
+    // ANTI-HERO ARC
+    rogue: 30,
+    mercenary: 34,
+    vigilante: 38,
+    renegade: 42,
+    // VILLAIN ARC
+    villain: 48,
+    nemesis: 52,
+    mastermind: 56,
+    overlord: 60,
   },
 };
 
