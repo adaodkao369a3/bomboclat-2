@@ -296,7 +296,7 @@ export const BOOST_MESSAGES: string[] = [
 export const SCHEMA = `
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-  user_id BIGINT PRIMARY KEY,
+  user_id TEXT PRIMARY KEY,
   username TEXT NOT NULL,
   nickname TEXT,
   current_xp INTEGER DEFAULT 0,
@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- XP transactions log
 CREATE TABLE IF NOT EXISTS xp_transactions (
   id SERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   source TEXT NOT NULL,
   reason TEXT,
@@ -328,8 +328,8 @@ CREATE TABLE IF NOT EXISTS xp_transactions (
 -- Admin XP changes log
 CREATE TABLE IF NOT EXISTS admin_xp_changes (
   id SERIAL PRIMARY KEY,
-  admin_user_id BIGINT NOT NULL,
-  target_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  admin_user_id TEXT NOT NULL,
+  target_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   change_type TEXT NOT NULL,
   old_value TEXT,
   new_value TEXT,
@@ -340,14 +340,14 @@ CREATE TABLE IF NOT EXISTS admin_xp_changes (
 -- Residuals transactions log
 CREATE TABLE IF NOT EXISTS residual_transactions (
   id SERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   balance_before INTEGER NOT NULL,
   balance_after INTEGER NOT NULL,
   transaction_type TEXT NOT NULL,
   source TEXT NOT NULL,
   reason TEXT,
-  admin_user_id BIGINT,
+  admin_user_id TEXT,
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -355,8 +355,8 @@ CREATE TABLE IF NOT EXISTS residual_transactions (
 -- Admin Residuals changes log
 CREATE TABLE IF NOT EXISTS admin_residual_changes (
   id SERIAL PRIMARY KEY,
-  admin_user_id BIGINT NOT NULL,
-  target_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  admin_user_id TEXT NOT NULL,
+  target_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   change_type TEXT NOT NULL,
   old_value INTEGER,
   new_value INTEGER,
@@ -403,7 +403,7 @@ ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS role_id TEXT;
 -- User archetypes table
 CREATE TABLE IF NOT EXISTS user_archetypes (
   id SERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   archetype_id INTEGER NOT NULL REFERENCES shop_archetypes(id),
   slot_index INTEGER NOT NULL,
   acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS user_archetypes (
 -- User colors table
 CREATE TABLE IF NOT EXISTS user_colors (
   id SERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   color_id INTEGER NOT NULL REFERENCES shop_colors(id),
   active BOOLEAN DEFAULT FALSE,
   acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -428,6 +428,91 @@ CREATE INDEX IF NOT EXISTS idx_residual_transactions_created_at ON residual_tran
 
 -- Idempotent schema upgrades for existing databases
 ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_bonus_paid BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Migration: Convert user_id columns from BIGINT to TEXT for Discord ID compatibility
+-- This is safe for existing databases and preserves all data
+DO $$
+BEGIN
+  -- Migrate users.user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'users' AND column_name = 'user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE users ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+  END IF;
+
+  -- Migrate xp_transactions.user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'xp_transactions' AND column_name = 'user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE xp_transactions ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+  END IF;
+
+  -- Migrate admin_xp_changes.admin_user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'admin_xp_changes' AND column_name = 'admin_user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE admin_xp_changes ALTER COLUMN admin_user_id TYPE TEXT USING admin_user_id::TEXT;
+  END IF;
+
+  -- Migrate admin_xp_changes.target_user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'admin_xp_changes' AND column_name = 'target_user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE admin_xp_changes ALTER COLUMN target_user_id TYPE TEXT USING target_user_id::TEXT;
+  END IF;
+
+  -- Migrate residual_transactions.user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'residual_transactions' AND column_name = 'user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE residual_transactions ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+  END IF;
+
+  -- Migrate residual_transactions.admin_user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'residual_transactions' AND column_name = 'admin_user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE residual_transactions ALTER COLUMN admin_user_id TYPE TEXT USING admin_user_id::TEXT;
+  END IF;
+
+  -- Migrate admin_residual_changes.admin_user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'admin_residual_changes' AND column_name = 'admin_user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE admin_residual_changes ALTER COLUMN admin_user_id TYPE TEXT USING admin_user_id::TEXT;
+  END IF;
+
+  -- Migrate admin_residual_changes.target_user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'admin_residual_changes' AND column_name = 'target_user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE admin_residual_changes ALTER COLUMN target_user_id TYPE TEXT USING target_user_id::TEXT;
+  END IF;
+
+  -- Migrate user_archetypes.user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'user_archetypes' AND column_name = 'user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE user_archetypes ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+  END IF;
+
+  -- Migrate user_colors.user_id if it's still BIGINT
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'user_colors' AND column_name = 'user_id' AND data_type = 'bigint'
+  ) THEN
+    ALTER TABLE user_colors ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+  END IF;
+END $$;
 
 -- Ensure unique constraints for shop tables (required for ON CONFLICT)
 DO $$ 
