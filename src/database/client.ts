@@ -106,6 +106,8 @@ export async function getClient(): Promise<PoolClient> {
 export async function getOrCreateUser(userId: string, username: string, nickname: string): Promise<User> {
   const client = await getClient();
   try {
+    console.log(`[getOrCreateUser] Looking for user_id: ${userId} (type: ${typeof userId})`);
+
     // Try to get existing user
     const result = await client.query<User>(
       'SELECT * FROM users WHERE user_id = $1',
@@ -113,6 +115,7 @@ export async function getOrCreateUser(userId: string, username: string, nickname
     );
 
     if (result.rows.length > 0) {
+      console.log(`[getOrCreateUser] Found existing user: ${username}`);
       // Update username/nickname if changed
       await client.query(
         'UPDATE users SET username = $1, nickname = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3',
@@ -121,6 +124,7 @@ export async function getOrCreateUser(userId: string, username: string, nickname
       return mapRowToUser(result.rows[0]);
     }
 
+    console.log(`[getOrCreateUser] Creating new user: ${username} with user_id: ${userId}`);
     // Create new user
     const insertResult = await client.query<User>(
       `INSERT INTO users (user_id, username, nickname, current_progression_role)
@@ -138,12 +142,24 @@ export async function getOrCreateUser(userId: string, username: string, nickname
 export async function getUser(userId: string): Promise<User | null> {
   const client = await getClient();
   try {
+    console.log(`[getUser] Querying for user_id: ${userId} (type: ${typeof userId})`);
+
     const result = await client.query<User>(
       'SELECT * FROM users WHERE user_id = $1',
       [userId]
     );
 
+    console.log(`[getUser] Query returned ${result.rows.length} rows`);
+
     if (result.rows.length === 0) {
+      // Check if there are any users at all in the database
+      const countResult = await client.query('SELECT COUNT(*) as count FROM users');
+      console.log(`[getUser] Total users in database: ${countResult.rows[0].count}`);
+
+      // Show a sample of existing user_ids for debugging
+      const sampleResult = await client.query('SELECT user_id, username FROM users LIMIT 5');
+      console.log(`[getUser] Sample user_ids in database:`, sampleResult.rows.map(r => ({ id: r.user_id, type: typeof r.user_id, username: r.username })));
+
       return null;
     }
 
