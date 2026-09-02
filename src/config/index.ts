@@ -429,6 +429,24 @@ CREATE INDEX IF NOT EXISTS idx_residual_transactions_created_at ON residual_tran
 -- Idempotent schema upgrades for existing databases
 ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_bonus_paid BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Migration: Add missing username column if it was dropped or table was created from old schema
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'users' AND column_name = 'username'
+  ) THEN
+    ALTER TABLE users ADD COLUMN username TEXT NOT NULL DEFAULT 'Unknown';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'users' AND column_name = 'nickname'
+  ) THEN
+    ALTER TABLE users ADD COLUMN nickname TEXT;
+  END IF;
+END $$;
+
 -- Migration: Convert user_id columns from BIGINT to TEXT for Discord ID compatibility
 -- This is safe for existing databases and preserves all data
 DO $$
