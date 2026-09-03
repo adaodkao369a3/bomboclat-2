@@ -22,6 +22,7 @@ import { manageCommand } from './manage.js';
 import { resetCommand } from './reset.js';
 import { setupRolesCommand } from './setupRoles.js';
 import { dataCommand } from './data.js';
+import { restoreCommand } from './restore.js';
 
 export interface Command {
   name: string;
@@ -59,6 +60,7 @@ export async function registerCommands(client: Client): Promise<void> {
     resetCommand,
     setupRolesCommand,
     dataCommand,
+    restoreCommand,
   ];
 
   for (const command of commands) {
