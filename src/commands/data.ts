@@ -1,7 +1,7 @@
 import { AttachmentBuilder } from 'discord.js';
 import { ROLES } from '../config/index.js';
 import { getUser } from '../database/client.js';
-import { PROGRESSION_ROLE_KEYS, getArcForRole } from '../services/xp.js';
+import { PROGRESSION_ROLE_KEYS } from '../services/xp.js';
 import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
@@ -79,9 +79,9 @@ export const dataCommand: Command = {
         }
       }
 
-      const hasAudience = userRoles.includes('audience');
+      const hasAudience = userRoles.includes('civilian');
       const hasProgressionRole = userRoles.length > 0;
-      const arc = highestRole !== 'None' ? getArcForRole(highestRole) : null;
+      const arc = null; // No arc-based progression anymore
 
       // Fetch database data if available
       let currentXP: number | null = null;

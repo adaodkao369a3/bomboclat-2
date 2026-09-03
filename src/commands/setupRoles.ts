@@ -3,24 +3,25 @@ import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
 // Role definitions for the progression system
+// Ordered from lowest to highest milestone
 const PROGRESSION_ROLES = [
-  // CAST ARC
-  { name: 'Audience', configKey: 'AUDIENCE', color: 0x808080 },
-  { name: 'Extra', configKey: 'EXTRA', color: 0x95a5a6 },
-  { name: 'Featured Extra', configKey: 'FEATURED_EXTRA', color: 0x7f8c8d },
-  { name: 'Supporting Cast', configKey: 'SUPPORTING_CAST', color: 0x3498db },
-  { name: 'Principal Cast', configKey: 'PRINCIPAL_CAST', color: 0x9b59b6 },
-  { name: 'Lead Cast', configKey: 'LEAD_CAST', color: 0xe91e63 },
-  // ANTI-HERO ARC
-  { name: 'Rogue', configKey: 'ROGUE', color: 0xf39c12 },
-  { name: 'Mercenary', configKey: 'MERCENARY', color: 0xd35400 },
-  { name: 'Vigilante', configKey: 'VIGILANTE', color: 0xc0392b },
+  { name: 'Civilian', configKey: 'CIVILIAN', color: 0x808080 },
+  { name: 'Sidekick', configKey: 'SIDEKICK', color: 0x95a5a6 },
+  { name: 'Hero', configKey: 'HERO', color: 0x3498db },
+  { name: 'Champion', configKey: 'CHAMPION', color: 0x9b59b6 },
+  { name: 'Guardian', configKey: 'GUARDIAN', color: 0xe91e63 },
+  { name: 'Superhero', configKey: 'SUPERHERO', color: 0xf39c12 },
+  { name: 'Anti-Hero', configKey: 'ANTI_HERO', color: 0xd35400 },
+  { name: 'Rogue', configKey: 'ROGUE', color: 0xc0392b },
   { name: 'Renegade', configKey: 'RENEGADE', color: 0x8e44ad },
-  // VILLAIN ARC
-  { name: 'Villain', configKey: 'VILLAIN', color: 0x2c3e50 },
-  { name: 'Nemesis', configKey: 'NEMESIS', color: 0x1a1a2e },
+  { name: 'Outlaw', configKey: 'OUTLAW', color: 0x2c3e50 },
+  { name: 'Villain', configKey: 'VILLAIN', color: 0x1a1a2e },
   { name: 'Mastermind', configKey: 'MASTERMIND', color: 0x4a0e4e },
-  { name: 'Overlord', configKey: 'OVERLORD', color: 0x000000 },
+  { name: 'Kingpin', configKey: 'KINGPIN', color: 0x000000 },
+  { name: 'Overlord', configKey: 'OVERLORD', color: 0x7B61FF },
+  { name: 'Tyrant', configKey: 'TYRANT', color: 0x8B0000 },
+  { name: 'Emperor', configKey: 'EMPEROR', color: 0xFFD700 },
+  { name: 'Saint', configKey: 'SAINT', color: 0xFFFFFF },
 ];
 
 export const setupRolesCommand: Command = {
@@ -106,6 +107,40 @@ export const setupRolesCommand: Command = {
       value: 'Update the ROLES configuration in `src/config/index.ts` with the role IDs above, then run `$syncroles` to update existing users.',
       inline: false,
     });
+
+    // Order roles in Discord hierarchy (highest to lowest)
+    await message.reply('🔄 Ordering roles in Discord hierarchy...');
+    
+    try {
+      // Get all role IDs in reverse order (highest milestone first)
+      const rolePositions: { role: string; position: number }[] = [];
+      for (const roleDef of [...PROGRESSION_ROLES].reverse()) {
+        const existingRole = message.guild.roles.cache.find(r => r.name === roleDef.name);
+        if (existingRole) {
+          rolePositions.push({ role: existingRole.id, position: rolePositions.length });
+        }
+      }
+
+      // Set role positions
+      if (rolePositions.length > 0) {
+        await message.guild.roles.setPositions(rolePositions);
+        console.log('✓ Role ordering complete');
+        embed.addFields({
+          name: '✅ Role Ordering',
+          value: 'Roles have been ordered in Discord hierarchy (highest to lowest).',
+          inline: false,
+        });
+      }
+    } catch (error) {
+      const errorMsg = `Failed to order roles: ${error}`;
+      errors.push(errorMsg);
+      console.error(errorMsg);
+      embed.addFields({
+        name: '❌ Role Ordering Error',
+        value: errorMsg,
+        inline: false,
+      });
+    }
 
     await message.reply({ embeds: [embed] });
   },

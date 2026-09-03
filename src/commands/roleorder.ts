@@ -134,30 +134,7 @@ export const roleorderCommand: Command = {
         else if (role.id === ROLES.PRODUCER) {
           categories.find(c => c.name === 'Producer')?.roles.push(role);
         }
-        // Lead Cast (use role ID)
-        else if (role.id === ROLES.LEAD_CAST) {
-          categories.find(c => c.name === 'Lead Cast')?.roles.push(role);
-        }
-        // Principal Cast (use role ID)
-        else if (role.id === ROLES.PRINCIPAL_CAST) {
-          categories.find(c => c.name === 'Principal Cast')?.roles.push(role);
-        }
-        // Supporting Cast (use role ID)
-        else if (role.id === ROLES.SUPPORTING_CAST) {
-          categories.find(c => c.name === 'Supporting Cast')?.roles.push(role);
-        }
-        // Featured Extra (use role ID)
-        else if (role.id === ROLES.FEATURED_EXTRA) {
-          categories.find(c => c.name === 'Featured Extra')?.roles.push(role);
-        }
-        // Extra (use role ID)
-        else if (role.id === ROLES.EXTRA) {
-          categories.find(c => c.name === 'Extra')?.roles.push(role);
-        }
-        // Audience (use role ID)
-        else if (role.id === ROLES.AUDIENCE) {
-          categories.find(c => c.name === 'Audience')?.roles.push(role);
-        }
+        // Old Cast roles are being removed - skip them
         // Use role IDs for shop roles (colors and archetypes) - check before name-based detection
         else if (shopRoleIds.has(role.id)) {
           // Determine if it's a color or archetype by checking the shop data

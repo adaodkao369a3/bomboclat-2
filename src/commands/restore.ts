@@ -15,6 +15,7 @@ interface MigrationResult {
   newProgressionRole: string;
   databaseStatus: 'inserted' | 'updated' | 'error';
   errorMessage?: string;
+  xpSource: 'historical' | 'estimated';
 }
 
 // Level, progression role, and promotion eligibility are all derived using
@@ -96,38 +97,26 @@ export const restoreCommand: Command = {
         continue;
       }
 
-      let oldRole = 'audience';
-      let oldRoleIndex = -1;
+      // Determine XP value
+      let restoredXP: number;
+      let xpSource: 'historical' | 'estimated';
 
-      // Check each progression role (old Cast roles only)
-      const oldRoles = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
-      for (const roleName of oldRoles) {
-        const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
-        if (roleId && member.roles.cache.has(roleId)) {
-          const roleIndex = roleOrder.get(roleName) ?? -1;
-          if (roleIndex > oldRoleIndex) {
-            oldRole = roleName;
-            oldRoleIndex = roleIndex;
-          }
-        }
+      if (ledgerTotals.has(member.user.id)) {
+        restoredXP = ledgerTotals.get(member.user.id) ?? 0;
+        xpSource = 'historical';
+      } else {
+        // User not in our lists - skip them
+        continue;
       }
 
-      const restoredXP = ledgerTotals.get(member.user.id) ?? 0;
-      if (restoredXP === 0) {
-        zeroXpCount++;
-      }
+      // Calculate level from XP
       const calculatedLevel = calculateLevelFromXP(restoredXP);
-      const newProgressionRole = getRoleFromLevel(calculatedLevel);
-      const eligibility = calculatePromotionEligibility(restoredXP, calculatedLevel, newProgressionRole);
 
-      // Upsert to database in a single atomic statement. This makes the
-      // migration idempotent (safe to re-run): a user_id that already
-      // exists gets its XP/level/username/nickname reset to the same
-      // deterministic values instead of a duplicate row being created, and
-      // `xmax = 0` tells us whether Postgres actually inserted or updated
-      // the row, rather than guessing from a pre-fetched value.
+      // Determine milestone role from level
+      const milestoneRole = getRoleFromLevel(calculatedLevel);
+
+      // Upsert to database
       let databaseStatus: 'inserted' | 'updated' | 'error' = 'error';
-      let errorMessage: string | undefined;
       try {
         const client = await getClient();
         try {
@@ -143,7 +132,7 @@ export const restoreCommand: Command = {
                  promotion_eligibility_percentage = EXCLUDED.promotion_eligibility_percentage,
                  updated_at = CURRENT_TIMESTAMP
              RETURNING (xmax = 0) AS inserted`,
-            [member.user.id, member.user.username, member.displayName, restoredXP, calculatedLevel, newProgressionRole, eligibility]
+            [member.user.id, member.user.username, member.displayName, restoredXP, calculatedLevel, milestoneRole, calculatePromotionEligibility(restoredXP, calculatedLevel, milestoneRole)]
           );
 
           if (result.rows[0]?.inserted) {
@@ -157,32 +146,55 @@ export const restoreCommand: Command = {
           client.release();
         }
 
+        // Assign milestone role if level >= 1
+        if (milestoneRole) {
+          const roleId = ROLES[milestoneRole.toUpperCase() as keyof typeof ROLES];
+          if (roleId && !roleId.startsWith('PLACEHOLDER_')) {
+            try {
+              // Remove all old progression roles
+              for (const roleName of PROGRESSION_ROLE_KEYS) {
+                const oldRoleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+                if (oldRoleId && oldRoleId !== roleId && member.roles.cache.has(oldRoleId)) {
+                  await member.roles.remove(oldRoleId, 'XP restoration - removing old progression role');
+                }
+              }
+              
+              // Add new milestone role
+              if (!member.roles.cache.has(roleId)) {
+                await member.roles.add(roleId, 'XP restoration - assigning milestone role');
+              }
+            } catch (roleError) {
+              console.error(`Failed to assign role for user ${member.user.id}:`, roleError);
+            }
+          }
+        }
+
         migrationResults.push({
           userId: member.user.id,
           username: member.user.username,
           displayName: member.displayName,
-          oldRole,
+          oldRole: milestoneRole || 'none',
           restoredXP,
           calculatedLevel,
-          newProgressionRole,
+          newProgressionRole: milestoneRole,
           databaseStatus,
+          xpSource,
         });
       } catch (error) {
-        // Do not swallow the error - surface it in the report so it can
-        // actually be diagnosed instead of just showing "error".
-        errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Failed to restore user ${member.user.id}:`, error);
         errorCount++;
+        const errorMessage = error instanceof Error ? error.message : String(error);
         migrationResults.push({
           userId: member.user.id,
           username: member.user.username,
           displayName: member.displayName,
-          oldRole,
+          oldRole: milestoneRole || 'none',
           restoredXP,
           calculatedLevel,
-          newProgressionRole,
+          newProgressionRole: milestoneRole,
           databaseStatus: 'error',
           errorMessage,
+          xpSource: 'historical',
         });
       }
     }

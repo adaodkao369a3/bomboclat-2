@@ -13,40 +13,25 @@ import {
 import { ResidualsService } from './residuals.js';
 
 export const PROGRESSION_ROLE_KEYS = [
-  // CAST ARC
-  'audience',
-  'extra',
-  'featured_extra',
-  'supporting_cast',
-  'principal_cast',
-  'lead_cast',
-  // ANTI-HERO ARC
+  'civilian',
+  'sidekick',
+  'hero',
+  'champion',
+  'guardian',
+  'superhero',
+  'antiHero',
   'rogue',
-  'mercenary',
-  'vigilante',
   'renegade',
-  // VILLAIN ARC
+  'outlaw',
   'villain',
-  'nemesis',
   'mastermind',
+  'kingpin',
   'overlord',
+  'tyrant',
+  'emperor',
+  'saint',
 ] as const;
 
-// Arc definitions for cleanup logic
-export const ARCS: Record<string, ProgressionRoleName[]> = {
-  CAST: ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'],
-  ANTI_HERO: ['rogue', 'mercenary', 'vigilante', 'renegade'],
-  VILLAIN: ['villain', 'nemesis', 'mastermind', 'overlord'],
-};
-
-// Arc thresholds - which role marks the start of each arc
-export const ARC_START_ROLES = {
-  CAST: 'audience',
-  ANTI_HERO: 'rogue',
-  VILLAIN: 'villain',
-} as const;
-
-export type ArcName = keyof typeof ARCS;
 export type ProgressionRoleName = (typeof PROGRESSION_ROLE_KEYS)[number];
 
 // Calculate residuals awarded on level-up (10-100 range, scaling with level)
@@ -70,6 +55,9 @@ export function calculateLevelFromXP(totalXP: number): number {
 
   const requirements = XP_CONFIG.LEVEL_XP_REQUIREMENTS;
   let level = 0;
+  
+  // Level 1 requires 50 XP, anything below is Level 0
+  if (totalXP < 50) return 0;
   
   for (let i = 0; i < requirements.length; i++) {
     if (totalXP >= requirements[i]) {
@@ -127,9 +115,11 @@ export function calculatePromotionEligibility(
 }
 
 export function getRoleFromLevel(level: number): string {
+  if (level < 1) return ''; // No milestone role for Level 0
+  
   const rolesByLevel = Object.entries(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS).map(([role, lvl]) => [lvl, role]);
 
-  let highestRole = 'audience';
+  let highestRole = 'civilian';
   for (const [roleLevel, roleName] of rolesByLevel) {
     if (level >= (roleLevel as number)) {
       highestRole = roleName as string;
@@ -137,24 +127,6 @@ export function getRoleFromLevel(level: number): string {
   }
 
   return highestRole;
-}
-
-// Helper function to determine which arc a role belongs to
-export function getArcForRole(roleName: string): ArcName | null {
-  for (const [arcName, roles] of Object.entries(ARCS)) {
-    if (roles.includes(roleName as ProgressionRoleName)) {
-      return arcName as ArcName;
-    }
-  }
-  return null;
-}
-
-// Helper function to get all roles in an arc up to and including a target role
-export function getRolesInArcUpTo(arcName: ArcName, targetRole: ProgressionRoleName): ProgressionRoleName[] {
-  const arcRoles = ARCS[arcName];
-  const targetIndex = arcRoles.indexOf(targetRole);
-  if (targetIndex === -1) return [];
-  return arcRoles.slice(0, targetIndex + 1);
 }
 
 export interface ProgressionRolePlan {
@@ -169,34 +141,15 @@ export function getProgressionRolePlan(
   assignedRoles: ReadonlySet<string>
 ): ProgressionRolePlan {
   const targetRole = getRoleFromLevel(level) as ProgressionRoleName;
-  const targetArc = getArcForRole(targetRole);
   
-  // Determine expected roles based on arc logic
-  let expectedRoles: ProgressionRoleName[];
-  
-  if (targetArc === 'CAST') {
-    // In Cast arc: keep Audience + all Cast roles up to target
-    expectedRoles = getRolesInArcUpTo('CAST', targetRole);
-  } else if (targetArc === 'ANTI_HERO') {
-    // In Anti-Hero arc: keep Audience + all Anti-Hero roles up to target
-    const antiHeroRoles = getRolesInArcUpTo('ANTI_HERO', targetRole);
-    expectedRoles = ['audience', ...antiHeroRoles];
-  } else if (targetArc === 'VILLAIN') {
-    // In Villain arc: keep Audience + all Villain roles up to target
-    const villainRoles = getRolesInArcUpTo('VILLAIN', targetRole);
-    expectedRoles = ['audience', ...villainRoles];
-  } else {
-    // Fallback to original logic
-    const targetIndex = PROGRESSION_ROLE_KEYS.indexOf(targetRole);
-    expectedRoles = PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
-  }
+  // Linear progression: only one milestone role at a time
+  const expectedRoles: ProgressionRoleName[] = [targetRole];
   
   const missingRoles = expectedRoles.filter(role => !assignedRoles.has(role));
   
-  // Outdated roles are those assigned but not in expected roles
-  // This handles arc cleanup by removing previous arc roles
+  // Outdated roles are any progression roles that aren't the target
   const outdatedRoles = PROGRESSION_ROLE_KEYS.filter(
-    role => assignedRoles.has(role) && !expectedRoles.includes(role)
+    role => assignedRoles.has(role) && role !== targetRole
   );
 
   return { targetRole, expectedRoles, missingRoles, outdatedRoles };
