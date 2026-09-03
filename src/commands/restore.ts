@@ -1,6 +1,6 @@
 import { AttachmentBuilder } from 'discord.js';
 import { ROLES } from '../config/index.js';
-import { PROGRESSION_ROLE_KEYS } from '../services/xp.js';
+import { PROGRESSION_ROLE_KEYS, calculateLevelFromXP, getRoleFromLevel, calculatePromotionEligibility } from '../services/xp.js';
 import { isAdmin } from '../utils/permissions.js';
 import { getClient } from '../database/client.js';
 import { Command } from './index.js';
@@ -12,32 +12,18 @@ interface MigrationResult {
   oldRole: string;
   restoredXP: number;
   calculatedLevel: number;
+  newProgressionRole: string;
   databaseStatus: 'inserted' | 'updated' | 'error';
   errorMessage?: string;
 }
 
-// Legacy 25-level XP thresholds used only for restoring historical XP.
-// This is intentionally separate from XP_CONFIG.LEVEL_XP_REQUIREMENTS, which
-// now holds the new extended 60-level progression table (Anti-Hero/Villain
-// arcs). That table is for the *new* progression roles we're rolling out
-// later - it is not the table historical levels were calculated against.
-const LEGACY_LEVEL_XP_REQUIREMENTS: number[] = [
-  50, 150, 300, 500, 750, 1050, 1400, 1800, 2250, 2750,
-  3300, 3900, 4550, 5250, 6000, 6800, 7650, 8550, 9500, 10500,
-  11550, 12650, 13800, 15000, 16250,
-];
-
-// Calculate level from XP using the legacy 25-level threshold table.
-// Level is the highest threshold reached; below the Level 1 threshold (50 XP)
-// the user is Level 0.
-function calculateLevelFromXP(xp: number): number {
-  for (let i = LEGACY_LEVEL_XP_REQUIREMENTS.length - 1; i >= 0; i--) {
-    if (xp >= LEGACY_LEVEL_XP_REQUIREMENTS[i]) {
-      return i + 1;
-    }
-  }
-  return 0;
-}
+// Level, progression role, and promotion eligibility are all derived using
+// the SAME live functions .level/.profile/$syncroles use (XP_CONFIG.LEVEL_XP_REQUIREMENTS,
+// the current 60-level Cast/Anti-Hero/Villain table) - not a separate legacy
+// table. Writing a level here that was computed against different thresholds
+// than the ones live commands read against is exactly what produced Level 25
+// on 17,060 XP (which only reaches Level 20 on the real table) and a
+// hardcoded 'audience' role regardless of actual level.
 
 export const restoreCommand: Command = {
   name: 'restore',
@@ -131,6 +117,8 @@ export const restoreCommand: Command = {
         zeroXpCount++;
       }
       const calculatedLevel = calculateLevelFromXP(restoredXP);
+      const newProgressionRole = getRoleFromLevel(calculatedLevel);
+      const eligibility = calculatePromotionEligibility(restoredXP, calculatedLevel, newProgressionRole);
 
       // Upsert to database in a single atomic statement. This makes the
       // migration idempotent (safe to re-run): a user_id that already
@@ -144,16 +132,18 @@ export const restoreCommand: Command = {
         const client = await getClient();
         try {
           const result = await client.query<{ inserted: boolean }>(
-            `INSERT INTO users (user_id, username, nickname, current_xp, current_level, current_progression_role)
-             VALUES ($1, $2, $3, $4, $5, 'audience')
+            `INSERT INTO users (user_id, username, nickname, current_xp, current_level, current_progression_role, promotion_eligibility_percentage)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (user_id) DO UPDATE
              SET username = EXCLUDED.username,
                  nickname = EXCLUDED.nickname,
                  current_xp = EXCLUDED.current_xp,
                  current_level = EXCLUDED.current_level,
+                 current_progression_role = EXCLUDED.current_progression_role,
+                 promotion_eligibility_percentage = EXCLUDED.promotion_eligibility_percentage,
                  updated_at = CURRENT_TIMESTAMP
              RETURNING (xmax = 0) AS inserted`,
-            [member.user.id, member.user.username, member.displayName, restoredXP, calculatedLevel]
+            [member.user.id, member.user.username, member.displayName, restoredXP, calculatedLevel, newProgressionRole, eligibility]
           );
 
           if (result.rows[0]?.inserted) {
@@ -174,6 +164,7 @@ export const restoreCommand: Command = {
           oldRole,
           restoredXP,
           calculatedLevel,
+          newProgressionRole,
           databaseStatus,
         });
       } catch (error) {
@@ -189,6 +180,7 @@ export const restoreCommand: Command = {
           oldRole,
           restoredXP,
           calculatedLevel,
+          newProgressionRole,
           databaseStatus: 'error',
           errorMessage,
         });
@@ -199,7 +191,7 @@ export const restoreCommand: Command = {
     migrationResults.sort((a, b) => b.restoredXP - a.restoredXP);
 
     // Generate CSV content
-    const headers = ['User ID', 'Username', 'Display Name', 'Old Role', 'Restored XP', 'Calculated Level', 'DB Status', 'Error'];
+    const headers = ['User ID', 'Username', 'Display Name', 'Old Role', 'Restored XP', 'Calculated Level', 'New Progression Role', 'DB Status', 'Error'];
     const csvRows = [headers.join(',')];
 
     for (const result of migrationResults) {
@@ -210,6 +202,7 @@ export const restoreCommand: Command = {
         result.oldRole,
         result.restoredXP.toString(),
         result.calculatedLevel.toString(),
+        result.newProgressionRole,
         result.databaseStatus,
         result.errorMessage ? `"${result.errorMessage.replace(/"/g, '""')}"` : '',
       ];
@@ -231,7 +224,8 @@ export const restoreCommand: Command = {
       `- Bots excluded: ${botCount}\n` +
       `- Errors: ${errorCount}\n` +
       `- Ledger rows for users no longer in guild: ${ledgerOnlyIds.length}\n\n` +
-      `📊 Full report attached as migration_report.csv`;
+      `📊 Full report attached as migration_report.csv\n\n` +
+      `⚠️ This updates the database only. Run \`$syncroles\` next to apply the correct Discord role to everyone based on their restored level.`;
 
     let errorSample = '';
     if (errorCount > 0) {
