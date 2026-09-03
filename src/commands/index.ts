@@ -10,19 +10,14 @@ import { customGifCommand } from './customGif.js';
 import { clipCommand } from './clip.js';
 import { xpCommand } from './xp.js';
 import { residualsCommand } from './residuals.js';
-import { syncRolesCommand } from './syncRoles.js';
 import { adminHelpCommand } from './adminHelp.js';
 import { rulesCommand } from './rules.js';
 import { testWelcomeCommand } from './testWelcome.js';
 import { testBoosterCommand } from './testBooster.js';
 import { settingsCommand } from './settings.js';
 import { shopCommand } from './shop.js';
-import { roleorderCommand } from './roleorder.js';
 import { manageCommand } from './manage.js';
 import { resetCommand } from './reset.js';
-import { setupRolesCommand } from './setupRoles.js';
-import { dataCommand } from './data.js';
-import { restoreCommand } from './restore.js';
 
 export interface Command {
   name: string;
@@ -48,19 +43,14 @@ export async function registerCommands(client: Client): Promise<void> {
     clipCommand,
     xpCommand,
     residualsCommand,
-    syncRolesCommand,
     adminHelpCommand,
     rulesCommand,
     testWelcomeCommand,
     testBoosterCommand,
     settingsCommand,
     shopCommand,
-    roleorderCommand,
     manageCommand,
     resetCommand,
-    setupRolesCommand,
-    dataCommand,
-    restoreCommand,
   ];
 
   for (const command of commands) {
