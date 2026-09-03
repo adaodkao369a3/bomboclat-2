@@ -58,19 +58,14 @@ export const roleorderCommand: Command = {
         { name: 'bot-kun', roles: [], priority: 4 },
         { name: 'bob-kun', roles: [], priority: 5 },
         { name: 'Guest Star / Booster', roles: [], priority: 6 },
-        { name: 'Colors', roles: [], priority: 7 },
-        { name: 'Archetypes', roles: [], priority: 8 },
-        { name: 'Executive Producer', roles: [], priority: 9 },
-        { name: 'Producer', roles: [], priority: 10 },
-        { name: 'Lead Cast', roles: [], priority: 11 },
-        { name: 'Principal Cast', roles: [], priority: 12 },
-        { name: 'Supporting Cast', roles: [], priority: 13 },
-        { name: 'Featured Extra', roles: [], priority: 14 },
-        { name: 'Extra', roles: [], priority: 15 },
-        { name: 'Audience', roles: [], priority: 16 },
-        { name: 'Random Bot Roles', roles: [], priority: 17 },
-        { name: 'Bots', roles: [], priority: 18 },
-        { name: '@everyone', roles: [], priority: 19 },
+        { name: 'Progression Roles', roles: [], priority: 7 },
+        { name: 'Colors', roles: [], priority: 8 },
+        { name: 'Archetypes', roles: [], priority: 9 },
+        { name: 'Executive Producer', roles: [], priority: 10 },
+        { name: 'Producer', roles: [], priority: 11 },
+        { name: 'Random Bot Roles', roles: [], priority: 12 },
+        { name: 'Bots', roles: [], priority: 13 },
+        { name: '@everyone', roles: [], priority: 14 },
       ];
 
       // Create a mapping of shop role IDs for color and archetype detection
@@ -134,7 +129,28 @@ export const roleorderCommand: Command = {
         else if (role.id === ROLES.PRODUCER) {
           categories.find(c => c.name === 'Producer')?.roles.push(role);
         }
-        // Old Cast roles are being removed - skip them
+        // Progression Roles (new 17 milestone roles)
+        else if (
+          role.id === ROLES.CIVILIAN ||
+          role.id === ROLES.SIDEKICK ||
+          role.id === ROLES.HERO ||
+          role.id === ROLES.CHAMPION ||
+          role.id === ROLES.GUARDIAN ||
+          role.id === ROLES.SUPERHERO ||
+          role.id === ROLES.ANTI_HERO ||
+          role.id === ROLES.ROGUE ||
+          role.id === ROLES.RENEGADE ||
+          role.id === ROLES.OUTLAW ||
+          role.id === ROLES.VILLAIN ||
+          role.id === ROLES.MASTERMIND ||
+          role.id === ROLES.KINGPIN ||
+          role.id === ROLES.OVERLORD ||
+          role.id === ROLES.TYRANT ||
+          role.id === ROLES.EMPEROR ||
+          role.id === ROLES.SAINT
+        ) {
+          categories.find(c => c.name === 'Progression Roles')?.roles.push(role);
+        }
         // Use role IDs for shop roles (colors and archetypes) - check before name-based detection
         else if (shopRoleIds.has(role.id)) {
           // Determine if it's a color or archetype by checking the shop data
@@ -197,9 +213,24 @@ export const roleorderCommand: Command = {
         }
       }
 
-      // Sort roles within each category (alphabetically for consistency)
+      // Sort roles within each category
       for (const category of categories) {
-        category.roles.sort((a, b) => a.name.localeCompare(b.name));
+        if (category.name === 'Progression Roles') {
+          // Sort progression roles by milestone level (highest to lowest)
+          const roleOrder = [
+            'Saint', 'Emperor', 'Tyrant', 'Overlord', 'Kingpin', 'Mastermind',
+            'Villain', 'Outlaw', 'Renegade', 'Rogue', 'Anti-Hero', 'Superhero',
+            'Guardian', 'Champion', 'Hero', 'Sidekick', 'Civilian'
+          ];
+          category.roles.sort((a, b) => {
+            const aIndex = roleOrder.indexOf(a.name);
+            const bIndex = roleOrder.indexOf(b.name);
+            return aIndex - bIndex; // Lower index = higher milestone = should come first
+          });
+        } else {
+          // Sort other categories alphabetically
+          category.roles.sort((a, b) => a.name.localeCompare(b.name));
+        }
       }
 
       // Calculate new positions
