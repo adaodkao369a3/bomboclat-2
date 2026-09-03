@@ -46,7 +46,7 @@ export const levelCommand: Command = {
 
     // Create progress bar
     const progressBars = Math.floor(xpProgress / 10);
-    const progressBar = '<:glossystaremoji:1541974836861993101>'.repeat(progressBars) + '☆'.repeat(10 - progressBars);
+    const progressBar = '<a:pokeballsuccess:1545003084948701265>'.repeat(progressBars) + '☆'.repeat(10 - progressBars);
 
     // Format role name
     const roleDisplay = formatRoleName(userData.current_progression_role);

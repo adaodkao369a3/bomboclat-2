@@ -7,16 +7,16 @@ export const helpCommand: Command = {
   async execute(message, _args, _prefix) {
 
     const embed = new EmbedBuilder()
-      .setTitle('<:mspaward:1542331249690026074> Bomboclat Commands')
+      .setTitle('<:star:1545002693368750193> Bomboclat Commands')
       .setDescription('Use these commands in chat. (prefix ".")')
       .setColor(0x4900ff);
 
     // Public commands
     embed.addFields([
-      { name: '<:glossystaremoji:1541974836861993101> Profile & Progression', value: '`.profile` `.level` `.res` `.leaderboard`', inline: true },
-      { name: '<a:rainbowdaftpunk:1536398335651352657> Fun Commands', value: '`.rizz` `.larp` `.blush` `.cooked` `.fumble` `.cope` `.grass` `.aura` `.huh` `.cry`', inline: true },
-      { name: '<:sunglas:1536398312448589884> Custom GIF', value: '`.c <query>`', inline: true },
-      { name: '<a:shoppingcart:1542322214303699095> Manage shop items', value: '`.manage` - manage roles', inline: true },
+      { name: '<a:pokeballsuccess:1545003084948701265> Profile & Progression', value: '`.profile` `.level` `.res` `.leaderboard`', inline: true },
+      { name: '<:glossystaremoji:1545004043699626004> Fun Commands', value: '`.rizz` `.larp` `.blush` `.cooked` `.fumble` `.cope` `.grass` `.aura` `.huh` `.cry`', inline: true },
+      { name: '<:jolly:1545004994418446403> Custom GIF', value: '`.c <query>`', inline: true },
+      { name: '<a:shoppingcart:1545005246579875860> Manage shop items', value: '`.manage` - manage roles', inline: true },
     ]);
 
     await message.reply({ embeds: [embed] });

@@ -13,18 +13,18 @@ function isRoleMilestone(level: number): boolean {
 function getUnlockedPerks(role: string): string[] {
   switch (role) {
     case 'featured_extra':
-      return ['<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked'];
+      return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked'];
     case 'supporting_cast':
-      return ['<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked', '<a:happystar:1541974913781338273> Additional media permissions'];
+      return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked', '<a:happystar:1541974913781338273> Additional media permissions'];
     case 'principal_cast':
       return [
-        '<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked',
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
         '<a:happystar:1541974913781338273> Additional media permissions',
         '👑 Principal Cast privileges',
       ];
     case 'lead_cast':
       return [
-        '<a:rainbowdaftpunk:1536398335651352657> Custom GIF search unlocked',
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
         '<a:happystar:1541974913781338273> Additional media permissions',
         '👑 Lead Cast privileges',
         '💎 Mythic shop access',
@@ -57,7 +57,7 @@ export async function sendLevelUpNotification(
       .setTitle(result.roleChanged ? '<a:oldtelephone:1529443123602653225> PROMOTION ALERT!' : '<:greenglossytickcheckmark:1541974842398482472> LEVEL UP!')
       .setDescription(
         result.roleChanged
-          ? `**${displayName}** has been promoted to <:glossystaremoji:1541974836861993101> **${formatRole(currentRole)}**!`
+          ? `**${displayName}** has been promoted to <a:pokeballsuccess:1545003084948701265> **${formatRole(currentRole)}**!`
           : `**${displayName}** has reached level **${result.newLevel}**!`
       )
       .setColor(0x7B61FF)

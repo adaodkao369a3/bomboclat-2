@@ -30,8 +30,8 @@ export const customGifCommand: Command = {
       return;
     }
 
-    // Add anime suffix for search (but don't show it in embed)
-    const searchQuery = `${query} anime`;
+    // Use query as-is for search
+    const searchQuery = query;
 
     // Calculate cooldown based on targets
     let cooldownTime = GIF_CONFIG.NORMAL_COOLDOWN_SECONDS;
@@ -67,7 +67,7 @@ export const customGifCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<:glossystaremoji:1541974836861993101> custom gif')
+      .setTitle('<a:pokeballsuccess:1545003084948701265> custom gif')
       .setDescription(`${message.author.toString()} "${query}" ${targets ? targets : ''}`)
       .setColor(0x4900ff)
       .setImage(gifUrl)

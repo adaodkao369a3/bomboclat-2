@@ -57,7 +57,7 @@ export const profileCommand: Command = {
     // Add promotion eligibility if not at max role
     if (nextRoleThreshold > 0) {
       const eligibility = userData.promotion_eligibility_percentage || 0;
-      fields.push({ name: '<:glossystaremoji:1541974836861993101> Promotion Eligibility', value: `\`${Math.floor(eligibility)}%\` (Level ${nextRoleThreshold})`, inline: true });
+      fields.push({ name: '<a:pokeballsuccess:1545003084948701265> Promotion Eligibility', value: `\`${Math.floor(eligibility)}%\` (Level ${nextRoleThreshold})`, inline: true });
     }
 
     // Create embed
