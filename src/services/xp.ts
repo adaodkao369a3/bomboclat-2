@@ -115,7 +115,7 @@ export function calculatePromotionEligibility(
 }
 
 export function getRoleFromLevel(level: number): string {
-  if (level < 1) return ''; // No milestone role for Level 0
+  if (level < 1) return 'civilian'; // Level 0 users get civilian role
   
   const rolesByLevel = Object.entries(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS).map(([role, lvl]) => [lvl, role]);
 
@@ -142,14 +142,15 @@ export function getProgressionRolePlan(
 ): ProgressionRolePlan {
   const targetRole = getRoleFromLevel(level) as ProgressionRoleName;
   
-  // Linear progression: only one milestone role at a time
-  const expectedRoles: ProgressionRoleName[] = [targetRole];
+  // Stacked progression: all roles up to and including target
+  const targetIndex = PROGRESSION_ROLE_KEYS.indexOf(targetRole);
+  const expectedRoles: ProgressionRoleName[] = PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
   
   const missingRoles = expectedRoles.filter(role => !assignedRoles.has(role));
   
-  // Outdated roles are any progression roles that aren't the target
+  // Outdated roles are any progression roles beyond the target
   const outdatedRoles = PROGRESSION_ROLE_KEYS.filter(
-    role => assignedRoles.has(role) && role !== targetRole
+    role => assignedRoles.has(role) && !expectedRoles.includes(role)
   );
 
   return { targetRole, expectedRoles, missingRoles, outdatedRoles };

@@ -146,26 +146,29 @@ export const restoreCommand: Command = {
           client.release();
         }
 
-        // Assign milestone role if level >= 1
+        // Assign stacked progression roles (all roles up to target level)
         if (milestoneRole) {
-          const roleId = ROLES[milestoneRole.toUpperCase() as keyof typeof ROLES];
-          if (roleId && !roleId.startsWith('PLACEHOLDER_')) {
-            try {
-              // Remove all old progression roles
-              for (const roleName of PROGRESSION_ROLE_KEYS) {
-                const oldRoleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
-                if (oldRoleId && oldRoleId !== roleId && member.roles.cache.has(oldRoleId)) {
-                  await member.roles.remove(oldRoleId, 'XP restoration - removing old progression role');
-                }
+          const targetIndex = PROGRESSION_ROLE_KEYS.indexOf(milestoneRole as any);
+          const rolesToAdd = PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
+          
+          try {
+            // Remove all progression roles beyond target
+            for (const roleName of PROGRESSION_ROLE_KEYS.slice(targetIndex + 1)) {
+              const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+              if (roleId && member.roles.cache.has(roleId)) {
+                await member.roles.remove(roleId, 'XP restoration - removing roles beyond target level');
               }
-              
-              // Add new milestone role
-              if (!member.roles.cache.has(roleId)) {
-                await member.roles.add(roleId, 'XP restoration - assigning milestone role');
-              }
-            } catch (roleError) {
-              console.error(`Failed to assign role for user ${member.user.id}:`, roleError);
             }
+            
+            // Add all roles up to target (stacking)
+            for (const roleName of rolesToAdd) {
+              const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+              if (roleId && !roleId.startsWith('PLACEHOLDER_') && !member.roles.cache.has(roleId)) {
+                await member.roles.add(roleId, 'XP restoration - assigning stacked progression role');
+              }
+            }
+          } catch (roleError) {
+            console.error(`Failed to assign roles for user ${member.user.id}:`, roleError);
           }
         }
 
