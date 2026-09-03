@@ -21,6 +21,7 @@ import { roleorderCommand } from './roleorder.js';
 import { manageCommand } from './manage.js';
 import { resetCommand } from './reset.js';
 import { setupRolesCommand } from './setupRoles.js';
+import { dataCommand } from './data.js';
 
 export interface Command {
   name: string;
@@ -57,6 +58,7 @@ export async function registerCommands(client: Client): Promise<void> {
     manageCommand,
     resetCommand,
     setupRolesCommand,
+    dataCommand,
   ];
 
   for (const command of commands) {

@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js';
 import { Command } from './index.js';
 
 export const helpCommand: Command = {
-  name: 'help',
+  name: 'commands',
   allowedPrefix: '.',
   async execute(message, _args, _prefix) {
 
