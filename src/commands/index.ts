@@ -14,6 +14,7 @@ import { adminHelpCommand } from './adminHelp.js';
 import { rulesCommand } from './rules.js';
 import { testWelcomeCommand } from './testWelcome.js';
 import { testBoosterCommand } from './testBooster.js';
+import { testLevelCommand } from './testLevel.js';
 import { settingsCommand } from './settings.js';
 import { shopCommand } from './shop.js';
 import { manageCommand } from './manage.js';
@@ -47,6 +48,7 @@ export async function registerCommands(client: Client): Promise<void> {
     rulesCommand,
     testWelcomeCommand,
     testBoosterCommand,
+    testLevelCommand,
     settingsCommand,
     shopCommand,
     manageCommand,
