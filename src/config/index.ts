@@ -59,7 +59,7 @@ export const BOOSTER_ROLE_LABEL = 'Guest Star';
 // Custom Emojis (server emojis only - keep these out of embed footers, Discord
 // doesn't render custom emojis there)
 export const EMOJIS = {
-  MONEY: '<:money:1529443112127168623>',
+  MONEY: '<a:cash:1545126549035024524>',
   CROWN: '<:crown:1529443082406461521>',
   CROWN2: '<:crown1:1529443086193660084>',
   SUNGLASSES: '<:jolly:1545004994418446403>',

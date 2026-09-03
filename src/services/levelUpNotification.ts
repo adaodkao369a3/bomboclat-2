@@ -54,10 +54,10 @@ export async function sendLevelUpNotification(
       : 'Keep going to unlock the next progression perk.';
 
     const embed = new EmbedBuilder()
-      .setTitle(result.roleChanged ? '<a:oldtelephone:1529443123602653225> PROMOTION ALERT!' : '<:greenglossytickcheckmark:1541974842398482472> LEVEL UP!')
+      .setTitle(result.roleChanged ? '<a:oldtelephone:1529443123602653225> PROMOTION ALERT!' : '<:greenglossytickcheckmark:1545126564247633970> LEVEL UP!')
       .setDescription(
         result.roleChanged
-          ? `**${displayName}** has been promoted to <a:pokeballsuccess:1545003084948701265> **${formatRole(currentRole)}**!`
+          ? `**${displayName}** has been promoted to <:ladder:1545126567145906246> **${formatRole(currentRole)}**!`
           : `**${displayName}** has reached level **${result.newLevel}**!`
       )
       .setColor(0x7B61FF)

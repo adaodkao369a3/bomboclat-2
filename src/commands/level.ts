@@ -57,7 +57,7 @@ export const levelCommand: Command = {
     const roleLadder = PROGRESSION_ROLE_KEYS.map((roleKey) => {
       const requiredLevel = XP_CONFIG.ROLE_LEVEL_REQUIREMENTS[roleKey];
       const achieved = currentLevel >= requiredLevel;
-      const icon = achieved ? '<:greenglossytickcheckmark:1541974842398482472>' : '<:glossyredcancelx:1541974834370842654>';
+      const icon = achieved ? '<:greenglossytickcheckmark:1545126564247633970>' : '<:glossyredcancelx:1545126551673241731>';
       const isCurrent = roleKey === userData.current_progression_role;
       const marker = isCurrent ? ` ${EMOJIS.CROWN}` : '';
       return `${icon} **${formatRoleName(roleKey)}**${marker}`;

@@ -17,7 +17,7 @@ export const leaderboardCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<a:pokeballsuccess:1545003084948701265> TOP CAST')
+      .setTitle('<:ladder:1545126567145906246> TOP CAST')
       .setDescription('The most active members of MI BOMBO Studios')
       .setColor(0x4900ff)
       .setFooter({ text: 'MI BOM3O Studios' });

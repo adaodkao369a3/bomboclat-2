@@ -31,7 +31,7 @@ export const adminHelpCommand: Command = {
           'Other admins get a summary only, no artwork, and a 30 minute cooldown between uses.',
         inline: false,
       },
-      { name: '<a:pokeballsuccess:1545003084948701265> $clip Art Styles', value: artStylesList, inline: false },
+      { name: '<:ladder:1545126567145906246> $clip Art Styles', value: artStylesList, inline: false },
       { name: 'XP Management', value: '`$xp @user` - Manage user XP and progression', inline: false },
       { name: 'Residuals Management', value: '`$residuals @user` - Manage user Residuals (Admin/Staff)', inline: false },
       { name: 'Role Synchronization', value: '`$syncroles` - Synchronize all progression roles', inline: false },

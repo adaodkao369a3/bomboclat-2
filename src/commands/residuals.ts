@@ -38,7 +38,7 @@ export const residualsCommand: Command = {
 
     // Create Residuals management UI
     const embed = new EmbedBuilder()
-      .setTitle('<:money:1529443112127168623> Residuals Management')
+      .setTitle('<a:cash:1545126549035024524> Residuals Management')
       .setDescription(`Managing Residuals for **${target.displayName}**`)
       .setColor(0x4900ff)
       .addFields([

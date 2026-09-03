@@ -50,11 +50,11 @@ export const rulesCommand: Command = {
           inline: false 
         },
         { 
-          name: '<:money:1529443112127168623> RESIDUALS', 
+          name: '<a:cash:1545126549035024524> RESIDUALS', 
           value: 'Residuals are the studio\'s currency.\n\n' +
                  'Your Residual balance, lifetime earnings, spending and transaction history are tracked separately from your XP.\n\n' +
                  'For now, Residual management is handled by staff.\n\n' +
-                 '<:money:1529443112127168623>', 
+                 '<a:cash:1545126549035024524>', 
           inline: false 
         },
         { 
