@@ -15,17 +15,17 @@ function getUnlockedPerks(role: string): string[] {
     case 'featured_extra':
       return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked'];
     case 'supporting_cast':
-      return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked', '<a:happystar:1541974913781338273> Additional media permissions'];
+      return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked', '<:star:1545002693368750193> Additional media permissions'];
     case 'principal_cast':
       return [
         '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<a:happystar:1541974913781338273> Additional media permissions',
+        '<:star:1545002693368750193> Additional media permissions',
         '👑 Principal Cast privileges',
       ];
     case 'lead_cast':
       return [
         '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<a:happystar:1541974913781338273> Additional media permissions',
+        '<:star:1545002693368750193> Additional media permissions',
         '👑 Lead Cast privileges',
         '💎 Mythic shop access',
       ];

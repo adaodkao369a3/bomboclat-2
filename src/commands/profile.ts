@@ -62,7 +62,7 @@ export const profileCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<a:happystar:1541974913781338273> STUDIO PROFILE')
+      .setTitle('<:star:1545002693368750193> STUDIO PROFILE')
       .setDescription(`**${target.displayName}**\n\`${roleDisplay}\``)
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
