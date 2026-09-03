@@ -429,6 +429,44 @@ CREATE INDEX IF NOT EXISTS idx_residual_transactions_created_at ON residual_tran
 -- Idempotent schema upgrades for existing databases
 ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_bonus_paid BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Defensive column backfill: tables created from older schema versions may be
+-- missing columns that were added later without a matching ALTER statement.
+-- Each of these is a no-op if the column already exists.
+-- NOTE: total_residuals_balance / lifetime_residuals_earned / lifetime_residuals_spent
+-- are deliberately NOT backfilled here - the live table uses coin_balance /
+-- lifetime_coins_earned / lifetime_coins_spent instead. That's a naming
+-- mismatch between this code and the live schema, not a missing column, and
+-- needs to be resolved deliberately (see conversation) rather than papered
+-- over with a second, disconnected currency column.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS current_xp INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS current_level INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS current_progression_role TEXT DEFAULT 'audience';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS promotion_eligibility_percentage REAL DEFAULT 0.0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_xp_timestamp TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_xp_earned INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily_xp_reset TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_promotion_timestamp TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+-- Defensive: the restore migration relies on ON CONFLICT (user_id), which
+-- requires a unique/primary key constraint on user_id. Add one if the live
+-- table doesn't already have it, without assuming it does.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'users'::regclass AND contype IN ('p', 'u')
+    AND array_length(conkey, 1) = 1
+    AND conkey[1] = (
+      SELECT attnum FROM pg_attribute
+      WHERE attrelid = 'users'::regclass AND attname = 'user_id'
+    )
+  ) THEN
+    ALTER TABLE users ADD CONSTRAINT users_user_id_key UNIQUE (user_id);
+  END IF;
+END $$;
+
 -- Migration: Add missing username column if it was dropped or table was created from old schema
 DO $$
 BEGIN
