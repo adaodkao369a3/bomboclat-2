@@ -64,7 +64,7 @@ export async function sendLevelUpNotification(
       .addFields(
         { name: 'New Level', value: result.newLevel.toString(), inline: true },
         { name: 'Total XP', value: result.newXP.toLocaleString(), inline: true },
-        { name: '<a:doginaldollar:1541974906252828672> Residuals Earned', value: `+${result.levelUpResiduals}`, inline: true },
+        { name: '<a:cash:1545126549035024524> Residuals Earned', value: `+${result.levelUpResiduals}`, inline: true },
         { name: 'Current Role', value: formatRole(currentRole), inline: true },
         { name: 'Perks Unlocked', value: perksText, inline: false },
       )

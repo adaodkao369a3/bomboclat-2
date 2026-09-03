@@ -65,7 +65,7 @@ export const levelCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<a:pinkarrowright:1542330072839749662> LEVEL PROGRESS')
+      .setTitle('<:ladder:1545126567145906246> LEVEL PROGRESS')
       .setDescription(`**${target.displayName}**\n\`${roleDisplay}\` ${EMOJIS.CROWN}`)
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())

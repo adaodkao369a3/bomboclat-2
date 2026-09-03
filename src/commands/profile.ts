@@ -51,7 +51,7 @@ export const profileCommand: Command = {
     // Build embed fields
     const fields = [
       { name: 'Level', value: currentLevel.toString(), inline: true },
-      { name: '<a:doginaldollar:1541974906252828672> Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
+      { name: '<a:cash:1545126549035024524> Residuals', value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
     ];
 
     // Add promotion eligibility if not at max role
