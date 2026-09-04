@@ -31,8 +31,16 @@ client.once('ready', async () => {
     await client.user.setActivity('XP, shop & community', { type: ActivityType.Watching });
   }
   
-  // Register commands
+  // Register legacy commands
   await registerCommands(client);
+  
+  // Register slash commands
+  try {
+    const { registerSlashCommands } = await import('./commands/slash/index.js');
+    await registerSlashCommands();
+  } catch (error) {
+    console.error('Failed to register slash commands:', error);
+  }
   
   // Start voice XP ticker
   startVoiceTicker();
@@ -65,6 +73,30 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     handleVoiceStateUpdate(oldState, newState);
   } catch (error) {
     console.error('Unhandled error in voiceStateUpdate handler:', error);
+  }
+});
+
+client.on('interactionCreate', async (interaction) => {
+  try {
+    if (interaction.isChatInputCommand()) {
+      const { handleSlashCommand } = await import('./commands/slash/index.js');
+      await handleSlashCommand(interaction);
+    } else if (interaction.isButton()) {
+      const { handleButtonInteraction } = await import('./commands/slash/index.js');
+      await handleButtonInteraction(interaction);
+    } else if (interaction.isModalSubmit()) {
+      const { handleModalSubmit } = await import('./commands/slash/index.js');
+      await handleModalSubmit(interaction);
+    }
+  } catch (error) {
+    console.error('Unhandled error in interactionCreate handler:', error);
+    if (interaction.isRepliable()) {
+      try {
+        await interaction.reply({ content: '❌ An error occurred processing this interaction.', ephemeral: true });
+      } catch (replyError) {
+        console.error('Failed to send error reply:', replyError);
+      }
+    }
   }
 });
 

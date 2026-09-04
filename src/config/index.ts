@@ -4,6 +4,7 @@ dotenv.config();
 
 // Discord Configuration
 export const DISCORD_TOKEN = process.env.DISCORD_TOKEN || '';
+export const CLIENT_ID = process.env.CLIENT_ID || '';
 export const PREFIX = process.env.PREFIX || '.';
 export const ADMIN_PREFIX = '$';
 
@@ -298,6 +299,10 @@ export const BOOST_GIF_QUERIES = [
 // Residuals gifted automatically when someone boosts (becomes Guest Star)
 export const BOOST_RESIDUAL_GIFT = 40;
 
+// Emoji Submission Configuration
+export const EMOJI_XP_THRESHOLD = 3600;
+export const EMOJI_REVIEW_CHANNEL_ID = '1545394590851276891';
+
 // Randomized welcome message lines. {user} = mention, {count} = member number.
 export const WELCOME_MESSAGES: string[] = [
   '{user} just walked onto the set. Welcome to MI BOM3O Studios {typing} — introduce yourself and start the climb from Audience to Lead Cast.',
@@ -459,6 +464,27 @@ CREATE INDEX IF NOT EXISTS idx_xp_transactions_user_id ON xp_transactions(user_i
 CREATE INDEX IF NOT EXISTS idx_xp_transactions_created_at ON xp_transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_residual_transactions_user_id ON residual_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_residual_transactions_created_at ON residual_transactions(created_at);
+
+-- Emoji submissions table
+CREATE TABLE IF NOT EXISTS emoji_submissions (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  guild_id TEXT NOT NULL,
+  emoji_name TEXT NOT NULL,
+  image_buffer BYTEA NOT NULL,
+  image_mime_type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at TIMESTAMP,
+  reviewed_by TEXT,
+  rejection_reason TEXT,
+  created_emoji_id TEXT,
+  user_xp INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_emoji_submissions_user_id ON emoji_submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_emoji_submissions_status ON emoji_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_emoji_submissions_guild_id ON emoji_submissions(guild_id);
 
 -- Idempotent schema upgrades for existing databases
 ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_bonus_paid BOOLEAN NOT NULL DEFAULT FALSE;
