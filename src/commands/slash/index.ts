@@ -1,9 +1,9 @@
-import { REST, Routes, SlashCommandBuilder, ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
+import { REST, Routes, ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 import { DISCORD_TOKEN, CLIENT_ID } from '../../config/index.js';
 import { emojiSubmitCommand } from './emojiSubmit.js';
 
 export interface SlashCommand {
-  data: SlashCommandBuilder;
+  data: any; // Discord.js builder types are complex, using any for flexibility
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
@@ -72,10 +72,7 @@ export async function handleButtonInteraction(interaction: ButtonInteraction): P
 export async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
   const customId = interaction.customId;
 
-  if (customId === 'emoji_submit_modal') {
-    const { handleEmojiSubmitModal } = await import('./emojiSubmit.js');
-    await handleEmojiSubmitModal(interaction);
-  } else if (customId.startsWith('emoji_reject_modal_')) {
+  if (customId.startsWith('emoji_reject_modal_')) {
     const { handleEmojiRejectModal } = await import('./emojiSubmit.js');
     const submissionId = parseInt(customId.split('_').pop() || '0', 10);
     await handleEmojiRejectModal(interaction, submissionId);

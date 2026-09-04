@@ -8,7 +8,27 @@ import { EMOJI_REVIEW_CHANNEL_ID, EMOJI_XP_THRESHOLD } from '../../config/index.
 export const emojiSubmitCommand = {
   data: new SlashCommandBuilder()
     .setName('emojisubmit')
-    .setDescription('Submit a custom emoji for review (requires 3,600 XP)'),
+    .setDescription('Submit a custom emoji for review (requires 3,600 XP)')
+    .addStringOption(option =>
+      option
+        .setName('text')
+        .setDescription('Emoji name (e.g., happy_cat)')
+        .setRequired(true)
+        .setMinLength(2)
+        .setMaxLength(32)
+    )
+    .addAttachmentOption(option =>
+      option
+        .setName('image')
+        .setDescription('Attach an image file for the emoji')
+        .setRequired(false)
+    )
+    .addStringOption(option =>
+      option
+        .setName('image_url')
+        .setDescription('Image URL if not attaching a file')
+        .setRequired(false)
+    ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) {
@@ -45,140 +65,113 @@ export const emojiSubmitCommand = {
       return;
     }
 
-    // Show modal for emoji name and image URL
-    const modal = new ModalBuilder()
-      .setCustomId('emoji_submit_modal')
-      .setTitle('Submit Custom Emoji')
-      .addComponents(
-        new ActionRowBuilder<TextInputBuilder>().addComponents(
-          new TextInputBuilder()
-            .setCustomId('emoji_name')
-            .setLabel('Emoji Name')
-            .setStyle(TextInputStyle.Short)
-            .setMinLength(2)
-            .setMaxLength(32)
-            .setPlaceholder('e.g., happy_cat')
-            .setRequired(true)
-        ),
-        new ActionRowBuilder<TextInputBuilder>().addComponents(
-          new TextInputBuilder()
-            .setCustomId('image_url')
-            .setLabel('Image URL')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('https://example.com/image.png')
-            .setRequired(true)
-        )
-      );
+    // Get options
+    const emojiName = interaction.options.getString('text', true);
+    const imageAttachment = interaction.options.getAttachment('image');
+    const imageUrl = interaction.options.getString('image_url');
 
-    await interaction.showModal(modal);
-  },
-};
-
-export async function handleEmojiSubmitModal(interaction: ModalSubmitInteraction): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: '❌ This command can only be used in a server.', ephemeral: true });
-    return;
-  }
-
-  const emojiName = interaction.fields.getTextInputValue('emoji_name');
-  const imageUrl = interaction.fields.getTextInputValue('image_url');
-
-  // Sanitize emoji name
-  const sanitizedName = sanitizeEmojiName(emojiName);
-  if (!sanitizedName) {
-    await interaction.reply({ 
-      content: '❌ Invalid emoji name. Use only letters, numbers, and underscores (2-32 characters).', 
-      ephemeral: true 
-    });
-    return;
-  }
-
-  // Re-fetch user XP for the embed
-  let userXP: number;
-  try {
-    const user = await getUser(interaction.user.id);
-    if (!user) {
+    // Validate that either attachment or URL is provided
+    if (!imageAttachment && !imageUrl) {
       await interaction.reply({ 
-        content: '❌ User record not found. Please send a message to create your account.', 
+        content: '❌ Please either attach an image file or provide an image URL.', 
         ephemeral: true 
       });
       return;
     }
-    userXP = user.current_xp;
-  } catch (error) {
-    console.error('Error fetching user XP:', error);
-    userXP = 0;
-  }
 
-  await interaction.deferReply({ ephemeral: true });
-
-  try {
-    // Validate and process image
-    const processedImage = await validateAndProcessImage(imageUrl, userXP);
-    if (!processedImage) {
-      await interaction.editReply({ 
-        content: '❌ Invalid or unprocessable image. Please provide a valid PNG, JPEG, or GIF image URL.' 
+    // Sanitize emoji name
+    const sanitizedName = sanitizeEmojiName(emojiName);
+    if (!sanitizedName) {
+      await interaction.reply({ 
+        content: '❌ Invalid emoji name. Use only letters, numbers, and underscores (2-32 characters).', 
+        ephemeral: true 
       });
       return;
     }
 
-    // Create submission in database
-    const submission = await createEmojiSubmission(
-      interaction.user.id,
-      interaction.guild.id,
-      sanitizedName,
-      processedImage.buffer,
-      processedImage.mimeType
-    );
+    await interaction.deferReply({ ephemeral: true });
 
-    // Post to review channel
-    const reviewChannel = interaction.guild.channels.cache.get(EMOJI_REVIEW_CHANNEL_ID);
-    if (!reviewChannel || !reviewChannel.isTextBased()) {
-      await interaction.editReply({ 
-        content: '❌ Review channel not found. Please contact an admin.' 
+    try {
+      // Determine image source
+      let finalImageUrl: string;
+      if (imageAttachment) {
+        finalImageUrl = imageAttachment.url;
+      } else if (imageUrl) {
+        finalImageUrl = imageUrl;
+      } else {
+        await interaction.editReply({ 
+          content: '❌ No image source provided.' 
+        });
+        return;
+      }
+
+      // Validate and process image
+      const processedImage = await validateAndProcessImage(finalImageUrl, userXP);
+      if (!processedImage) {
+        await interaction.editReply({ 
+          content: '❌ Invalid or unprocessable image. Please provide a valid PNG, JPEG, or GIF image.' 
+        });
+        return;
+      }
+
+      // Create submission in database
+      const submission = await createEmojiSubmission(
+        interaction.user.id,
+        interaction.guild.id,
+        sanitizedName,
+        processedImage.buffer,
+        processedImage.mimeType
+      );
+
+      // Post to review channel
+      const reviewChannel = interaction.guild.channels.cache.get(EMOJI_REVIEW_CHANNEL_ID);
+      if (!reviewChannel || !reviewChannel.isTextBased()) {
+        await interaction.editReply({ 
+          content: '❌ Review channel not found. Please contact an admin.' 
+        });
+        return;
+      }
+
+      const attachment = new AttachmentBuilder(processedImage.buffer, { name: `emoji_${submission.id}.${processedImage.extension}` });
+
+      const embed = new EmbedBuilder()
+        .setTitle('🎨 Emoji Submission')
+        .setDescription(`**Name:** \`${sanitizedName}\`\n**Submitter:** <@${interaction.user.id}>\n**XP:** ${processedImage.userXP?.toLocaleString() || 'N/A'}\n**Status:** Pending Review`)
+        .setColor(0xFFA500)
+        .setImage(`attachment://emoji_${submission.id}.${processedImage.extension}`)
+        .setTimestamp()
+        .setFooter({ text: `Submission ID: ${submission.id}` });
+
+      const approveButton = new ButtonBuilder()
+        .setCustomId(`emoji_approve_${submission.id}`)
+        .setLabel('✅ Approve')
+        .setStyle(ButtonStyle.Success);
+
+      const rejectButton = new ButtonBuilder()
+        .setCustomId(`emoji_reject_${submission.id}`)
+        .setLabel('❌ Reject')
+        .setStyle(ButtonStyle.Danger);
+
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(approveButton, rejectButton);
+
+      await reviewChannel.send({
+        content: `<@${interaction.user.id}>`,
+        embeds: [embed],
+        files: [attachment],
+        components: [row],
       });
-      return;
+
+      await interaction.editReply({ 
+        content: '✅ Emoji submitted successfully! It will be reviewed by an admin.' 
+      });
+    } catch (error) {
+      console.error('Error processing emoji submission:', error);
+      await interaction.editReply({ 
+        content: '❌ Failed to process submission. Please try again later.' 
+      });
     }
-
-    const attachment = new AttachmentBuilder(processedImage.buffer, { name: `emoji_${submission.id}.${processedImage.extension}` });
-
-    const embed = new EmbedBuilder()
-      .setTitle('🎨 Emoji Submission')
-      .setDescription(`**Name:** \`${sanitizedName}\`\n**Submitter:** <@${interaction.user.id}>\n**XP:** ${processedImage.userXP?.toLocaleString() || 'N/A'}\n**Status:** Pending Review`)
-      .setColor(0xFFA500)
-      .setImage(`attachment://emoji_${submission.id}.${processedImage.extension}`)
-      .setTimestamp()
-      .setFooter({ text: `Submission ID: ${submission.id}` });
-
-    const approveButton = new ButtonBuilder()
-      .setCustomId(`emoji_approve_${submission.id}`)
-      .setLabel('✅ Approve')
-      .setStyle(ButtonStyle.Success);
-
-    const rejectButton = new ButtonBuilder()
-      .setCustomId(`emoji_reject_${submission.id}`)
-      .setLabel('❌ Reject')
-      .setStyle(ButtonStyle.Danger);
-
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(approveButton, rejectButton);
-
-    await reviewChannel.send({
-      content: `<@${interaction.user.id}>`,
-      embeds: [embed],
-      files: [attachment],
-      components: [row],
-    });
-
-    await interaction.editReply({ 
-      content: '✅ Emoji submitted successfully! It will be reviewed by an admin.' 
-    });
-  } catch (error) {
-    console.error('Error processing emoji submission:', error);
-    await interaction.editReply({ 
-      content: '❌ Failed to process submission. Please try again later.' 
-    });
-  }
-}
+  },
+};
 
 export async function handleEmojiApprove(interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) {
