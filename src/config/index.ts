@@ -5,6 +5,7 @@ dotenv.config();
 // Discord Configuration
 export const DISCORD_TOKEN = process.env.DISCORD_TOKEN || '';
 export const CLIENT_ID = process.env.CLIENT_ID || '';
+export const DEV_GUILD_ID = process.env.DEV_GUILD_ID || '';
 export const PREFIX = process.env.PREFIX || '.';
 export const ADMIN_PREFIX = '$';
 

@@ -34,14 +34,6 @@ client.once('ready', async () => {
   // Register legacy commands
   await registerCommands(client);
   
-  // Register slash commands
-  try {
-    const { registerSlashCommands } = await import('./commands/slash/index.js');
-    await registerSlashCommands();
-  } catch (error) {
-    console.error('Failed to register slash commands:', error);
-  }
-  
   // Start voice XP ticker
   startVoiceTicker();
   

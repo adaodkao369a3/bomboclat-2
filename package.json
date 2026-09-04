@@ -8,7 +8,10 @@
     "start": "tsc && node dist/src/index.js",
     "dev": "ts-node src/index.ts",
     "clean": "rimraf dist",
-    "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js && node dist/tests/shop.test.js"
+    "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js && node dist/tests/shop.test.js",
+    "deploy:dev": "ts-node scripts/deploy-commands.ts dev",
+    "deploy:global": "ts-node scripts/deploy-commands.ts global",
+    "deploy:clear": "ts-node scripts/deploy-commands.ts clear"
   },
   "keywords": [
     "discord",
