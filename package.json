@@ -9,9 +9,10 @@
     "dev": "ts-node src/index.ts",
     "clean": "rimraf dist",
     "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js && node dist/tests/shop.test.js",
-    "deploy:dev": "ts-node scripts/deploy-commands.ts dev",
-    "deploy:global": "ts-node scripts/deploy-commands.ts global",
-    "deploy:clear": "ts-node scripts/deploy-commands.ts clear"
+    "deploy:dev": "tsc && node scripts/deploy-commands.js dev",
+    "deploy:global": "tsc && node scripts/deploy-commands.js global",
+    "deploy:sync": "tsc && node scripts/deploy-commands.js sync",
+    "deploy:clear": "tsc && node scripts/deploy-commands.js clear"
   },
   "keywords": [
     "discord",

@@ -1,6 +1,6 @@
 import { REST, Routes, ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
-import { DISCORD_TOKEN, CLIENT_ID, DEV_GUILD_ID } from '../../config/index.js';
-import { emojiSubmitCommand } from './emojiSubmit.js';
+import { DISCORD_TOKEN, CLIENT_ID, DEV_GUILD_ID } from '../../config/index';
+import { emojiSubmitCommand } from './emojiSubmit';
 
 export interface SlashCommand {
   data: any; // Discord.js builder types are complex, using any for flexibility
@@ -66,6 +66,67 @@ export async function clearGlobalCommands(): Promise<void> {
     console.log('Successfully cleared all global commands.');
   } catch (error) {
     console.error('Error clearing global commands:', error);
+  }
+}
+
+export async function syncCommands(mode: 'dev' | 'global'): Promise<void> {
+  if (!CLIENT_ID) {
+    console.warn('CLIENT_ID not set, skipping command sync');
+    return;
+  }
+
+  const commands = slashCommands.map(cmd => cmd.data.toJSON());
+  const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
+
+  try {
+    console.log('=== Command Sync ===');
+    
+    // Fetch current state
+    const globalCommands = await rest.get(Routes.applicationCommands(CLIENT_ID)) as any[];
+    console.log(`Current global commands: ${globalCommands.length}`);
+    
+    if (DEV_GUILD_ID) {
+      const guildCommands = await rest.get(Routes.applicationGuildCommands(CLIENT_ID, DEV_GUILD_ID)) as any[];
+      console.log(`Current guild commands (${DEV_GUILD_ID}): ${guildCommands.length}`);
+    } else {
+      console.log('No DEV_GUILD_ID set, skipping guild sync');
+    }
+
+    // Sync based on mode
+    if (mode === 'dev' && DEV_GUILD_ID) {
+      // Dev mode: guild = current commands, global = cleared
+      console.log('\nSyncing for development mode...');
+      console.log(`  → Guild: ${commands.length} commands`);
+      console.log(`  → Global: clearing`);
+      
+      await rest.put(Routes.applicationGuildCommands(CLIENT_ID, DEV_GUILD_ID), { body: commands });
+      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
+      
+    } else if (mode === 'global') {
+      // Production mode: global = current commands, guild = cleared (optional)
+      console.log('\nSyncing for production mode...');
+      console.log(`  → Global: ${commands.length} commands`);
+      
+      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+      
+      if (DEV_GUILD_ID) {
+        console.log(`  → Guild: clearing (optional, comment out if you want dev guild to keep working)`);
+        await rest.put(Routes.applicationGuildCommands(CLIENT_ID, DEV_GUILD_ID), { body: [] });
+      }
+    }
+
+    // Log final state
+    console.log('\n=== Sync Complete ===');
+    const finalGlobal = await rest.get(Routes.applicationCommands(CLIENT_ID)) as any[];
+    console.log(`Final global commands: ${finalGlobal.length}`);
+    
+    if (DEV_GUILD_ID) {
+      const finalGuild = await rest.get(Routes.applicationGuildCommands(CLIENT_ID, DEV_GUILD_ID)) as any[];
+      console.log(`Final guild commands (${DEV_GUILD_ID}): ${finalGuild.length}`);
+    }
+    
+  } catch (error) {
+    console.error('Error syncing commands:', error);
   }
 }
 
