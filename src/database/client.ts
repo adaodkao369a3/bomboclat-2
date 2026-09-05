@@ -1,5 +1,5 @@
 import { Pool, PoolClient, type QueryResultRow } from 'pg';
-import { DATABASE_URL, SCHEMA } from '../config/index.js';
+import { DATABASE_URL, SCHEMA } from '../config/index';
 
 let pool: Pool | null = null;
 

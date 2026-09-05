@@ -1,24 +1,24 @@
 import { Client, Collection, Message } from 'discord.js';
 
-import { helpCommand } from './help.js';
-import { profileCommand } from './profile.js';
-import { levelCommand } from './level.js';
-import { resCommand } from './res.js';
-import { leaderboardCommand } from './leaderboard.js';
-import { gifCommands } from './gif.js';
-import { customGifCommand } from './customGif.js';
-import { clipCommand } from './clip.js';
-import { xpCommand } from './xp.js';
-import { residualsCommand } from './residuals.js';
-import { adminHelpCommand } from './adminHelp.js';
-import { rulesCommand } from './rules.js';
-import { testWelcomeCommand } from './testWelcome.js';
-import { testBoosterCommand } from './testBooster.js';
-import { testLevelCommand } from './testLevel.js';
-import { settingsCommand } from './settings.js';
-import { shopCommand } from './shop.js';
-import { manageCommand } from './manage.js';
-import { resetCommand } from './reset.js';
+import { helpCommand } from './help';
+import { profileCommand } from './profile';
+import { levelCommand } from './level';
+import { resCommand } from './res';
+import { leaderboardCommand } from './leaderboard';
+import { gifCommands } from './gif';
+import { customGifCommand } from './customGif';
+import { clipCommand } from './clip';
+import { xpCommand } from './xp';
+import { residualsCommand } from './residuals';
+import { adminHelpCommand } from './adminHelp';
+import { rulesCommand } from './rules';
+import { testWelcomeCommand } from './testWelcome';
+import { testBoosterCommand } from './testBooster';
+import { testLevelCommand } from './testLevel';
+import { settingsCommand } from './settings';
+import { shopCommand } from './shop';
+import { manageCommand } from './manage';
+import { resetCommand } from './reset';
 
 export interface Command {
   name: string;

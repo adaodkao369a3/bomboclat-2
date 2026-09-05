@@ -1,11 +1,11 @@
 import { Client, GatewayIntentBits, Partials, Collection, ActivityType } from 'discord.js';
-import { connect as connectDB, disconnect as disconnectDB } from './database/client.js';
-import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX } from './config/index.js';
-import { registerCommands } from './commands/index.js';
-import { handleXPMessage } from './services/messageHandler.js';
-import { sendWelcomeMessage, sendBoosterThankYou, giftBoosterResiduals, hasBoosterRole } from './services/welcome.js';
-import { Command } from './commands/index.js';
-import { handleVoiceStateUpdate, startVoiceTicker } from './services/voiceHandler.js';
+import { connect as connectDB, disconnect as disconnectDB } from './database/client';
+import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX } from './config/index';
+import { registerCommands } from './commands/index';
+import { handleXPMessage } from './services/messageHandler';
+import { sendWelcomeMessage, sendBoosterThankYou, giftBoosterResiduals, hasBoosterRole } from './services/welcome';
+import { Command } from './commands/index';
+import { handleVoiceStateUpdate, startVoiceTicker } from './services/voiceHandler';
 
 // Extend Client to include commands
 class ExtendedClient extends Client {
@@ -71,13 +71,13 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 client.on('interactionCreate', async (interaction) => {
   try {
     if (interaction.isChatInputCommand()) {
-      const { handleSlashCommand } = await import('./commands/slash/index.js');
+      const { handleSlashCommand } = await import('./commands/slash/index');
       await handleSlashCommand(interaction);
     } else if (interaction.isButton()) {
-      const { handleButtonInteraction } = await import('./commands/slash/index.js');
+      const { handleButtonInteraction } = await import('./commands/slash/index');
       await handleButtonInteraction(interaction);
     } else if (interaction.isModalSubmit()) {
-      const { handleModalSubmit } = await import('./commands/slash/index.js');
+      const { handleModalSubmit } = await import('./commands/slash/index');
       await handleModalSubmit(interaction);
     }
   } catch (error) {

@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "tsc && node dist/src/index.js",
     "dev": "ts-node src/index.ts",
+    "dev:watch": "tsc && nodemon dist/src/index.js",
     "clean": "rimraf dist",
     "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js && node dist/tests/shop.test.js",
     "deploy:dev": "tsc && node scripts/deploy-commands.js dev",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@types/node": "^20.11.19",
     "@types/pg": "^8.11.0",
+    "nodemon": "^3.1.0",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2"
   }
