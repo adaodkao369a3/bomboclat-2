@@ -130,10 +130,14 @@ export const rulesCommand: Command = {
     // Set image from attachment if successfully fetched, otherwise use external URL
     if (gifAttachment) {
       embed.setImage('attachment://minions.gif');
-      await message.reply({ embeds: [embed], files: [gifAttachment] });
+      if (message.channel.isTextBased()) {
+        await (message.channel as any).send({ embeds: [embed], files: [gifAttachment] });
+      }
     } else {
       embed.setImage('https://media.discordapp.net/attachments/1535286802871623831/1540273341481361458/minions.gif?ex=6a895ad5&is=6a880955&hm=db79686ed2b8dda68e2255b0ee80e46910aaa2db0166df4bb0bf539436598d5c&=');
-      await message.reply({ embeds: [embed] });
+      if (message.channel.isTextBased()) {
+        await (message.channel as any).send({ embeds: [embed] });
+      }
     }
   },
 };
