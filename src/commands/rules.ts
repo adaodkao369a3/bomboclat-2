@@ -104,9 +104,9 @@ export const rulesCommand: Command = {
     // 4. Bombo Games
     const gamesEmbed = new EmbedBuilder()
       .setTitle('<:bob:1545825919770300506> BOMBO GAMES')
-      .setDescription(
+      .setDescription('════════════════\n\n' +
         '__**Bombo Games**__ is MI BOMBO\'s chaotic game-night bot — built for competition, gambling, and messing around with friends\n' +
-        '════════════════\n' +
+        
         '<:swords:1545829059978858516> __**Multiplayer**__ — Wordle, duels, trials, Impostor, Simon Says & more\n' +
         '<:cards:1545829082196086904> __**Gambling**__ — Slots, blackjack, dice, roulette, bombs & coin flips\n' +
         '<a:cd:1543859826113908786> __**Wheels**__ — PFP, Truth or Dare, Punishment & Acting\n' +
