@@ -4,7 +4,7 @@ import { Command } from './index.js';
 const RULES_GIF = 'https://i.pinimg.com/originals/13/c3/e8/13c3e803a85dff90e46d084990bc0fb1.gif';
 const BOMBOCLAT_GIF = 'https://i.pinimg.com/originals/1b/dc/23/1bdc2395fe777608278d713286b7aee1.gif';
 const BOCCHI_GIF = 'https://64.media.tumblr.com/472e8404c397f14fb0945b4f30f2b8f3/ad833584756fe657-27/s640x960/26afc151c01117a1906b592b15288001fc55c0d5.gif';
-const BOMBO_GAMES_GIF = 'https://i.pinimg.com/originals/9b/12/52/9b1252779f8a7c4bb0df3f8f2bd097dd.gif';
+const BOMBO_GAMES_GIF = 'https://i.pinimg.com/originals/1b/dc/23/1bdc2395fe777608278d713286b7aee1.gif';
 const ENDING_GIF = 'https://giffiles.alphacoders.com/221/221952.gif';
 
 export const rulesCommand: Command = {
@@ -44,19 +44,19 @@ export const rulesCommand: Command = {
         '__**Welcome to the studio**__ — a place for **chat, games, gambling, bots, and a whole cast.**\n\n' +
         '<a:pokeballsuccess:1545003084948701265> __**PROGRESSION**__\n' +
         'Earn **XP** through normal activity and climb the cast ladder. Every level brings a new role, higher status, and **perks to unlock.**\n\n' +
-        '__**LEVEL PERKS**__\n' +
+        '<:greenglossytickcheckmark:1545126564247633970> __**LEVEL PERKS**__\n' +
         'Each **level** comes with its own **perks and unlocks.** Use __**.level**__ to check your current level, progress, and available perks. <a:hearticon:1545831749034967182>\n\n' +
-        '　　　　　　　　　　　　　　　　<:ladder:1545126567145906246> **Saint** <:saint:1545860968721162291>\n' +
-        '　　　　　　　　　　　　　　　<:ladder:1545126567145906246> **Emperor**\n' +
-        '　　　　　　　　　　　　　　<:ladder:1545126567145906246> **Tyrant**\n' +
-        '　　　　　　　　　　　　　<:ladder:1545126567145906246> **Overlord**\n' +
-        '　　　　　　　　　　　　<:ladder:1545126567145906246> **Kingpin** <:kingpin:1545860963930996898>\n' +
-        '　　　　　　　　　　　<:ladder:1545126567145906246> **Mastermind**\n' +
-        '　　　　　　　　　　<:ladder:1545126567145906246> **Villain**\n' +
-        '　　　　　　　　　<:ladder:1545126567145906246> **Outlaw**\n' +
-        '　　　　　　　　<:ladder:1545126567145906246> **Renegade** <:renegade:1545860966342725843>\n' +
-        '　　　　　　　<:ladder:1545126567145906246> **Rogue**\n' +
-        '　　　　　　<:ladder:1545126567145906246> **Anti-Hero**\n' +
+        '　　　<:ladder:1545126567145906246> **Saint** <:saint:1545860968721162291>\n' +
+        '　　<:ladder:1545126567145906246> **Emperor**\n' +
+        '　<:ladder:1545126567145906246> **Tyrant**\n' +
+        '<:ladder:1545126567145906246> **Overlord**\n' +
+        '　　　　　　<:ladder:1545126567145906246> **Kingpin** <:kingpin:1545860963930996898>\n' +
+        '　　　　　<:ladder:1545126567145906246> **Mastermind**\n' +
+        '　　　　<:ladder:1545126567145906246> **Villain**\n' +
+        '　　　<:ladder:1545126567145906246> **Outlaw**\n' +
+        '　　<:ladder:1545126567145906246> **Renegade** <:renegade:1545860966342725843>\n' +
+        '　<:ladder:1545126567145906246> **Rogue**\n' +
+        '<:ladder:1545126567145906246> **Anti-Hero**\n' +
         '　　　　　<:ladder:1545126567145906246> **Superhero** <:superhero:1545861427720359937>\n' +
         '　　　　<:ladder:1545126567145906246> **Guardian**\n' +
         '　　　<:ladder:1545126567145906246> **Champion**\n' +
@@ -85,7 +85,7 @@ export const rulesCommand: Command = {
 
     // 3. Bocchi AI
     const bocchiEmbed = new EmbedBuilder()
-      .setTitle('<:nosapechi:1545822258960801863> MEET BOCCHI KUN')
+      .setTitle('<:nosapechi:1545822258960801863> MEET BOCCHI CHAN')
       .setDescription('════════════════\n\n' +
         '__**Bocchi**__ is __**MI BOM3O**__\'s own AI companion, made to be a fun, awkward little presence around the studio.\n\n' +
         '<:bocchilike:1545822253759856782> __**AI Companion**__ — Shy, awkward, introverted, and genuinely kind.\n\n' +
