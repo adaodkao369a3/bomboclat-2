@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js';
 import { Command } from './index.js';
 
 const RULES_GIF = 'https://i.pinimg.com/originals/13/c3/e8/13c3e803a85dff90e46d084990bc0fb1.gif';
-const BOMBOCLAT_GIF = 'https://i.pinimg.com/originals/1b/dc/23/1bdc2395fe777608278d713286b7aee1.gif';
+const BOMBOCLAT_GIF = 'https://i.pinimg.com/originals/68/f1/42/68f142cc473e62240c593f7290d263ab.gif';
 const BOCCHI_GIF = 'https://64.media.tumblr.com/472e8404c397f14fb0945b4f30f2b8f3/ad833584756fe657-27/s640x960/26afc151c01117a1906b592b15288001fc55c0d5.gif';
 const BOMBO_GAMES_GIF = 'https://i.pinimg.com/originals/1b/dc/23/1bdc2395fe777608278d713286b7aee1.gif';
 const ENDING_GIF = 'https://giffiles.alphacoders.com/221/221952.gif';
