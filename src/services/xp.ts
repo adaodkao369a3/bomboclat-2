@@ -1,18 +1,20 @@
-import { XP_CONFIG, ROLES } from '../config/index.js';
+import { XP_CONFIG } from '../config/index.js';
 import { GuildMember } from 'discord.js';
-import { 
-  getOrCreateUser, 
-  getUser, 
-  addUserXP, 
-  setUserLevel, 
-  setUserProgressionRole, 
-  updatePromotionEligibility, 
-  setDailyBonusPaid, 
-  resetDailyXP 
+import {
+  getOrCreateUser,
+  getUser,
+  addUserXP,
+  setUserLevel,
+  setUserProgressionRole,
+  updatePromotionEligibility,
+  setDailyBonusPaid,
+  resetDailyXP
 } from '../database/client.js';
 import { ResidualsService } from './residuals.js';
+import { getRoleId } from './managedRoles.js';
 
 export const PROGRESSION_ROLE_KEYS = [
+  'spectator',
   'civilian',
   'sidekick',
   'hero',
@@ -88,6 +90,14 @@ export function calculatePromotionEligibility(
   currentLevel: number,
   currentRole: string
 ): number {
+  // Spectator has no next role to promote to (until level 1)
+  if (currentRole === 'spectator') {
+    if (currentLevel >= 1) {
+      return 100.0; // Eligible for Civilian
+    }
+    return (currentLevel / 1) * 100; // Progress toward level 1
+  }
+
   const roleKeys = Object.keys(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS);
   const currentIndex = roleKeys.indexOf(currentRole);
 
@@ -115,7 +125,7 @@ export function calculatePromotionEligibility(
 }
 
 export function getRoleFromLevel(level: number): string {
-  if (level < 1) return 'civilian'; // Level 0 users get civilian role
+  if (level < 1) return 'spectator'; // Level 0 users get spectator role
   
   const rolesByLevel = Object.entries(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS).map(([role, lvl]) => [lvl, role]);
 
@@ -140,16 +150,30 @@ export function getProgressionRolePlan(
   level: number,
   assignedRoles: ReadonlySet<string>
 ): ProgressionRolePlan {
+  // Plan covers only the 17 progression roles (civilian through saint)
+  // Spectator is handled separately in synchronizeProgressionRoles
+  const progressionRoleKeys = PROGRESSION_ROLE_KEYS.filter(r => r !== 'spectator') as ProgressionRoleName[];
+
+  // For level 0, return empty plan (Spectator is handled separately)
+  if (level < 1) {
+    return {
+      targetRole: 'civilian', // Default to civilian for type compatibility
+      expectedRoles: [],
+      missingRoles: [],
+      outdatedRoles: [],
+    };
+  }
+
   const targetRole = getRoleFromLevel(level) as ProgressionRoleName;
-  
+
   // Stacked progression: all roles up to and including target
-  const targetIndex = PROGRESSION_ROLE_KEYS.indexOf(targetRole);
-  const expectedRoles: ProgressionRoleName[] = PROGRESSION_ROLE_KEYS.slice(0, targetIndex + 1);
-  
+  const targetIndex = progressionRoleKeys.indexOf(targetRole);
+  const expectedRoles: ProgressionRoleName[] = progressionRoleKeys.slice(0, targetIndex + 1);
+
   const missingRoles = expectedRoles.filter(role => !assignedRoles.has(role));
-  
+
   // Outdated roles are any progression roles beyond the target
-  const outdatedRoles = PROGRESSION_ROLE_KEYS.filter(
+  const outdatedRoles = progressionRoleKeys.filter(
     role => assignedRoles.has(role) && !expectedRoles.includes(role)
   );
 
@@ -191,19 +215,19 @@ export function getNextProgressionThreshold(currentRole: string): number {
 
 export async function addProgressionRole(member: GuildMember, roleName: string): Promise<boolean> {
   if (!member.guild) return false;
-  
-  const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+
+  const roleId = await getRoleId(roleName as ProgressionRoleName);
   if (!roleId) {
     console.error(`Unknown progression role: ${roleName}`);
     return false;
   }
-  
+
   const role = member.guild.roles.cache.get(roleId);
   if (!role) {
     console.error(`Role ${roleId} not found in guild`);
     return false;
   }
-  
+
   try {
     await member.roles.add(role, 'XP progression system: role stacking');
     console.log(`Added role ${roleName} to user ${member.id}`);
@@ -216,20 +240,20 @@ export async function addProgressionRole(member: GuildMember, roleName: string):
 
 export async function verifyRoleAssignment(member: GuildMember, roleName: string): Promise<boolean> {
   if (!member.guild) return false;
-  
-  const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+
+  const roleId = await getRoleId(roleName as ProgressionRoleName);
   if (!roleId) return false;
-  
+
   return member.roles.cache.has(roleId);
 }
 
 export async function rollbackRoles(member: GuildMember, roleNames: string[]): Promise<void> {
   if (!member.guild || !roleNames.length) return;
-  
+
   for (const roleName of roleNames) {
-    const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+    const roleId = await getRoleId(roleName as ProgressionRoleName);
     if (!roleId) continue;
-    
+
     const role = member.guild.roles.cache.get(roleId);
     if (role && member.roles.cache.has(roleId)) {
       try {
@@ -246,6 +270,7 @@ export interface ProgressionRoleSyncResult {
   success: boolean;
   addedRoles: ProgressionRoleName[];
   removedRoles: ProgressionRoleName[];
+  failedRoles: ProgressionRoleName[];
 }
 
 export async function synchronizeProgressionRoles(
@@ -254,31 +279,71 @@ export async function synchronizeProgressionRoles(
 ): Promise<ProgressionRoleSyncResult> {
   const assignedRoles = new Set<string>();
   for (const roleName of PROGRESSION_ROLE_KEYS) {
-    const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+    const roleId = await getRoleId(roleName as ProgressionRoleName);
     if (roleId && member.roles.cache.has(roleId)) {
       assignedRoles.add(roleName);
     }
   }
 
-  const plan = getProgressionRolePlan(targetLevel, assignedRoles);
   const addedRoles: ProgressionRoleName[] = [];
   const removedRoles: ProgressionRoleName[] = [];
+  const failedRoles: ProgressionRoleName[] = [];
 
-  for (const roleName of plan.missingRoles) {
-    const success = await addProgressionRole(member, roleName);
-    if (!success || !(await verifyRoleAssignment(member, roleName))) {
-      await rollbackRoles(member, addedRoles);
-      return { success: false, addedRoles: [], removedRoles: [] };
+  // Handle Spectator separately - it's mutually exclusive with progression roles
+  const spectatorRoleId = await getRoleId('spectator');
+  const hasSpectator = spectatorRoleId && member.roles.cache.has(spectatorRoleId);
+  const shouldBeSpectator = targetLevel < 1;
+
+  if (shouldBeSpectator && !hasSpectator && spectatorRoleId) {
+    const success = await addProgressionRole(member, 'spectator');
+    if (success) {
+      addedRoles.push('spectator');
+    } else {
+      failedRoles.push('spectator');
+      console.error(`Failed to add Spectator role to user ${member.id}`);
     }
-    addedRoles.push(roleName);
+  } else if (!shouldBeSpectator && hasSpectator && spectatorRoleId) {
+    const role = member.guild.roles.cache.get(spectatorRoleId);
+    if (role) {
+      try {
+        await member.roles.remove(role, 'XP progression system: removing Spectator');
+        removedRoles.push('spectator');
+      } catch (error) {
+        failedRoles.push('spectator');
+        console.error(`Failed to remove Spectator role from user ${member.id}:`, error);
+      }
+    }
   }
 
-  for (const roleName of plan.outdatedRoles) {
-    const roleId = ROLES[roleName.toUpperCase() as keyof typeof ROLES];
+  // Handle progression roles (excluding spectator which is already handled)
+  const progressionRoleKeys = PROGRESSION_ROLE_KEYS.filter(r => r !== 'spectator');
+  const progressionAssignedRoles = new Set<string>();
+  for (const roleName of progressionRoleKeys) {
+    const roleId = await getRoleId(roleName as ProgressionRoleName);
+    if (roleId && member.roles.cache.has(roleId)) {
+      progressionAssignedRoles.add(roleName);
+    }
+  }
+
+  const progressionPlan = getProgressionRolePlan(targetLevel, progressionAssignedRoles);
+
+  for (const roleName of progressionPlan.missingRoles) {
+    const success = await addProgressionRole(member, roleName);
+    if (success && await verifyRoleAssignment(member, roleName)) {
+      addedRoles.push(roleName);
+    } else {
+      failedRoles.push(roleName);
+      console.error(`Failed to add progression role ${roleName} to user ${member.id}`);
+    }
+  }
+
+  for (const roleName of progressionPlan.outdatedRoles) {
+    const roleId = await getRoleId(roleName as ProgressionRoleName);
     const role = roleId ? member.guild?.roles.cache.get(roleId) : undefined;
     if (!role) {
-      await rollbackRoles(member, addedRoles);
-      return { success: false, addedRoles: [], removedRoles: [] };
+      failedRoles.push(roleName);
+      console.error(`Role ${roleId} not found in guild for ${roleName}`);
+      continue;
     }
 
     try {
@@ -288,16 +353,16 @@ export async function synchronizeProgressionRoles(
       }
       removedRoles.push(roleName);
     } catch (error) {
+      failedRoles.push(roleName);
       console.error(`Failed to remove progression role ${roleName}:`, error);
-      await rollbackRoles(member, addedRoles);
-      for (const restoredRoleName of removedRoles) {
-        await addProgressionRole(member, restoredRoleName);
-      }
-      return { success: false, addedRoles: [], removedRoles: [] };
     }
   }
 
-  return { success: true, addedRoles, removedRoles };
+  // Never remove roles the system doesn't manage
+  // Only remove roles that are in PROGRESSION_ROLE_KEYS
+
+  const success = failedRoles.length === 0;
+  return { success, addedRoles, removedRoles, failedRoles };
 }
 
 export interface XPAwardResult {
@@ -310,6 +375,7 @@ export interface XPAwardResult {
   newRole: string | null;
   levelsCrossed: number[];
   levelUpResiduals: number;
+  failedRoles: string[];
 }
 
 export async function awardXP(
@@ -339,6 +405,7 @@ export async function awardXP(
         newRole: null,
         levelsCrossed: [],
         levelUpResiduals: 0,
+        failedRoles: [],
       };
     }
 
@@ -379,6 +446,7 @@ export async function awardXP(
         newRole: null,
         levelsCrossed: [],
         levelUpResiduals: 0,
+        failedRoles: [],
       };
     }
 
@@ -444,6 +512,8 @@ export async function awardXP(
             roleChanged = true;
             newRole = currentRole;
           }
+        } else {
+          console.error(`Role sync failed for user ${userId}. Failed roles: ${syncResult.failedRoles.join(', ')}`);
         }
       } catch (error) {
         console.error('Error during role progression check:', error);
@@ -460,6 +530,7 @@ export async function awardXP(
       newRole,
       levelsCrossed,
       levelUpResiduals: totalLevelUpResiduals,
+      failedRoles: [],
     };
   } catch (error) {
     console.error('Error awarding XP:', error);
@@ -473,6 +544,7 @@ export async function awardXP(
       newRole: null,
       levelsCrossed: [],
       levelUpResiduals: 0,
+      failedRoles: [],
     };
   }
 }

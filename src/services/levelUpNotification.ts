@@ -68,7 +68,7 @@ export async function sendLevelUpNotification(
         { name: 'Current Role', value: formatRole(currentRole), inline: true },
         { name: 'Perks Unlocked', value: perksText, inline: false },
       )
-      .setFooter({ text: 'MI BOM3O Studios' })
+      .setFooter({ text: 'MI BOMBO Studios' })
       .setThumbnail(avatarUrl);
 
     const castingChannel = guild.channels.cache.get(CHANNELS.CASTING);

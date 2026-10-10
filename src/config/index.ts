@@ -23,6 +23,9 @@ export const HF_API_TOKEN = process.env.HF_API_TOKEN || '';
 
 // Role IDs (as strings for Discord.js compatibility)
 export const ROLES = {
+  // Spectator Role (Level 0 - no XP yet)
+  SPECTATOR: '1555477161144488016',
+
   // Progression Roles (17 milestone roles)
   CIVILIAN: '1545103370438578276',
   SIDEKICK: '1545103371776692395',
@@ -83,6 +86,7 @@ export const XP_CONFIG = {
   LEVEL_XP_REQUIREMENTS: generateLevelXPRequirements(150),
   
   ROLE_LEVEL_REQUIREMENTS: {
+    spectator: 0,
     civilian: 1,
     sidekick: 5,
     hero: 10,
@@ -306,30 +310,30 @@ export const EMOJI_REVIEW_CHANNEL_ID = '1545394590851276891';
 
 // Randomized welcome message lines. {user} = mention, {count} = member number.
 export const WELCOME_MESSAGES: string[] = [
-  '{user} just walked onto the set. Welcome to MI BOM3O Studios {typing} — introduce yourself and start the climb from Audience to Lead Cast.',
-  'Say hi to {user}, the newest face at MI BOM3O Studios {sunglasses}. Your journey starts now.',
+  '{user} just walked onto the set. Welcome to MI BOMBO Studios {typing} — introduce yourself and start the climb from Audience to Lead Cast.',
+  'Say hi to {user}, the newest face at MI BOMBO Studios {sunglasses}. Your journey starts now.',
   '{user} has entered the building {pink} — welcome to the cast, grab a seat.',
-  'Casting call complete — {user} is officially part of MI BOM3O Studios {orange}.',
-  'New face on set: {user} {sunglasses} Welcome to MI BOM3O Studios.',
+  'Casting call complete — {user} is officially part of MI BOMBO Studios {orange}.',
+  'New face on set: {user} {sunglasses} Welcome to MI BOMBO Studios.',
   '{user} just joined. Member #{count} {typing} — the cast just got bigger.',
-  'Everyone welcome {user} to MI BOM3O Studios {pink}.',
-  '{user} has arrived. MI BOM3O Studios welcomes its newest star {sunglasses}.',
+  'Everyone welcome {user} to MI BOMBO Studios {pink}.',
+  '{user} has arrived. MI BOMBO Studios welcomes its newest star {sunglasses}.',
   'The set just got one more cast member — welcome {user} {orange}.',
-  '{user} is officially cast in MI BOM3O Studios {typing}. Can\'t wait to see where your story goes.',
+  '{user} is officially cast in MI BOMBO Studios {typing}. Can\'t wait to see where your story goes.',
 ];
 
 // Randomized booster ("Guest Star") message lines, sent to the red carpet channel.
 export const BOOST_MESSAGES: string[] = [
-  '{user} just boosted MI BOM3O Studios {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
+  '{user} just boosted MI BOMBO Studios {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
   'Red carpet\'s rolled out for {user} {crown2} thanks for boosting. Guest Star, 40 residuals, custom gifs — all unlocked.',
   '{user} boosted the server {crown} that\'s Guest Star status unlocked, plus a 40 residual gift {money}.',
   'Big thanks to {user} for boosting {pink} — Guest Star role, 40 residuals, and custom gifs, all yours now.',
   '{user} just stepped onto the red carpet {sunglasses} Guest Star status and 40 residuals are locked in.',
-  'MI BOM3O Studios just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
+  'MI BOMBO Studios just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
   '{user} boosted the server {money} that\'s a 40 residual thank-you gift and Guest Star perks headed your way.',
   'Thank you {user} for the boost {crown2} you\'re Guest Star now, 40 residuals and custom gifs unlocked.',
-  '{user} just gave MI BOM3O Studios a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
-  'Red carpet moment: {user} boosted MI BOM3O Studios {crown} Guest Star unlocked, 40 residuals gifted.',
+  '{user} just gave MI BOMBO Studios a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
+  'Red carpet moment: {user} boosted MI BOMBO Studios {crown} Guest Star unlocked, 40 residuals gifted.',
 ];
 
 // Database Schema
@@ -648,4 +652,12 @@ BEGIN
     ALTER TABLE shop_colors ADD CONSTRAINT shop_colors_name_key UNIQUE (name);
   END IF;
 END $$;
+
+-- Managed roles table for role recreation and ID tracking
+CREATE TABLE IF NOT EXISTS public.managed_roles (
+  key TEXT PRIMARY KEY,
+  role_id TEXT NOT NULL,
+  template JSONB,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 `;

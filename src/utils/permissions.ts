@@ -1,5 +1,6 @@
 import { GuildMember } from 'discord.js';
 import { ROLES } from '../config/index.js';
+import { getRoleId } from '../services/managedRoles.js';
 
 export function isAdmin(member: GuildMember): boolean {
   // Check for Executive Producer or Director roles
@@ -25,46 +26,77 @@ export function canManageResiduals(member: GuildMember): boolean {
   );
 }
 
-export function hasFeaturedExtra(member: GuildMember): boolean {
+export async function hasFeaturedExtra(member: GuildMember): Promise<boolean> {
   // Hero role or higher progression roles (Level 10+), or Guest Star (boosters)
+  const heroId = await getRoleId('hero');
+  const championId = await getRoleId('champion');
+  const guardianId = await getRoleId('guardian');
+  const superheroId = await getRoleId('superhero');
+  const antiHeroId = await getRoleId('antiHero');
+  const rogueId = await getRoleId('rogue');
+  const renegadeId = await getRoleId('renegade');
+  const outlawId = await getRoleId('outlaw');
+  const villainId = await getRoleId('villain');
+  const mastermindId = await getRoleId('mastermind');
+  const kingpinId = await getRoleId('kingpin');
+  const overlordId = await getRoleId('overlord');
+  const tyrantId = await getRoleId('tyrant');
+  const emperorId = await getRoleId('emperor');
+  const saintId = await getRoleId('saint');
+  
   return (
-    member.roles.cache.has(ROLES.HERO) ||
-    member.roles.cache.has(ROLES.CHAMPION) ||
-    member.roles.cache.has(ROLES.GUARDIAN) ||
-    member.roles.cache.has(ROLES.SUPERHERO) ||
-    member.roles.cache.has(ROLES.ANTI_HERO) ||
-    member.roles.cache.has(ROLES.ROGUE) ||
-    member.roles.cache.has(ROLES.RENEGADE) ||
-    member.roles.cache.has(ROLES.OUTLAW) ||
-    member.roles.cache.has(ROLES.VILLAIN) ||
-    member.roles.cache.has(ROLES.MASTERMIND) ||
-    member.roles.cache.has(ROLES.KINGPIN) ||
-    member.roles.cache.has(ROLES.OVERLORD) ||
-    member.roles.cache.has(ROLES.TYRANT) ||
-    member.roles.cache.has(ROLES.EMPEROR) ||
-    member.roles.cache.has(ROLES.SAINT) ||
+    (heroId && member.roles.cache.has(heroId)) ||
+    (championId && member.roles.cache.has(championId)) ||
+    (guardianId && member.roles.cache.has(guardianId)) ||
+    (superheroId && member.roles.cache.has(superheroId)) ||
+    (antiHeroId && member.roles.cache.has(antiHeroId)) ||
+    (rogueId && member.roles.cache.has(rogueId)) ||
+    (renegadeId && member.roles.cache.has(renegadeId)) ||
+    (outlawId && member.roles.cache.has(outlawId)) ||
+    (villainId && member.roles.cache.has(villainId)) ||
+    (mastermindId && member.roles.cache.has(mastermindId)) ||
+    (kingpinId && member.roles.cache.has(kingpinId)) ||
+    (overlordId && member.roles.cache.has(overlordId)) ||
+    (tyrantId && member.roles.cache.has(tyrantId)) ||
+    (emperorId && member.roles.cache.has(emperorId)) ||
+    (saintId && member.roles.cache.has(saintId)) ||
     member.roles.cache.has(ROLES.BOOSTER)
-  );
+  ) as boolean;
 }
 
-export function hasSupportingCast(member: GuildMember): boolean {
+export async function hasSupportingCast(member: GuildMember): Promise<boolean> {
   // Champion role or higher progression roles (Level 20+)
+  const championId = await getRoleId('champion');
+  const guardianId = await getRoleId('guardian');
+  const superheroId = await getRoleId('superhero');
+  const antiHeroId = await getRoleId('antiHero');
+  const rogueId = await getRoleId('rogue');
+  const renegadeId = await getRoleId('renegade');
+  const outlawId = await getRoleId('outlaw');
+  const villainId = await getRoleId('villain');
+  const mastermindId = await getRoleId('mastermind');
+  const kingpinId = await getRoleId('kingpin');
+  const overlordId = await getRoleId('overlord');
+  const tyrantId = await getRoleId('tyrant');
+  const emperorId = await getRoleId('emperor');
+  const saintId = await getRoleId('saint');
+  
   return (
-    member.roles.cache.has(ROLES.CHAMPION) ||
-    member.roles.cache.has(ROLES.GUARDIAN) ||
-    member.roles.cache.has(ROLES.SUPERHERO) ||
-    member.roles.cache.has(ROLES.ANTI_HERO) ||
-    member.roles.cache.has(ROLES.ROGUE) ||
-    member.roles.cache.has(ROLES.RENEGADE) ||
-    member.roles.cache.has(ROLES.OUTLAW) ||
-    member.roles.cache.has(ROLES.VILLAIN) ||
-    member.roles.cache.has(ROLES.MASTERMIND) ||
-    member.roles.cache.has(ROLES.KINGPIN) ||
-    member.roles.cache.has(ROLES.OVERLORD) ||
-    member.roles.cache.has(ROLES.TYRANT) ||
-    member.roles.cache.has(ROLES.EMPEROR) ||
-    member.roles.cache.has(ROLES.SAINT)
-  );
+    (championId && member.roles.cache.has(championId)) ||
+    (guardianId && member.roles.cache.has(guardianId)) ||
+    (superheroId && member.roles.cache.has(superheroId)) ||
+    (antiHeroId && member.roles.cache.has(antiHeroId)) ||
+    (rogueId && member.roles.cache.has(rogueId)) ||
+    (renegadeId && member.roles.cache.has(renegadeId)) ||
+    (outlawId && member.roles.cache.has(outlawId)) ||
+    (villainId && member.roles.cache.has(villainId)) ||
+    (mastermindId && member.roles.cache.has(mastermindId)) ||
+    (kingpinId && member.roles.cache.has(kingpinId)) ||
+    (overlordId && member.roles.cache.has(overlordId)) ||
+    (tyrantId && member.roles.cache.has(tyrantId)) ||
+    (emperorId && member.roles.cache.has(emperorId)) ||
+    (saintId && member.roles.cache.has(saintId))
+  ) as boolean;
 }
 
 export function isBotOwner(member: GuildMember): boolean {
@@ -72,26 +104,17 @@ export function isBotOwner(member: GuildMember): boolean {
   return member.roles.cache.has(ROLES.DIRECTOR);
 }
 
-export function isProgressionRole(roleId: string): boolean {
-  return Object.values({
-    CIVILIAN: ROLES.CIVILIAN,
-    SIDEKICK: ROLES.SIDEKICK,
-    HERO: ROLES.HERO,
-    CHAMPION: ROLES.CHAMPION,
-    GUARDIAN: ROLES.GUARDIAN,
-    SUPERHERO: ROLES.SUPERHERO,
-    ANTI_HERO: ROLES.ANTI_HERO,
-    ROGUE: ROLES.ROGUE,
-    RENEGADE: ROLES.RENEGADE,
-    OUTLAW: ROLES.OUTLAW,
-    VILLAIN: ROLES.VILLAIN,
-    MASTERMIND: ROLES.MASTERMIND,
-    KINGPIN: ROLES.KINGPIN,
-    OVERLORD: ROLES.OVERLORD,
-    TYRANT: ROLES.TYRANT,
-    EMPEROR: ROLES.EMPEROR,
-    SAINT: ROLES.SAINT,
-  }).includes(roleId);
+export async function isProgressionRole(roleId: string): Promise<boolean> {
+  const progressionKeys = ['civilian', 'sidekick', 'hero', 'champion', 'guardian', 'superhero', 'antiHero', 'rogue', 'renegade', 'outlaw', 'villain', 'mastermind', 'kingpin', 'overlord', 'tyrant', 'emperor', 'saint'] as const;
+
+  for (const key of progressionKeys) {
+    const managedId = await getRoleId(key);
+    if (managedId && managedId === roleId) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function isSpecialRole(roleId: string): boolean {

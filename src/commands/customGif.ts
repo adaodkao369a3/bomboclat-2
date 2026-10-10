@@ -11,7 +11,7 @@ export const customGifCommand: Command = {
   async execute(message, args, _prefix) {
 
     // Check permissions (Featured Extra+ or admins)
-    if (!message.member || (!hasFeaturedExtra(message.member) && !isAdmin(message.member))) {
+    if (!message.member || (!(await hasFeaturedExtra(message.member)) && !isAdmin(message.member))) {
       await message.reply('❌ This command requires Featured Extra role (or Guest Star) or higher.');
       return;
     }
@@ -23,8 +23,16 @@ export const customGifCommand: Command = {
       return;
     }
 
-    // Get query
-    const query = args.join(' ').trim();
+    // Get query (strip mentions from the text)
+    let query = args.join(' ').trim();
+    
+    // Remove user mentions from the query text for the output
+    if (mentions && mentions.size > 0) {
+      mentions.forEach((member) => {
+        query = query.replace(new RegExp(`<@!?${member.id}>`, 'g'), '').trim();
+      });
+    }
+    
     if (!query) {
       await message.reply('Please provide something to search for.\n\nExample:\n.c door shutting');
       return;
@@ -53,7 +61,7 @@ export const customGifCommand: Command = {
     // Build targets string
     let targets: string;
     if (mentions && mentions.size > 0) {
-      targets = Array.from(mentions.values()).map(m => m.toString()).join(' ');
+      targets = Array.from(mentions.values()).map(m => m.toString()).join(' & ');
     } else {
       targets = message.author.toString();
     }
@@ -67,7 +75,7 @@ export const customGifCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<a:pokeballsuccess:1545003084948701265> custom gif')
+      .setTitle('<a:dcrown:1545829074956591234> custom gif')
       .setDescription(`${message.author.toString()} "${query}" ${targets ? targets : ''}`)
       .setColor(0x4900ff)
       .setImage(gifUrl)

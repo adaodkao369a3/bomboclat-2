@@ -15,7 +15,7 @@ export const helpCommand: Command = {
     embed.addFields([
       { name: '<:ladder:1545126567145906246> Profile & Progression', value: '`.profile` `.level` `.res` `.leaderboard`', inline: true },
       { name: '<:glossystaremoji:1545004043699626004> Fun Commands', value: '`.rizz` `.larp` `.blush` `.cooked` `.fumble` `.cope` `.grass` `.aura` `.huh` `.cry`', inline: true },
-      { name: '<:jolly:1545004994418446403> Custom GIF', value: '`.c <query>`', inline: true },
+      { name: '<a:dcrown:1545829074956591234> Custom GIF', value: '`.c <query>`', inline: true },
       { name: '<a:shoppingcart:1545005246579875860> Manage shop items', value: '`.manage` - manage roles', inline: true },
     ]);
 

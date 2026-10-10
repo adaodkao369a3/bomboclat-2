@@ -12,6 +12,7 @@ import {
 import { fetchGIF } from './klipy.js';
 import { getOrCreateUser } from '../database/client.js';
 import { ResidualsService } from './residuals.js';
+import { assignRolesOnJoin } from './roleAudit.js';
 
 function randomFrom<T>(pool: T[]): T {
   return pool[Math.floor(Math.random() * pool.length)];
@@ -37,7 +38,7 @@ const BOOST_REPLACEMENTS = {
   sunglasses: EMOJIS.SUNGLASSES,
 };
 
-function guestStarCount(member: GuildMember): number {
+async function guestStarCount(member: GuildMember): Promise<number> {
   return member.guild.members.cache.filter(m => m.roles.cache.has(ROLES.BOOSTER)).size;
 }
 
@@ -47,6 +48,9 @@ function guestStarCount(member: GuildMember): number {
  */
 export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
   try {
+    // Assign roles based on database level (spectator for new members, progression for returning)
+    await assignRolesOnJoin(member);
+
     const channel = CHANNELS.WELCOME
       ? member.guild.channels.cache.get(CHANNELS.WELCOME)
       : member.guild.systemChannel;
@@ -68,7 +72,7 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
       .setDescription(line)
       .setColor(0x9b5de5)
       .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Member #${member.guild.memberCount} - MI BOM3O Studios` })
+      .setFooter({ text: `Member #${member.guild.memberCount} - MI BOMBO Studios` })
       .setTimestamp();
 
     if (gifUrl) {
@@ -100,11 +104,13 @@ export async function sendBoosterThankYou(member: GuildMember): Promise<void> {
       user: `<@${member.id}>`,
     });
 
+    const guestStarCountValue = await guestStarCount(member);
+
     const embed = new EmbedBuilder()
       .setDescription(line)
       .setColor(0xF47FFF)
       .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Guest Star #${guestStarCount(member)} - MI BOM3O Studios` })
+      .setFooter({ text: `Guest Star #${guestStarCountValue} - MI BOMBO Studios` })
       .setTimestamp();
 
     if (gifUrl) {

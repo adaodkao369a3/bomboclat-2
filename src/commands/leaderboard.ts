@@ -20,7 +20,7 @@ export const leaderboardCommand: Command = {
       .setTitle('<:ladder:1545126567145906246> TOP CAST')
       .setDescription('The most active members of MI BOMBO Studios')
       .setColor(0x4900ff)
-      .setFooter({ text: 'MI BOM3O Studios' });
+      .setFooter({ text: 'MI BOMBO Studios' });
 
     // Add leaderboard entries
     leaderboard.forEach((entry, index) => {

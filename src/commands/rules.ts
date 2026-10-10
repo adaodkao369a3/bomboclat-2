@@ -17,7 +17,7 @@ export const rulesCommand: Command = {
 
     // 1. Discord server rules
     const rulesEmbed = new EmbedBuilder()
-      .setTitle('<:star:1545002693368750193> WELCOME TO MI BOMBO 3')
+      .setTitle('<:star:1545002693368750193> WELCOME TO MI BOMBO')
       .setDescription('════════════════\n'+
         'Before you step onto the set, here are a few things that keep the production fun for everyone\n\n' +
         '**1.** __**Respect the cast.**__ Treat everyone with basic respect; no harassment, bullying, or targeted abuse\n\n' +
@@ -39,7 +39,7 @@ export const rulesCommand: Command = {
 
     // 2. Server + Bomboclat / progression
     const serverEmbed = new EmbedBuilder()
-      .setTitle('<:glossystaremoji:1545004043699626004> MI BOMBO STUDIOS')
+      .setTitle('<:glossystaremoji:1545004043699626004> MI BOMBO Studios')
       .setDescription('════════════════\n' +
         '__**Welcome to the studio**__ — a place for **chat, games, gambling, bots, and a whole cast.**\n\n' +
         '<a:pokeballsuccess:1545003084948701265> __**PROGRESSION**__\n' +
@@ -87,7 +87,7 @@ export const rulesCommand: Command = {
     const bocchiEmbed = new EmbedBuilder()
       .setTitle('<:nosapechi:1545822258960801863> MEET BOCCHI CHAN')
       .setDescription('════════════════\n\n' +
-        '__**Bocchi**__ is __**MI BOM3O**__\'s own AI companion, made to be a fun, awkward little presence around the studio.\n\n' +
+        '__**Bocchi**__ is __**MI BOMBO**__\'s own AI companion, made to be a fun, awkward little presence around the studio.\n\n' +
         '<:bocchilike:1545822253759856782> __**AI Companion**__ — Shy, awkward, introverted, and genuinely kind.\n\n' +
         '<:sapechi:1545822261880033360> __**Context Aware**__ — Understands conversations and remembers useful details when eligible.\n\n' +
         '<a:bocchicringe:1545822251704651917> __**Reactions**__ — Joins in with memes, GIFs, deadpan humor, and occasional panic.\n\n' +

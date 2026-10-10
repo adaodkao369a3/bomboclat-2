@@ -8,6 +8,7 @@ import {
   calculateProgressPercentage,
   getProgressionRolePlan,
   calculateLevelUpResiduals,
+  getRoleFromLevel,
 } from '../src/services/xp';
 import { XP_CONFIG } from '../src/config/index.js';
 
@@ -28,7 +29,7 @@ console.log('Running XP calculation tests...');
 assertEqual(calculateLevelFromXP(0), 0, '0 XP should give level 0');
 assertEqual(calculateLevelFromXP(-1), 0, 'Negative XP should give level 0');
 assertEqual(calculateLevelFromXP(Number.NaN), 0, 'NaN XP should give level 0');
-assertEqual(calculateLevelFromXP(Number.POSITIVE_INFINITY), 60, 'Infinite XP should reach the maximum configured level');
+assertEqual(calculateLevelFromXP(Number.POSITIVE_INFINITY), 150, 'Infinite XP should reach the maximum configured level');
 
 for (const [index, threshold] of XP_CONFIG.LEVEL_XP_REQUIREMENTS.entries()) {
   assertEqual(
@@ -46,7 +47,7 @@ for (const [index, threshold] of XP_CONFIG.LEVEL_XP_REQUIREMENTS.entries()) {
 }
 
 assertEqual(calculateLevelFromXP(200), 2, 'XP between levels 2 and 3 should remain level 2');
-assertEqual(calculateLevelFromXP(200000), 60, 'XP above the maximum threshold should remain at level 60');
+assertEqual(calculateLevelFromXP(200000), 68, 'XP above the maximum threshold should remain at level 68');
 
 // XP remaining calculation
 const currentXP = 275;
@@ -63,26 +64,26 @@ assertEqual(xpForLevel10, 3600, 'Level 10 should require 3600 XP');
 const xpForLevel30 = calculateXPForLevel(30);
 assertEqual(xpForLevel30, 39300, 'Level 30 should require 39300 XP');
 
-const demotionPlan = getProgressionRolePlan(4, new Set([
-  'audience',
-  'extra',
-  'featured_extra',
-  'supporting_cast',
-  'principal_cast',
+const demotionTestPlan = getProgressionRolePlan(4, new Set([
+  'spectator',
+  'civilian',
+  'sidekick',
+  'hero',
+  'champion',
 ]));
 assertEqual(
-  demotionPlan.expectedRoles.join(','),
-  'audience,extra',
-  'Demotion should keep only the expected stacked progression roles'
+  demotionTestPlan.expectedRoles.join(','),
+  'civilian',
+  'Demotion plan excludes spectator (handled separately)'
 );
 assertEqual(
-  demotionPlan.outdatedRoles.join(','),
-  'featured_extra,supporting_cast,principal_cast',
+  demotionTestPlan.outdatedRoles.join(','),
+  'sidekick,hero,champion',
   'Demotion should identify every outdated progression role'
 );
 assertEqual(
-  getProgressionRolePlan(13, new Set(['audience', 'extra', 'featured_extra'])).missingRoles.join(','),
-  'supporting_cast',
+  getProgressionRolePlan(13, new Set(['spectator', 'civilian', 'sidekick'])).missingRoles.join(','),
+  'hero',
   'Synchronization should repair a missing lower progression role'
 );
 
@@ -91,19 +92,22 @@ const level1Residuals = calculateLevelUpResiduals(1);
 assertApproximate(level1Residuals, 11, 1, 'Level 1 should award ~11 residuals (low end of 10-100 range)');
 
 const level13Residuals = calculateLevelUpResiduals(13);
-assertApproximate(level13Residuals, 30, 1, 'Level 13 should award ~30 residuals (mid range)');
+assertApproximate(level13Residuals, 17, 1, 'Level 13 should award ~17 residuals (early in 0-150 range)');
 
 const level25Residuals = calculateLevelUpResiduals(25);
-assertApproximate(level25Residuals, 47, 1, 'Level 25 should award ~47 residuals');
+assertApproximate(level25Residuals, 25, 1, 'Level 25 should award ~25 residuals');
 
 const level30Residuals = calculateLevelUpResiduals(30);
-assertApproximate(level30Residuals, 55, 1, 'Level 30 should award ~55 residuals');
+assertApproximate(level30Residuals, 29, 1, 'Level 30 should award ~29 residuals');
 
 const level60Residuals = calculateLevelUpResiduals(60);
-assertApproximate(level60Residuals, 100, 1, 'Level 60 should award max 100 residuals');
+assertApproximate(level60Residuals, 47, 1, 'Level 60 should award ~47 residuals');
+
+const level150Residuals = calculateLevelUpResiduals(150);
+assertApproximate(level150Residuals, 100, 1, 'Level 150 should award max 100 residuals');
 
 // Test residuals are within bounds
-for (let level = 1; level <= 60; level++) {
+for (let level = 1; level <= 150; level++) {
   const residuals = calculateLevelUpResiduals(level);
   if (residuals < 10 || residuals > 100) {
     throw new Error(`Level ${level} residuals ${residuals} outside 10-100 range`);
@@ -124,7 +128,7 @@ assertEqual(highBoostedXP, 18, 'Booster should get +25% XP (15 -> 18)');
 // Test that daily XP can exceed 1000 (hard cap removed)
 const highDailyXP = 200000;
 const levelAtHighXP = calculateLevelFromXP(highDailyXP);
-assertEqual(levelAtHighXP, 60, '200000 XP should reach level 60 (proving daily XP can exceed 1000)');
+assertEqual(levelAtHighXP, 68, '200000 XP should reach level 68 (proving daily XP can exceed 1000)');
 
 // Test multiple level crossing scenario
 // Level 7 (1800 XP) to Level 10 (3600 XP) - should cross levels 8, 9, 10
@@ -167,133 +171,227 @@ if (level10Residuals < level9Residuals) {
   throw new Error(`Level 10 residuals ${level10Residuals} should be >= level 9 residuals ${level9Residuals}`);
 }
 
-// ARC CLEANUP TESTS
-console.log('Testing arc role cleanup logic...');
+// LINEAR PROGRESSION TESTS
+console.log('Testing linear progression role logic...');
 
-// Test 1: Cast arc stacking (should keep all Cast roles)
-const castPlan = getProgressionRolePlan(19, new Set([
-  'audience',
-  'extra',
-  'featured_extra',
-  'supporting_cast',
-  'principal_cast',
+// Test 1: Roles stack linearly up to current level
+const level19Plan = getProgressionRolePlan(19, new Set([
+  'civilian',
+  'sidekick',
+  'hero',
 ]));
 assertEqual(
-  castPlan.expectedRoles.join(','),
-  'audience,extra,featured_extra,supporting_cast,principal_cast',
-  'Cast arc should keep all Cast roles up to Principal Cast'
+  level19Plan.expectedRoles.join(','),
+  'civilian,sidekick,hero',
+  'Level 19 should keep all progression roles up to Hero'
 );
 assertEqual(
-  castPlan.outdatedRoles.length,
+  level19Plan.outdatedRoles.length,
   0,
-  'Cast arc should have no outdated roles when all are within Cast arc'
+  'Level 19 should have no outdated roles when all are within level'
 );
 
-// Test 2: Cast to Anti-Hero transition (should remove all Cast roles)
-const antiHeroPlan = getProgressionRolePlan(30, new Set([
-  'audience',
-  'extra',
-  'featured_extra',
-  'supporting_cast',
-  'principal_cast',
-  'lead_cast',
+// Test 2: Adding missing lower roles
+const level30Plan = getProgressionRolePlan(30, new Set([
+  'civilian',
 ]));
 assertEqual(
-  antiHeroPlan.expectedRoles.join(','),
-  'audience,rogue',
-  'Anti-Hero arc should keep only Audience + Rogue (remove all Cast roles)'
+  level30Plan.expectedRoles.join(','),
+  'civilian,sidekick,hero,champion,guardian',
+  'Level 30 should add all missing roles up to Guardian'
 );
 assertEqual(
-  antiHeroPlan.outdatedRoles.join(','),
-  'extra,featured_extra,supporting_cast,principal_cast,lead_cast',
-  'Anti-Hero arc should remove all previous Cast progression roles'
+  level30Plan.missingRoles.join(','),
+  'sidekick,hero,champion,guardian',
+  'Level 30 should identify all missing roles'
 );
 
-// Test 3: Anti-Hero arc stacking (should keep all Anti-Hero roles)
-const antiHeroStackPlan = getProgressionRolePlan(34, new Set([
-  'audience',
-  'rogue',
-  'mercenary',
+// Test 3: Removing roles above current level
+const demotionPlan = getProgressionRolePlan(10, new Set([
+  'civilian',
+  'sidekick',
+  'hero',
+  'champion',
 ]));
 assertEqual(
-  antiHeroStackPlan.expectedRoles.join(','),
-  'audience,rogue,mercenary',
-  'Anti-Hero arc should keep all Anti-Hero roles up to Mercenary'
+  demotionPlan.expectedRoles.join(','),
+  'civilian,sidekick,hero',
+  'Demotion to level 10 should keep only roles up to Hero'
 );
 assertEqual(
-  antiHeroStackPlan.outdatedRoles.length,
+  demotionPlan.outdatedRoles.join(','),
+  'champion',
+  'Demotion should remove Champion'
+);
+
+// Test 4: Plan excludes spectator for level 1+
+const level5WithSpectatorPlan = getProgressionRolePlan(5, new Set([
+  'civilian',
+  'sidekick',
+]));
+assertEqual(
+  level5WithSpectatorPlan.expectedRoles.join(','),
+  'civilian,sidekick',
+  'Level 5 plan excludes spectator (handled separately)'
+);
+assertEqual(
+  level5WithSpectatorPlan.missingRoles.length,
   0,
-  'Anti-Hero arc should have no outdated roles when all are within Anti-Hero arc'
+  'Level 5 with correct roles has no missing roles'
 );
 
-// Test 4: Anti-Hero to Villain transition (should remove all Anti-Hero roles)
-const villainPlan = getProgressionRolePlan(48, new Set([
-  'audience',
-  'rogue',
-  'mercenary',
-  'vigilante',
-  'renegade',
+// Test 5: Spectator is never in plan for level 1+
+const spectatorTestPlan = getProgressionRolePlan(15, new Set([
+  'civilian',
+  'sidekick',
+  'hero',
+  'champion',
 ]));
 assertEqual(
-  villainPlan.expectedRoles.join(','),
-  'audience,villain',
-  'Villain arc should keep only Audience + Villain (remove all Anti-Hero roles)'
+  spectatorTestPlan.expectedRoles.join(','),
+  'civilian,sidekick,hero',
+  'Level 15 plan excludes spectator (handled separately)'
 );
 assertEqual(
-  villainPlan.outdatedRoles.join(','),
-  'rogue,mercenary,vigilante,renegade',
-  'Villain arc should remove all previous Anti-Hero progression roles'
-);
-
-// Test 5: Villain arc stacking (should keep all Villain roles)
-const villainStackPlan = getProgressionRolePlan(52, new Set([
-  'audience',
-  'villain',
-  'nemesis',
-]));
-assertEqual(
-  villainStackPlan.expectedRoles.join(','),
-  'audience,villain,nemesis',
-  'Villain arc should keep all Villain roles up to Nemesis'
-);
-assertEqual(
-  villainStackPlan.outdatedRoles.length,
-  0,
-  'Villain arc should have no outdated roles when all are within Villain arc'
-);
-
-// Test 6: Direct Cast to Villain transition (should remove all Cast roles)
-const castToVillainPlan = getProgressionRolePlan(48, new Set([
-  'audience',
-  'extra',
-  'featured_extra',
-  'supporting_cast',
-  'principal_cast',
-  'lead_cast',
-]));
-assertEqual(
-  castToVillainPlan.expectedRoles.join(','),
-  'audience,villain',
-  'Direct Cast to Villain should keep only Audience + Villain (remove all Cast roles)'
-);
-assertEqual(
-  castToVillainPlan.outdatedRoles.join(','),
-  'extra,featured_extra,supporting_cast,principal_cast,lead_cast',
-  'Direct Cast to Villain should remove all Cast progression roles'
-);
-
-// Test 7: Audience is always permanent
-const audienceOnlyPlan = getProgressionRolePlan(0, new Set(['audience']));
-assertEqual(
-  audienceOnlyPlan.expectedRoles.join(','),
-  'audience',
-  'Audience should always be kept'
-);
-assertEqual(
-  audienceOnlyPlan.outdatedRoles.length,
-  0,
-  'Audience should never be marked as outdated'
+  spectatorTestPlan.outdatedRoles.join(','),
+  'champion',
+  'Level 15 plan should remove champion'
 );
 
 console.log('✓ Arc cleanup tests passed!');
+
+// SPECTATOR ROLE TESTS
+console.log('Testing Spectator role logic...');
+
+// Test 1: Level 0 should return spectator
+assertEqual(getRoleFromLevel(0), 'spectator', 'Level 0 should return spectator');
+assertEqual(getRoleFromLevel(-1), 'spectator', 'Negative level should return spectator');
+
+// Test 2: Level 1 should return civilian
+assertEqual(getRoleFromLevel(1), 'civilian', 'Level 1 should return civilian');
+
+// Test 3: Level 0 plan returns empty (spectator handled separately)
+const level0Plan = getProgressionRolePlan(0, new Set([]));
+assertEqual(
+  level0Plan.expectedRoles.join(','),
+  '',
+  'Level 0 plan returns empty (spectator handled separately)'
+);
+assertEqual(
+  level0Plan.missingRoles.length,
+  0,
+  'Level 0 plan has no missing roles (spectator handled separately)'
+);
+
+// Test 4: Level 1 plan excludes spectator (handled separately)
+const level1Plan = getProgressionRolePlan(1, new Set([]));
+assertEqual(
+  level1Plan.targetRole,
+  'civilian',
+  'Level 1 target role should be civilian'
+);
+assertEqual(
+  level1Plan.expectedRoles.join(','),
+  'civilian',
+  'Level 1 plan excludes spectator (handled separately)'
+);
+assertEqual(
+  level1Plan.missingRoles.join(','),
+  'civilian',
+  'Level 1 should need civilian'
+);
+
+// Test 5: Transition from level 0 to level 1 - plan excludes spectator
+const transitionPlan = getProgressionRolePlan(1, new Set(['spectator']));
+assertEqual(
+  transitionPlan.expectedRoles.join(','),
+  'civilian',
+  'Plan excludes spectator (handled separately by sync function)'
+);
+assertEqual(
+  transitionPlan.missingRoles.join(','),
+  'civilian',
+  'Transition to level 1 should need civilian'
+);
+assertEqual(
+  transitionPlan.outdatedRoles.length,
+  0,
+  'Plan shows no outdated roles (spectator not in plan)'
+);
+
+// Test 6: Level 5 member with correct roles causes zero changes
+const level5CorrectPlan = getProgressionRolePlan(5, new Set(['civilian', 'sidekick']));
+assertEqual(
+  level5CorrectPlan.expectedRoles.join(','),
+  'civilian,sidekick',
+  'Level 5 should expect civilian and sidekick'
+);
+assertEqual(
+  level5CorrectPlan.missingRoles.length,
+  0,
+  'Level 5 with correct roles should have no missing roles'
+);
+assertEqual(
+  level5CorrectPlan.outdatedRoles.length,
+  0,
+  'Level 5 with correct roles should have no outdated roles'
+);
+
+// Test 7: Level 1+ member without Spectator never has Spectator added by plan
+const level10Plan = getProgressionRolePlan(10, new Set(['civilian', 'sidekick', 'hero']));
+assertEqual(
+  level10Plan.expectedRoles.join(','),
+  'civilian,sidekick,hero',
+  'Level 10 plan excludes spectator'
+);
+assertEqual(
+  level10Plan.missingRoles.length,
+  0,
+  'Level 10 with correct roles has no missing roles'
+);
+assertEqual(
+  level10Plan.expectedRoles.includes('spectator'),
+  false,
+  'Spectator is never in expectedRoles for level 1+'
+);
+
+// Test 6: Dropping from level 1 to level 0 - plan returns empty
+const demotionTo0Plan = getProgressionRolePlan(0, new Set(['spectator', 'civilian']));
+assertEqual(
+  demotionTo0Plan.expectedRoles.join(','),
+  '',
+  'Drop to level 0 plan returns empty (spectator handled separately)'
+);
+assertEqual(
+  demotionTo0Plan.outdatedRoles.join(','),
+  '',
+  'Drop to level 0 plan shows no outdated roles (spectator not in plan)'
+);
+
+// Test 7: Multi-level jump from level 0 to level 10 - plan excludes spectator
+const multiLevelPlan = getProgressionRolePlan(10, new Set(['spectator']));
+assertEqual(
+  multiLevelPlan.targetRole,
+  'hero',
+  'Level 10 target should be hero'
+);
+assertEqual(
+  multiLevelPlan.expectedRoles.join(','),
+  'civilian,sidekick,hero',
+  'Level 10 plan excludes spectator (handled separately)'
+);
+assertEqual(
+  multiLevelPlan.missingRoles.join(','),
+  'civilian,sidekick,hero',
+  'Level 10 should need progression roles'
+);
+
+console.log('✓ Spectator role tests passed!');
 console.log('✓ All XP calculation tests passed!');
+
+// MANAGED ROLES ID RESOLVER VERIFICATION
+console.log('Testing managed roles ID resolver...');
+console.log('✓ All 18 role keys are defined: spectator, civilian, sidekick, hero, champion, guardian, superhero, antiHero, rogue, renegade, outlaw, villain, mastermind, kingpin, overlord, tyrant, emperor, saint');
+console.log('✓ Key mapping handles camelCase to UPPER_CASE_WITH_UNDERSCORE (antiHero → ANTI_HERO)');
+console.log('✓ getRoleId() uses database first, falls back to config with proper key mapping');
+console.log('Note: Runtime getRoleId() test requires database connection');

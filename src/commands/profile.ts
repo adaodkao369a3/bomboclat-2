@@ -67,7 +67,7 @@ export const profileCommand: Command = {
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields(fields)
-      .setFooter({ text: 'MI BOM3O Studios' });
+      .setFooter({ text: 'MI BOMBO Studios' });
 
     await message.reply({ embeds: [embed] });
   },

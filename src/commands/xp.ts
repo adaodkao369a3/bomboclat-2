@@ -127,8 +127,8 @@ export const xpCommand: Command = {
 
       // Additional validation for specific actions
       if (action === 'set_level') {
-        if (amount < 1 || amount > 100) {
-          await modalInteraction.reply({ content: '❌ Level must be between 1 and 100.', flags: [1 << 6] });
+        if (amount < 0 || amount > 150) {
+          await modalInteraction.reply({ content: '❌ Level must be between 0 and 150.', flags: [1 << 6] });
           return;
         }
       }
@@ -177,7 +177,7 @@ export const xpCommand: Command = {
         const newRole = getRoleFromLevel(newLevel);
         const syncResult = await synchronizeProgressionRoles(target, newLevel);
         if (!syncResult.success) {
-          await modalInteraction.reply({ content: '❌ Failed to update progression roles. XP was saved; please retry synchronization.', flags: [1 << 6] });
+          await modalInteraction.reply({ content: `❌ Failed to update progression roles. XP was saved; please retry synchronization. Failed roles: ${syncResult.failedRoles.join(', ')}`, flags: [1 << 6] });
           return;
         }
 

@@ -19,6 +19,8 @@ import { settingsCommand } from './settings';
 import { shopCommand } from './shop';
 import { manageCommand } from './manage';
 import { resetCommand } from './reset';
+import { residualsLeaderboardCommand } from './residualsLeaderboard';
+import { syncRolesCommand } from './syncRoles';
 
 export interface Command {
   name: string;
@@ -39,6 +41,7 @@ export async function registerCommands(client: Client): Promise<void> {
     levelCommand,
     resCommand,
     leaderboardCommand,
+    residualsLeaderboardCommand,
     ...gifCommands,
     customGifCommand,
     clipCommand,
@@ -53,6 +56,7 @@ export async function registerCommands(client: Client): Promise<void> {
     shopCommand,
     manageCommand,
     resetCommand,
+    syncRolesCommand,
   ];
 
   for (const command of commands) {

@@ -124,7 +124,7 @@ export async function getOrCreateUser(userId: string, username: string, nickname
     // Create new user
     const insertResult = await client.query<User>(
       `INSERT INTO users (user_id, username, nickname, current_progression_role)
-       VALUES ($1, $2, $3, 'audience')
+       VALUES ($1, $2, $3, 'spectator')
        RETURNING *`,
       [userId, username, nickname]
     );
@@ -493,6 +493,48 @@ export async function getLeaderboard(limit: number = 5): Promise<Array<{ user_id
       current_xp: row.current_xp,
       current_level: row.current_level,
     }));
+  } finally {
+    client.release();
+  }
+}
+
+export interface ResidualsLeaderboardRow extends QueryResultRow {
+  user_id: string;
+  username: string;
+  total_residuals_balance: number;
+  lifetime_residuals_earned: number;
+}
+
+export async function getResidualsLeaderboard(limit: number = 10, offset: number = 0): Promise<{
+  entries: Array<{ user_id: string; username: string; total_residuals_balance: number; lifetime_residuals_earned: number }>;
+  total: number;
+}> {
+  const client = await getClient();
+  try {
+    // Get total count
+    const countResult = await client.query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM users WHERE total_residuals_balance > 0`
+    );
+    const total = parseInt(countResult.rows[0].count);
+
+    // Get paginated entries
+    const result = await client.query<ResidualsLeaderboardRow>(
+      `SELECT user_id, username, total_residuals_balance, lifetime_residuals_earned
+       FROM users
+       WHERE total_residuals_balance > 0
+       ORDER BY total_residuals_balance DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const entries = result.rows.map(row => ({
+      user_id: row.user_id,
+      username: row.username,
+      total_residuals_balance: row.total_residuals_balance,
+      lifetime_residuals_earned: row.lifetime_residuals_earned,
+    }));
+
+    return { entries, total };
   } finally {
     client.release();
   }

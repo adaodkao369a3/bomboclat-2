@@ -1,11 +1,13 @@
 import { Client, GatewayIntentBits, Partials, Collection, ActivityType } from 'discord.js';
 import { connect as connectDB, disconnect as disconnectDB } from './database/client';
-import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX } from './config/index';
+import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX, DEV_GUILD_ID } from './config/index';
 import { registerCommands } from './commands/index';
 import { handleXPMessage } from './services/messageHandler';
 import { sendWelcomeMessage, sendBoosterThankYou, giftBoosterResiduals, hasBoosterRole } from './services/welcome';
 import { Command } from './commands/index';
-import { handleVoiceStateUpdate, startVoiceTicker } from './services/voiceHandler';
+import { startVoiceTicker, registerGuild } from './services/voiceHandler';
+import { seedManagedRoles, ensureManagedRoles, loadRoleIdCache, refreshAllRoleTemplates } from './services/managedRoles';
+import { startupRoleCheck, runRoleAudit, isAuditOverdue, setLastAuditRun } from './services/roleAudit';
 
 // Extend Client to include commands
 class ExtendedClient extends Client {
@@ -36,8 +38,38 @@ client.once('ready', async () => {
   
   // Start voice XP ticker
   startVoiceTicker();
+
+  // Initialize managed roles system
+  await seedManagedRoles();
+  await loadRoleIdCache();
+
+  const guild = DEV_GUILD_ID ? client.guilds.cache.get(DEV_GUILD_ID) : client.guilds.cache.first();
+  if (guild) {
+    // Refresh templates from live roles before ensuring
+    await refreshAllRoleTemplates(guild);
+
+    // Register guild for voice tick processing
+    registerGuild(guild);
+
+    const roleResult = await ensureManagedRoles(guild);
+    console.log(`[managedRoles] Ensured ${roleResult.success.length} roles, ${roleResult.failed.length} failed`);
+
+    // Run startup role check for members without roles
+    await startupRoleCheck(guild);
+    
+    // Check if audit is overdue (bot was down at scheduled time)
+    if (await isAuditOverdue()) {
+      console.log('[roleAudit] Audit overdue, running catch-up...');
+      const auditSummary = await runRoleAudit(guild);
+      await setLastAuditRun(new Date());
+      console.log(`[roleAudit] Catch-up complete: ${JSON.stringify(auditSummary)}`);
+    }
+  }
   
-  console.log('🤖 MI BOM3O is online!');
+  // Schedule daily audit at 04:00 America/New_York
+  scheduleDailyAudit();
+  
+  console.log('🤖 MI BOMBO Studios is online!');
 });
 
 client.on('guildMemberAdd', async (member) => {
@@ -57,14 +89,6 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
   } catch (error) {
     console.error('Unhandled error in guildMemberUpdate handler:', error);
-  }
-});
-
-client.on('voiceStateUpdate', async (oldState, newState) => {
-  try {
-    handleVoiceStateUpdate(oldState, newState);
-  } catch (error) {
-    console.error('Unhandled error in voiceStateUpdate handler:', error);
   }
 });
 
@@ -137,6 +161,28 @@ client.on('messageCreate', async (message) => {
     // Don't crash the bot on message handling errors
   }
 });
+
+function scheduleDailyAudit(): void {
+  const checkAndRunAudit = async () => {
+    try {
+      const guild = DEV_GUILD_ID ? client.guilds.cache.get(DEV_GUILD_ID) : client.guilds.cache.first();
+      if (!guild) return;
+      
+      if (await isAuditOverdue()) {
+        console.log('[roleAudit] Running scheduled daily audit...');
+        const auditSummary = await runRoleAudit(guild);
+        await setLastAuditRun(new Date());
+        console.log(`[roleAudit] Daily audit complete: ${JSON.stringify(auditSummary)}`);
+      }
+    } catch (error) {
+      console.error('[roleAudit] Error in scheduled audit:', error);
+    }
+  };
+  
+  // Check every minute if it's time to run the audit
+  setInterval(checkAndRunAudit, 60000);
+  console.log('[roleAudit] Daily audit scheduler started (checks every minute)');
+}
 
 async function main() {
   if (!DISCORD_TOKEN) {

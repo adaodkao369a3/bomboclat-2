@@ -32,6 +32,7 @@ export const testLevelCommand: Command = {
       newRole: getRoleFromLevel(testLevel),
       levelsCrossed: [testLevel],
       levelUpResiduals: Math.floor(testLevel * 0.5),
+      failedRoles: [],
     };
 
     try {
