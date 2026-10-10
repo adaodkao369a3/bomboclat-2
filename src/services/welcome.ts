@@ -80,6 +80,7 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
     // Use welcome.png as the image
     try {
       const welcomeImageBuffer = readFileSync(WELCOME_IMAGE_PATH);
+      embed.setImage('attachment://welcome.png');
       await channel.send({
         embeds: [embed],
         files: [{ attachment: welcomeImageBuffer, name: 'welcome.png' }],
