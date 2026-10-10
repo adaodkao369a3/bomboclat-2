@@ -58,6 +58,8 @@ async function syncSpecificMembers(
   let totalRemoved = 0;
   let failures = 0;
   const failedUsers: string[] = [];
+  const addedByRole: Record<string, number> = {};
+  const removedByRole: Record<string, number> = {};
 
   for (const member of members) {
     if (member.user.bot) {
@@ -68,6 +70,15 @@ async function syncSpecificMembers(
       const result = await syncMember(member, isDryRun);
       totalAdded += result.added;
       totalRemoved += result.removed;
+
+      // Track per-role breakdown
+      for (const role of result.addedRoles) {
+        addedByRole[role] = (addedByRole[role] || 0) + 1;
+      }
+      for (const role of result.removedRoles) {
+        removedByRole[role] = (removedByRole[role] || 0) + 1;
+      }
+
       if (result.failed) {
         failures++;
         failedUsers.push(member.user.username);
@@ -79,14 +90,38 @@ async function syncSpecificMembers(
     }
   }
 
+  const checkedCount = members.filter(m => !m.user.bot).length;
+  const wouldChange = totalAdded > 0 || totalRemoved > 0 ? checkedCount - failures : 0;
+  const alreadyCorrect = checkedCount - failures - wouldChange;
+
   if (isDryRun) {
+    const addedBreakdown = Object.entries(addedByRole)
+      .map(([role, count]) => `${role}: ${count}`)
+      .join(', ');
+    const removedBreakdown = Object.entries(removedByRole)
+      .map(([role, count]) => `${role}: ${count}`)
+      .join(', ');
+
     await message.reply(
-      `🔍 Dry run complete: Would add ${totalAdded} roles, remove ${totalRemoved} roles` +
+      `🔍 Dry run complete:\n` +
+      `Members checked: ${members.filter(m => !m.user.bot).length} | would change: ${wouldChange} | already correct: ${alreadyCorrect}\n` +
+      (addedBreakdown ? `Would ADD: ${addedBreakdown}\n` : '') +
+      (removedBreakdown ? `Would REMOVE: ${removedBreakdown}` : '') +
       (failures > 0 ? `\n⚠️ Failed for ${failures} users: ${failedUsers.join(', ')}` : '')
     );
   } else {
+    const addedBreakdown = Object.entries(addedByRole)
+      .map(([role, count]) => `${role}: ${count}`)
+      .join(', ');
+    const removedBreakdown = Object.entries(removedByRole)
+      .map(([role, count]) => `${role}: ${count}`)
+      .join(', ');
+
     await message.reply(
-      `✅ Sync complete: ${totalAdded} roles added, ${totalRemoved} roles removed` +
+      `✅ Sync complete:\n` +
+      `Members checked: ${members.filter(m => !m.user.bot).length} | changed: ${wouldChange} | already correct: ${alreadyCorrect}\n` +
+      (addedBreakdown ? `Added: ${addedBreakdown}\n` : '') +
+      (removedBreakdown ? `Removed: ${removedBreakdown}` : '') +
       (failures > 0 ? `\n⚠️ Failed for ${failures} users: ${failedUsers.join(', ')}` : '')
     );
   }
@@ -130,6 +165,8 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
   let totalRemoved = 0;
   let failures = 0;
   const failedUsers: string[] = [];
+  const addedByRole: Record<string, number> = {};
+  const removedByRole: Record<string, number> = {};
 
   const startMessage = await message.reply(
     `🔄 Starting ${isDryRun ? 'dry run ' : ''}sync for ${nonBotMembers.size} members...`
@@ -140,6 +177,15 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
       const result = await syncMember(member, isDryRun);
       totalAdded += result.added;
       totalRemoved += result.removed;
+
+      // Track per-role breakdown
+      for (const role of result.addedRoles) {
+        addedByRole[role] = (addedByRole[role] || 0) + 1;
+      }
+      for (const role of result.removedRoles) {
+        removedByRole[role] = (removedByRole[role] || 0) + 1;
+      }
+
       if (result.failed) {
         failures++;
         failedUsers.push(member.user.username);
@@ -163,11 +209,21 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
     }
   }
 
+  const wouldChange = totalAdded > 0 || totalRemoved > 0 ? processed - failures : 0;
+  const alreadyCorrect = processed - failures - wouldChange;
+
+  const addedBreakdown = Object.entries(addedByRole)
+    .map(([role, count]) => `${role}: ${count}`)
+    .join(', ');
+  const removedBreakdown = Object.entries(removedByRole)
+    .map(([role, count]) => `${role}: ${count}`)
+    .join(', ');
+
   const summary =
     `✅ ${isDryRun ? 'Dry run ' : ''}Sync complete:\n` +
-    `• Members processed: ${processed}\n` +
-    `• Roles ${isDryRun ? 'would be ' : ''}added: ${totalAdded}\n` +
-    `• Roles ${isDryRun ? 'would be ' : ''}removed: ${totalRemoved}` +
+    `Members checked: ${processed} | ${isDryRun ? 'would change' : 'changed'}: ${wouldChange} | already correct: ${alreadyCorrect}\n` +
+    (addedBreakdown ? `${isDryRun ? 'Would ADD' : 'Added'}: ${addedBreakdown}\n` : '') +
+    (removedBreakdown ? `${isDryRun ? 'Would REMOVE' : 'Removed'}: ${removedBreakdown}` : '') +
     (failures > 0 ? `\n⚠️ Failures: ${failures} (${failedUsers.join(', ')})` : '');
 
   await startMessage.edit(summary);
@@ -176,7 +232,7 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
 async function syncMember(
   member: Parameters<typeof synchronizeProgressionRoles>[0],
   isDryRun: boolean
-): Promise<{ added: number; removed: number; failed: boolean }> {
+): Promise<{ added: number; removed: number; addedRoles: string[]; removedRoles: string[]; failed: boolean }> {
   // Get user data from database (use getUser for dry run to avoid creating rows)
   const userData = await getUser(member.user.id);
   const level = userData?.current_level ?? 0; // No row = level 0
@@ -194,27 +250,26 @@ async function syncMember(
     const { getProgressionRolePlan } = await import('../services/xp.js');
     const plan = getProgressionRolePlan(level, assignedRoles);
 
-    // Handle Spectator separately for dry run
+    // Spectator is permanent - always add if missing, never remove
     const spectatorRoleId = await (await import('../services/managedRoles.js')).getRoleId('spectator');
     const hasSpectator = spectatorRoleId && member.roles.cache.has(spectatorRoleId);
-    const shouldBeSpectator = level < 1;
 
-    let added = plan.missingRoles.length;
-    let removed = plan.outdatedRoles.length;
+    const addedRoles: string[] = [...plan.missingRoles];
+    const removedRoles: string[] = [...plan.outdatedRoles];
 
-    if (shouldBeSpectator && !hasSpectator) {
-      added++;
-    } else if (!shouldBeSpectator && hasSpectator) {
-      removed++;
+    if (!hasSpectator) {
+      addedRoles.push('spectator');
     }
 
-    return { added, removed, failed: false };
+    return { added: addedRoles.length, removed: removedRoles.length, addedRoles, removedRoles, failed: false };
   } else {
     // Actually sync roles
     const syncResult = await synchronizeProgressionRoles(member, level);
     return {
       added: syncResult.addedRoles.length,
       removed: syncResult.removedRoles.length,
+      addedRoles: syncResult.addedRoles,
+      removedRoles: syncResult.removedRoles,
       failed: !syncResult.success,
     };
   }

@@ -270,20 +270,25 @@ assertEqual(getRoleFromLevel(-1), 'spectator', 'Negative level should return spe
 // Test 2: Level 1 should return civilian
 assertEqual(getRoleFromLevel(1), 'civilian', 'Level 1 should return civilian');
 
-// Test 3: Level 0 plan returns empty (spectator handled separately)
-const level0Plan = getProgressionRolePlan(0, new Set([]));
+// Test 3: Level 0 plan removes all progression roles (spectator is permanent, added separately)
+const level0Plan = getProgressionRolePlan(0, new Set(['civilian', 'hero']));
 assertEqual(
   level0Plan.expectedRoles.join(','),
   '',
-  'Level 0 plan returns empty (spectator handled separately)'
+  'Level 0 plan returns empty (spectator is permanent, added separately)'
 );
 assertEqual(
   level0Plan.missingRoles.length,
   0,
-  'Level 0 plan has no missing roles (spectator handled separately)'
+  'Level 0 plan has no missing roles (spectator is permanent, added separately)'
+);
+assertEqual(
+  level0Plan.outdatedRoles.join(','),
+  'civilian,hero',
+  'Level 0 plan should identify all progression roles as outdated'
 );
 
-// Test 4: Level 1 plan excludes spectator (handled separately)
+// Test 4: Level 1 plan excludes spectator (spectator is permanent, added separately)
 const level1Plan = getProgressionRolePlan(1, new Set([]));
 assertEqual(
   level1Plan.targetRole,
@@ -293,7 +298,7 @@ assertEqual(
 assertEqual(
   level1Plan.expectedRoles.join(','),
   'civilian',
-  'Level 1 plan excludes spectator (handled separately)'
+  'Level 1 plan excludes spectator (spectator is permanent, added separately)'
 );
 assertEqual(
   level1Plan.missingRoles.join(','),
@@ -306,7 +311,7 @@ const transitionPlan = getProgressionRolePlan(1, new Set(['spectator']));
 assertEqual(
   transitionPlan.expectedRoles.join(','),
   'civilian',
-  'Plan excludes spectator (handled separately by sync function)'
+  'Plan excludes spectator (spectator is permanent, added separately by sync function)'
 );
 assertEqual(
   transitionPlan.missingRoles.join(','),
@@ -352,23 +357,23 @@ assertEqual(
 assertEqual(
   level10Plan.expectedRoles.includes('spectator'),
   false,
-  'Spectator is never in expectedRoles for level 1+'
+  'Spectator is never in expectedRoles for level 1+ (spectator is permanent, added separately)'
 );
 
-// Test 6: Dropping from level 1 to level 0 - plan returns empty
+// Test 8: Dropping from level 1 to level 0 - plan removes all progression roles
 const demotionTo0Plan = getProgressionRolePlan(0, new Set(['spectator', 'civilian']));
 assertEqual(
   demotionTo0Plan.expectedRoles.join(','),
   '',
-  'Drop to level 0 plan returns empty (spectator handled separately)'
+  'Drop to level 0 plan returns empty (spectator is permanent, added separately)'
 );
 assertEqual(
   demotionTo0Plan.outdatedRoles.join(','),
-  '',
-  'Drop to level 0 plan shows no outdated roles (spectator not in plan)'
+  'civilian',
+  'Drop to level 0 plan should identify civilian as outdated (spectator stays)'
 );
 
-// Test 7: Multi-level jump from level 0 to level 10 - plan excludes spectator
+// Test 9: Multi-level jump from level 0 to level 10 - plan excludes spectator
 const multiLevelPlan = getProgressionRolePlan(10, new Set(['spectator']));
 assertEqual(
   multiLevelPlan.targetRole,
@@ -378,7 +383,7 @@ assertEqual(
 assertEqual(
   multiLevelPlan.expectedRoles.join(','),
   'civilian,sidekick,hero',
-  'Level 10 plan excludes spectator (handled separately)'
+  'Level 10 plan excludes spectator (spectator is permanent, added separately)'
 );
 assertEqual(
   multiLevelPlan.missingRoles.join(','),

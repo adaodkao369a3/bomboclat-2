@@ -76,10 +76,19 @@ export async function runRoleAudit(guild: Guild): Promise<AuditSummary> {
 
           const plan = getProgressionRolePlan(level, assignedRoles);
 
-          if (plan.missingRoles.length > 0 || plan.outdatedRoles.length > 0) {
+          // Spectator is permanent - always add if missing, never remove
+          const spectatorRoleId = await getRoleId('spectator');
+          const hasSpectator = spectatorRoleId && member.roles.cache.has(spectatorRoleId);
+
+          const wouldAdd = [...plan.missingRoles];
+          if (!hasSpectator) {
+            wouldAdd.push('spectator');
+          }
+
+          if (wouldAdd.length > 0 || plan.outdatedRoles.length > 0) {
             console.log(`[roleAudit] [LOG] ${member.user.username} (level ${level}):`);
-            if (plan.missingRoles.length > 0) {
-              console.log(`  Would add: ${plan.missingRoles.join(', ')}`);
+            if (wouldAdd.length > 0) {
+              console.log(`  Would add: ${wouldAdd.join(', ')}`);
             }
             if (plan.outdatedRoles.length > 0) {
               console.log(`  Would remove: ${plan.outdatedRoles.join(', ')}`);

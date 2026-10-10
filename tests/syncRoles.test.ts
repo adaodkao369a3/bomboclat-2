@@ -11,27 +11,27 @@ function assertEqual<T>(actual: T, expected: T, message: string) {
 
 console.log('Running syncRoles tests...');
 
-// Test 1: Level 0 holding civilian+hero -> both removed, Spectator added
-console.log('Test 1: Level 0 with civilian+hero should remove both and add Spectator');
-// The sync function handles level 0 separately: removes all progression roles, adds spectator
-// getProgressionRolePlan returns empty for level 0 (spectator handled separately)
+// Test 1: Level 0 holding civilian+hero -> both removed, Spectator kept/added
+console.log('Test 1: Level 0 with civilian+hero should remove both progression roles, Spectator kept/added');
+// The sync function handles level 0: removes all progression roles, spectator is permanent
+// getProgressionRolePlan returns outdated roles for level 0 (spectator is permanent, added separately)
 const level0Roles = new Set(['civilian', 'hero']);
 const level0Plan = getProgressionRolePlan(0, level0Roles);
 assertEqual(
-  level0Plan.outdatedRoles.length,
-  0,
-  'Level 0 plan returns empty (spectator handled separately in sync function)'
+  level0Plan.outdatedRoles.join(','),
+  'civilian,hero',
+  'Level 0 plan should identify civilian and hero as outdated (spectator is permanent)'
 );
 assertEqual(
   level0Plan.missingRoles.length,
   0,
-  'Level 0 plan has no missing progression roles (spectator handled separately)'
+  'Level 0 plan has no missing progression roles (spectator is permanent, added separately)'
 );
-// The actual sync function (synchronizeProgressionRoles) removes civilian/hero and adds spectator
+// The actual sync function (synchronizeProgressionRoles) removes civilian/hero and adds spectator if missing
 console.log('✓ Test 1 passed');
 
-// Test 2: Level 1 -> Spectator removed, Civilian added
-console.log('Test 2: Level 1 with Spectator should remove Spectator and add Civilian');
+// Test 2: Level 1 -> Spectator kept, Civilian added
+console.log('Test 2: Level 1 with Spectator should keep Spectator and add Civilian');
 const level1WithSpectator = new Set(['spectator']);
 const level1Plan = getProgressionRolePlan(1, level1WithSpectator);
 assertEqual(
@@ -44,12 +44,12 @@ assertEqual(
   0,
   'Level 1 with only Spectator has no outdated progression roles'
 );
-// Spectator removal is handled separately in the sync function
+// Spectator is never removed, it's permanent
 console.log('✓ Test 2 passed');
 
-// Test 3: Level 5 with correct roles -> zero changes
-console.log('Test 3: Level 5 with correct roles should cause zero changes');
-const level5Correct = new Set(['civilian', 'sidekick']);
+// Test 3: Level 5 with correct roles including Spectator -> zero changes
+console.log('Test 3: Level 5 with correct roles including Spectator should cause zero changes');
+const level5Correct = new Set(['spectator', 'civilian', 'sidekick']);
 const level5Plan = getProgressionRolePlan(5, level5Correct);
 assertEqual(
   level5Plan.missingRoles.length,
@@ -61,6 +61,7 @@ assertEqual(
   0,
   'Level 5 with correct roles should have no outdated roles'
 );
+// Spectator is in the set but the plan ignores it (it's permanent, handled separately)
 console.log('✓ Test 3 passed');
 
 // Test 4: Dry run makes no changes

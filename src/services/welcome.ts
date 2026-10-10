@@ -3,7 +3,6 @@ import {
   CHANNELS,
   ROLES,
   EMOJIS,
-  WELCOME_GIF_QUERIES,
   BOOST_GIF_QUERIES,
   WELCOME_MESSAGES,
   BOOST_MESSAGES,
@@ -13,6 +12,11 @@ import { fetchGIF } from './klipy.js';
 import { getOrCreateUser } from '../database/client.js';
 import { ResidualsService } from './residuals.js';
 import { assignRolesOnJoin } from './roleAudit.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Use process.cwd() to get the project root at runtime
+const WELCOME_IMAGE_PATH = join(process.cwd(), 'assets/welcome.png');
 
 function randomFrom<T>(pool: T[]): T {
   return pool[Math.floor(Math.random() * pool.length)];
@@ -43,8 +47,8 @@ async function guestStarCount(member: GuildMember): Promise<number> {
 }
 
 /**
- * Sends a randomized welcome embed (one of 10 lines, plus a randomized
- * welcome/red-carpet GIF) whenever a new member joins.
+ * Sends a randomized welcome embed (one of 10 lines, plus the welcome PNG)
+ * whenever a new member joins.
  */
 export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
   try {
@@ -60,8 +64,6 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
       return;
     }
 
-    const gifUrl = await fetchGIF(randomFrom(WELCOME_GIF_QUERIES));
-
     const line = fillTemplate(randomFrom(WELCOME_MESSAGES), {
       ...WELCOME_REPLACEMENTS,
       user: `<@${member.id}>`,
@@ -75,11 +77,17 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
       .setFooter({ text: `Member #${member.guild.memberCount} - MI BOMBO Studios` })
       .setTimestamp();
 
-    if (gifUrl) {
-      embed.setImage(gifUrl);
+    // Use welcome.png as the image
+    try {
+      const welcomeImageBuffer = readFileSync(WELCOME_IMAGE_PATH);
+      await channel.send({
+        embeds: [embed],
+        files: [{ attachment: welcomeImageBuffer, name: 'welcome.png' }],
+      });
+    } catch (imageError) {
+      console.error('[welcome] Failed to read welcome.png, sending without image:', imageError);
+      await channel.send({ embeds: [embed] });
     }
-
-    await channel.send({ embeds: [embed] });
   } catch (error) {
     console.error('[welcome] Failed to send welcome message:', error);
   }

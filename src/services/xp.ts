@@ -151,16 +151,16 @@ export function getProgressionRolePlan(
   assignedRoles: ReadonlySet<string>
 ): ProgressionRolePlan {
   // Plan covers only the 17 progression roles (civilian through saint)
-  // Spectator is handled separately in synchronizeProgressionRoles
+  // Spectator is a permanent base role handled separately in synchronizeProgressionRoles
   const progressionRoleKeys = PROGRESSION_ROLE_KEYS.filter(r => r !== 'spectator') as ProgressionRoleName[];
 
-  // For level 0, return empty plan (Spectator is handled separately)
+  // For level 0, remove all progression roles (Spectator is permanent and added separately)
   if (level < 1) {
     return {
       targetRole: 'civilian', // Default to civilian for type compatibility
       expectedRoles: [],
       missingRoles: [],
-      outdatedRoles: [],
+      outdatedRoles: progressionRoleKeys.filter(role => assignedRoles.has(role)),
     };
   }
 
@@ -289,29 +289,17 @@ export async function synchronizeProgressionRoles(
   const removedRoles: ProgressionRoleName[] = [];
   const failedRoles: ProgressionRoleName[] = [];
 
-  // Handle Spectator separately - it's mutually exclusive with progression roles
+  // Spectator is a permanent base role - always add if missing, never remove
   const spectatorRoleId = await getRoleId('spectator');
   const hasSpectator = spectatorRoleId && member.roles.cache.has(spectatorRoleId);
-  const shouldBeSpectator = targetLevel < 1;
 
-  if (shouldBeSpectator && !hasSpectator && spectatorRoleId) {
+  if (!hasSpectator && spectatorRoleId) {
     const success = await addProgressionRole(member, 'spectator');
     if (success) {
       addedRoles.push('spectator');
     } else {
       failedRoles.push('spectator');
       console.error(`Failed to add Spectator role to user ${member.id}`);
-    }
-  } else if (!shouldBeSpectator && hasSpectator && spectatorRoleId) {
-    const role = member.guild.roles.cache.get(spectatorRoleId);
-    if (role) {
-      try {
-        await member.roles.remove(role, 'XP progression system: removing Spectator');
-        removedRoles.push('spectator');
-      } catch (error) {
-        failedRoles.push('spectator');
-        console.error(`Failed to remove Spectator role from user ${member.id}:`, error);
-      }
     }
   }
 
