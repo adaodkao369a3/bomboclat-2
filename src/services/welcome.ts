@@ -3,12 +3,10 @@ import {
   CHANNELS,
   ROLES,
   EMOJIS,
-  BOOST_GIF_QUERIES,
   WELCOME_MESSAGES,
   BOOST_MESSAGES,
   BOOST_RESIDUAL_GIFT,
 } from '../config/index.js';
-import { fetchGIF } from './klipy.js';
 import { getOrCreateUser } from '../database/client.js';
 import { ResidualsService } from './residuals.js';
 import { assignRolesOnJoin } from './roleAudit.js';
@@ -17,6 +15,7 @@ import { join } from 'path';
 
 // Use process.cwd() to get the project root at runtime
 const WELCOME_IMAGE_PATH = join(process.cwd(), 'assets/welcome.png');
+const BOOSTER_IMAGE_PATH = join(process.cwd(), 'assets/booster.png');
 
 function randomFrom<T>(pool: T[]): T {
   return pool[Math.floor(Math.random() * pool.length)];
@@ -26,20 +25,13 @@ function fillTemplate(template: string, replacements: Record<string, string>): s
   return template.replace(/\{(\w+)\}/g, (match, key) => replacements[key] ?? match);
 }
 
-const WELCOME_REPLACEMENTS = {
-  typing: EMOJIS.TYPING,
-  sunglasses: EMOJIS.SUNGLASSES,
-  pink: EMOJIS.PINK_HEART,
-  orange: EMOJIS.ORANGE_HEART,
-};
-
 const BOOST_REPLACEMENTS = {
   crown: EMOJIS.CROWN,
   crown2: EMOJIS.CROWN2,
   money: EMOJIS.MONEY,
   pink: EMOJIS.PINK_HEART,
   orange: EMOJIS.ORANGE_HEART,
-  sunglasses: EMOJIS.SUNGLASSES,
+  sunglasses: EMOJIS.JOLLY,
 };
 
 async function guestStarCount(member: GuildMember): Promise<number> {
@@ -49,15 +41,19 @@ async function guestStarCount(member: GuildMember): Promise<number> {
 /**
  * Sends a randomized welcome embed (one of 10 lines, plus the welcome PNG)
  * whenever a new member joins.
+ * @param member - The guild member who joined
+ * @param testChannel - Optional channel to send to for testing (if provided, skips role assignment)
  */
-export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
+export async function sendWelcomeMessage(member: GuildMember, testChannel?: any): Promise<void> {
   try {
-    // Assign roles based on database level (spectator for new members, progression for returning)
-    await assignRolesOnJoin(member);
+    // Only assign roles if not in test mode
+    if (!testChannel) {
+      await assignRolesOnJoin(member);
+    }
 
-    const channel = CHANNELS.WELCOME
+    const channel = testChannel || (CHANNELS.WELCOME
       ? member.guild.channels.cache.get(CHANNELS.WELCOME)
-      : member.guild.systemChannel;
+      : member.guild.systemChannel);
 
     if (!channel || !channel.isTextBased()) {
       console.warn('[welcome] Welcome channel not found or not text-based; skipping welcome message.');
@@ -65,7 +61,6 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
     }
 
     const line = fillTemplate(randomFrom(WELCOME_MESSAGES), {
-      ...WELCOME_REPLACEMENTS,
       user: `<@${member.id}>`,
       count: member.guild.memberCount.toString(),
     });
@@ -74,7 +69,7 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
       .setDescription(line)
       .setColor(0x9b5de5)
       .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Member #${member.guild.memberCount} - MI BOMBO Studios` })
+      .setFooter({ text: `Member #${member.guild.memberCount} - Mi Bombo` })
       .setTimestamp();
 
     // Use welcome.png as the image
@@ -96,16 +91,16 @@ export async function sendWelcomeMessage(member: GuildMember): Promise<void> {
 /**
  * Sends a randomized "Guest Star" thank-you embed to the red carpet channel,
  * and gifts the booster a one-time residual bonus.
+ * @param member - The guild member who boosted
+ * @param testChannel - Optional channel to send to for testing (if provided, skips residual gifting)
  */
-export async function sendBoosterThankYou(member: GuildMember): Promise<void> {
+export async function sendBoosterThankYou(member: GuildMember, testChannel?: any): Promise<void> {
   try {
-    const channel = member.guild.channels.cache.get(CHANNELS.BOOSTER_THANKYOU);
+    const channel = testChannel || member.guild.channels.cache.get(CHANNELS.BOOSTER_THANKYOU);
     if (!channel || !channel.isTextBased()) {
       console.warn('[booster] Red carpet channel not found or not text-based; skipping.');
       return;
     }
-
-    const gifUrl = await fetchGIF(randomFrom(BOOST_GIF_QUERIES));
 
     const line = fillTemplate(randomFrom(BOOST_MESSAGES), {
       ...BOOST_REPLACEMENTS,
@@ -117,15 +112,21 @@ export async function sendBoosterThankYou(member: GuildMember): Promise<void> {
     const embed = new EmbedBuilder()
       .setDescription(line)
       .setColor(0xF47FFF)
-      .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Guest Star #${guestStarCountValue} - MI BOMBO Studios` })
+      .setFooter({ text: `Guest Star #${guestStarCountValue} - Mi Bombo` })
       .setTimestamp();
 
-    if (gifUrl) {
-      embed.setImage(gifUrl);
+    // Use booster.png as the thumbnail (right side of embed)
+    try {
+      const boosterImageBuffer = readFileSync(BOOSTER_IMAGE_PATH);
+      embed.setThumbnail('attachment://booster.png');
+      await channel.send({
+        embeds: [embed],
+        files: [{ attachment: boosterImageBuffer, name: 'booster.png' }],
+      });
+    } catch (imageError) {
+      console.error('[booster] Failed to read booster.png, sending without image:', imageError);
+      await channel.send({ embeds: [embed] });
     }
-
-    await channel.send({ embeds: [embed] });
   } catch (error) {
     console.error('[booster] Failed to send booster thank-you message:', error);
   }

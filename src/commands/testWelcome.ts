@@ -12,7 +12,7 @@ export const testWelcomeCommand: Command = {
       return;
     }
 
-    await sendWelcomeMessage(message.member as GuildMember);
+    await sendWelcomeMessage(message.member as GuildMember, message.channel);
     await message.reply('✅ Sent a sample welcome message.');
   },
 };

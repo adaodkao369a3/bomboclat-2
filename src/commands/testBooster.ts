@@ -13,7 +13,7 @@ export const testBoosterCommand: Command = {
     }
 
     // Sample only - does NOT gift residuals, this just previews the message/GIF
-    await sendBoosterThankYou(message.member as GuildMember);
-    await message.reply('✅ Sent a sample Guest Star message to the red carpet channel. (No residuals were gifted - this is a preview only.)');
+    await sendBoosterThankYou(message.member as GuildMember, message.channel);
+    await message.reply('✅ Sent a sample Guest Star message to this channel. (No residuals were gifted - this is a preview only.)');
   },
 };

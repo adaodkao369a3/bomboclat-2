@@ -73,7 +73,7 @@ export const levelCommand: Command = {
         { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%`, inline: false },
         { name: '<:crown:1529443082406461521> Role Progression', value: roleLadder, inline: false },
       ])
-      .setFooter({ text: 'MI BOMBO Studios' });
+      .setFooter({ text: 'Bombo Studios' });
 
     await message.reply({ embeds: [embed] });
   },
