@@ -59,7 +59,7 @@ async function syncSpecificMembers(
   let failures = 0;
   const failedUsers: string[] = [];
 
-  for (const member of members.values()) {
+  for (const member of members) {
     if (member.user.bot) {
       continue; // Skip bots
     }
@@ -98,7 +98,31 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
     return;
   }
 
-  const members = await message.guild.members.fetch();
+  // Fetch members with retry logic for rate limits
+  let members;
+  let retries = 0;
+  const maxRetries = 3;
+  while (retries < maxRetries) {
+    try {
+      members = await message.guild.members.fetch();
+      break;
+    } catch (error: any) {
+      if (error.code === 50001 || error.name === 'GatewayRateLimitError') {
+        const retryAfter = error.retry_after || 5;
+        console.log(`Rate limited. Retrying after ${retryAfter} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        retries++;
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!members) {
+    await message.reply('❌ Failed to fetch guild members after multiple retries due to rate limits. Please try again later.');
+    return;
+  }
+
   const nonBotMembers = members.filter(m => !m.user.bot);
 
   let processed = 0;
