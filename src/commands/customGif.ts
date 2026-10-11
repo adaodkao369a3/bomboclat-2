@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { GIF_CONFIG } from '../config/index.js';
+import { GIF_CONFIG, EMOJIS } from '../config/index.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { isAdmin, hasFeaturedExtra } from '../utils/permissions.js';
@@ -75,7 +75,7 @@ export const customGifCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<a:dcrown:1545829074956591234> custom gif')
+      .setTitle(`${EMOJIS.DCROWN} custom gif`)
       .setDescription(`${message.author.toString()} "${query}" ${targets ? targets : ''}`)
       .setColor(0x4900ff)
       .setImage(gifUrl)

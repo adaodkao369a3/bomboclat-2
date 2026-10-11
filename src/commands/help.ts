@@ -1,4 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+import { EMOJIS } from '../config/index.js';
 import { Command } from './index.js';
 
 export const helpCommand: Command = {
@@ -7,7 +8,7 @@ export const helpCommand: Command = {
   async execute(message, _args, _prefix) {
     const categories = {
       profile: {
-        title: '<:ladder:1545126567145906246> Profile & Progression',
+        title: `${EMOJIS.LADDER} Profile & Progression`,
         description: 'Track your server progress and stats',
         fields: [
           { name: '`.profile`', value: 'View your profile with stats', inline: false },
@@ -17,7 +18,7 @@ export const helpCommand: Command = {
         ],
       },
       fun: {
-        title: '<:glossystaremoji:1545004043699626004> Fun Commands',
+        title: `${EMOJIS.GLOSSY_STAR} Fun Commands`,
         description: 'Express yourself with reactions',
         fields: [
           { name: '`.rizz`', value: 'Show off your rizz', inline: false },
@@ -30,17 +31,18 @@ export const helpCommand: Command = {
           { name: '`.aura`', value: 'Check your aura', inline: false },
           { name: '`.huh`', value: 'Huh reaction', inline: false },
           { name: '`.cry`', value: 'Cry reaction', inline: false },
+          { name: '`.leash`', value: 'Leash reaction', inline: false },
         ],
       },
       gif: {
-        title: '<a:dcrown:1545829074956591234> Custom GIF',
+        title: `${EMOJIS.DCROWN} Custom GIF`,
         description: 'Search and share custom GIFs',
         fields: [
           { name: '`.c <query>`', value: 'Search for a custom GIF (Featured Extra+ or Guest Star)', inline: false },
         ],
       },
       shop: {
-        title: '<a:shoppingcart:1545005246579875860> Shop & Economy',
+        title: `${EMOJIS.SHOPPING_CART} Shop & Economy`,
         description: 'Manage your shop items and earnings',
         fields: [
           { name: '`.shop`', value: 'View the shop', inline: false },
@@ -48,7 +50,7 @@ export const helpCommand: Command = {
         ],
       },
       utility: {
-        title: '<:star:1545002693368750193> Utility & System',
+        title: `${EMOJIS.STAR} Utility & System`,
         description: 'Account management and system commands',
         fields: [
           { name: '`.reset`', value: 'Reset your profile (use with caution)', inline: false },

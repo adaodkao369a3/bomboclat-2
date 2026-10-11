@@ -104,6 +104,7 @@ export const EMOJIS = {
   PALETTE: '<:palette:1545852130517319812>',
   CROWN2: '<:crown2:1545847221323571200>',
   CROWN: '<:crown:1529443082406461521>',
+  DCROWN: '<a:dcrown:1545829074956591234>',
   ORANGE_HEART: '<a:orangeheartexclaim:1529443126328950785>',
   PINK_HEART: '<a:pinkheartexclaim:1529443130104090734>',
 };
@@ -282,7 +283,7 @@ export const GIF_CAPTIONS: Record<string, string> = {
   aura: 'ts so aura <a:aura:1529443067529003108>',
   huh: 'i am confusion <:confusedbread:1536398345755435018>',
   cry: 'crine <:cryingsparkles:1529495144745930852>',
-  leash: '🔗',
+  leash: "who's mommy's good boy <:leash:1558758872079143062>",
 };
 
 // Art Styles for $clip
