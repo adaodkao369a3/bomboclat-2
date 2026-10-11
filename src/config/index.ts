@@ -267,6 +267,7 @@ export const GIF_COMMANDS = {
   aura: 'aura anime',
   huh: 'huh anime',
   cry: 'crying anime',
+  leash: 'leash anime',
 };
 
 // GIF Captions
@@ -281,6 +282,7 @@ export const GIF_CAPTIONS: Record<string, string> = {
   aura: 'ts so aura <a:aura:1529443067529003108>',
   huh: 'i am confusion <:confusedbread:1536398345755435018>',
   cry: 'crine <:cryingsparkles:1529495144745930852>',
+  leash: '🔗',
 };
 
 // Art Styles for $clip

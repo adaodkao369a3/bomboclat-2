@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { GIF_COMMANDS, GIF_CAPTIONS, GIF_CONFIG } from '../config/index.js';
+import { GIF_COMMANDS, GIF_CAPTIONS, GIF_CONFIG, EMOJIS } from '../config/index.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { isAdmin } from '../utils/permissions.js';
@@ -14,7 +14,7 @@ function createGIFCommand(name: string): Command {
       // Check target limit
       const mentions = message.mentions.members;
       if (mentions && mentions.size > GIF_CONFIG.MAX_TARGETS) {
-        await message.reply(`<:glossyredcancelx:1545126551673241731> Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
         return;
       }
 
@@ -46,7 +46,7 @@ function createGIFCommand(name: string): Command {
       // Fetch GIF
       const gifUrl = await fetchGIF(GIF_COMMANDS[name as keyof typeof GIF_COMMANDS]);
       if (!gifUrl) {
-        await message.reply('<:glossyredcancelx:1545126551673241731> No GIF found.');
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} No GIF found.`);
         return;
       }
 
