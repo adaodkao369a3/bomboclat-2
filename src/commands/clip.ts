@@ -25,6 +25,8 @@ export const clipCommand: Command = {
     if (clipChannelsSetting) {
       try {
         allowedChannels = JSON.parse(clipChannelsSetting);
+        // Filter out any non-numeric IDs (channel names) that may have been manually inserted
+        allowedChannels = allowedChannels.filter((id: string) => /^\d+$/.test(id));
       } catch {
         console.error('Invalid clip_channels data in database');
       }

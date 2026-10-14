@@ -15,7 +15,7 @@ export const settingsCommand: Command = {
     const subcommand = args[0]?.toLowerCase();
 
     if (!subcommand) {
-      await message.reply('❌ Usage: $settings <key> [get|set] [value] or $settings clip_channels <add|remove|list> [#channel]');
+      await message.reply('❌ Usage: $settings <key> [get|set] [value] or $settings clip_channels <add|remove|list|clear> [#channel]');
       return;
     }
 
@@ -39,6 +39,12 @@ export const settingsCommand: Command = {
         } catch {
           await message.reply('❌ Invalid clip_channels data in database.');
         }
+        return;
+      }
+
+      if (clipAction === 'clear') {
+        await setSetting('clip_channels', JSON.stringify([]), message.author.id);
+        await message.reply('✅ Clip channels allowlist cleared (defaulting to BOMBO_TIMES).');
         return;
       }
 
@@ -75,7 +81,7 @@ export const settingsCommand: Command = {
         return;
       }
 
-      await message.reply('❌ Usage: $settings clip_channels <add|remove|list> [#channel]');
+      await message.reply('❌ Usage: $settings clip_channels <add|remove|list|clear> [#channel]');
       return;
     }
 
@@ -101,6 +107,6 @@ export const settingsCommand: Command = {
       return;
     }
 
-    await message.reply('❌ Usage: $settings <key> [get|set] [value] or $settings clip_channels <add|remove|list> [#channel]');
+    await message.reply('❌ Usage: $settings <key> [get|set] [value] or $settings clip_channels <add|remove|list|clear> [#channel]');
   },
 };

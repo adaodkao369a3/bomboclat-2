@@ -21,6 +21,7 @@ import { manageCommand } from './manage';
 import { resetCommand } from './reset';
 import { residualsLeaderboardCommand } from './residualsLeaderboard';
 import { syncRolesCommand } from './syncRoles';
+import { channelsCommand } from './channels';
 
 export interface Command {
   name: string;
@@ -57,6 +58,7 @@ export async function registerCommands(client: Client): Promise<void> {
     manageCommand,
     resetCommand,
     syncRolesCommand,
+    channelsCommand,
   ];
 
   for (const command of commands) {

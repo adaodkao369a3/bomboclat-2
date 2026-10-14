@@ -34,6 +34,7 @@ export const adminHelpCommand: Command = {
       { name: '<:ladder:1545126567145906246> $clip Art Styles', value: artStylesList, inline: false },
       { name: 'XP Management', value: '`$xp @user` - Manage user XP and progression', inline: false },
       { name: 'Residuals Management', value: '`$residuals @user` - Manage user Residuals (Admin/Staff)', inline: false },
+      { name: 'Channel Listing', value: '`$channels` - List all channels grouped by category', inline: false },
       { name: 'Role Synchronization', value: '`$syncroles` - Synchronize all progression roles', inline: false },
       { name: 'Role Ordering', value: '`$roleorder` - Reorder server roles into the proper hierarchy', inline: false },
       { name: 'Settings', value: '`$settings clip_channels <add|remove|list> [#channel]` or `$settings <key> set <value>`', inline: false },
