@@ -1,9 +1,10 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, AttachmentBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { getUser } from '../../database/client.js';
 import { createEmojiSubmission, getEmojiSubmission, approveEmojiSubmission, rejectEmojiSubmission, updateEmojiSubmissionWithCreatedId } from '../../services/emojiSubmission.js';
 import { validateAndProcessImage } from '../../services/imageProcessing.js';
 import { sanitizeEmojiName } from '../../utils/sanitization.js';
 import { EMOJI_REVIEW_CHANNEL_ID, EMOJI_XP_THRESHOLD } from '../../config/index.js';
+import { calculateLevelFromXP } from '../../services/xp.js';
 
 export const emojiSubmitCommand = {
   data: new SlashCommandBuilder()
@@ -132,13 +133,13 @@ export const emojiSubmitCommand = {
         return;
       }
 
-      const attachment = new AttachmentBuilder(processedImage.buffer, { name: `emoji_${submission.id}.${processedImage.extension}` });
+      const userLevel = calculateLevelFromXP(userXP);
 
       const embed = new EmbedBuilder()
         .setTitle('🎨 Emoji Submission')
-        .setDescription(`**Name:** \`${sanitizedName}\`\n**Submitter:** <@${interaction.user.id}>\n**XP:** ${processedImage.userXP?.toLocaleString() || 'N/A'}\n**Status:** Pending Review`)
+        .setDescription(`**Name:** \`${sanitizedName}\`\n**Submitter:** <@${interaction.user.id}>\n**Level:** ${userLevel}\n**Status:** Pending Review`)
         .setColor(0xFFA500)
-        .setImage(`attachment://emoji_${submission.id}.${processedImage.extension}`)
+        .setThumbnail(finalImageUrl)
         .setTimestamp()
         .setFooter({ text: `Submission ID: ${submission.id}` });
 
@@ -157,7 +158,6 @@ export const emojiSubmitCommand = {
       await reviewChannel.send({
         content: `<@${interaction.user.id}>`,
         embeds: [embed],
-        files: [attachment],
         components: [row],
       });
 
@@ -233,15 +233,20 @@ export async function handleEmojiApprove(interaction: ButtonInteraction): Promis
     // Record created emoji ID in database
     await updateEmojiSubmissionWithCreatedId(submissionId, emoji.id);
 
+    // Calculate level from XP
+    const userLevel = calculateLevelFromXP(submission.user_xp || 0);
+
     // Update embed
     if (interaction.message && interaction.message.editable) {
       const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
-        .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Submitter:** <@${submission.user_id}>\n**XP:** ${submission.user_xp?.toLocaleString() || 'N/A'}\n**Status:** ✅ Approved\n**Created Emoji:** <:${emoji.name}:${emoji.id}>\n**Reviewed by:** <@${interaction.user.id}>`)
+        .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Submitter:** <@${submission.user_id}>\n**Level:** ${userLevel}\n**Status:** ✅ Approved\n**Created Emoji:** <:${emoji.name}:${emoji.id}>\n**Reviewed by:** <@${interaction.user.id}>`)
         .setColor(0x00FF00);
 
       await interaction.message.edit({
+        content: interaction.message.content,
         embeds: [updatedEmbed],
         components: [],
+        files: [],
       });
     }
 
@@ -324,29 +329,34 @@ export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction
     // Reject with DB-level guard
     const result = await rejectEmojiSubmission(submissionId, interaction.user.id, reason);
     if (!result.success) {
-      await interaction.editReply({ 
-        content: '❌ Failed to reject submission. It may have already been reviewed.' 
+      await interaction.editReply({
+        content: '❌ Failed to reject submission. It may have already been reviewed.'
       });
       return;
     }
+
+    // Calculate level from XP
+    const userLevel = calculateLevelFromXP(submission.user_xp || 0);
 
     // Find and update the original message
     const reviewChannel = interaction.guild.channels.cache.get(EMOJI_REVIEW_CHANNEL_ID);
     if (reviewChannel && reviewChannel.isTextBased()) {
       const messages = await reviewChannel.messages.fetch({ limit: 50 });
-      const reviewMessage = messages.find(m => 
-        m.embeds.length > 0 && 
+      const reviewMessage = messages.find(m =>
+        m.embeds.length > 0 &&
         m.embeds[0].footer?.text?.includes(`Submission ID: ${submissionId}`)
       );
 
       if (reviewMessage && reviewMessage.editable) {
         const updatedEmbed = EmbedBuilder.from(reviewMessage.embeds[0])
-          .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Submitter:** <@${submission.user_id}>\n**XP:** ${submission.user_xp?.toLocaleString() || 'N/A'}\n**Status:** ❌ Rejected\n**Reviewed by:** <@${interaction.user.id}>\n${reason ? `**Reason:** ${reason}` : ''}`)
+          .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Submitter:** <@${submission.user_id}>\n**Level:** ${userLevel}\n**Status:** ❌ Rejected\n**Reviewed by:** <@${interaction.user.id}>\n${reason ? `**Reason:** ${reason}` : ''}`)
           .setColor(0xFF0000);
 
         await reviewMessage.edit({
+          content: reviewMessage.content,
           embeds: [updatedEmbed],
           components: [],
+          files: [],
         });
       }
     }
