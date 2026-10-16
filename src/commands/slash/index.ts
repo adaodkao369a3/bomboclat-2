@@ -1,6 +1,7 @@
 import { REST, Routes, ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 import { DISCORD_TOKEN, CLIENT_ID, DEV_GUILD_ID } from '../../config/index';
 import { emojiSubmitCommand } from './emojiSubmit';
+import { releaseCommand } from './release';
 
 export interface SlashCommand {
   data: any; // Discord.js builder types are complex, using any for flexibility
@@ -9,6 +10,7 @@ export interface SlashCommand {
 
 const slashCommands: SlashCommand[] = [
   emojiSubmitCommand,
+  releaseCommand,
 ];
 
 export async function registerSlashCommands(guildId?: string): Promise<void> {
