@@ -45,7 +45,7 @@ export const adminHelpCommand: Command = {
 
     // Public commands reference
     embed.addFields([
-      { name: 'Public Commands', value: '`help`, `profile`, `level`, `res`, `leaderboard`, GIF commands, `c <query>` (Featured Extra+ or Guest Star)', inline: false },
+      { name: 'Public Commands', value: '`help`, `profile`, `level`, `res`, `leaderboard`, GIF commands, `c <query>` (Hero+ or Guest Star)', inline: false },
     ]);
 
     await message.reply({ embeds: [embed] });

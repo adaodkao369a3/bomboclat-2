@@ -12,21 +12,116 @@ function isRoleMilestone(level: number): boolean {
 
 function getUnlockedPerks(role: string): string[] {
   switch (role) {
-    case 'featured_extra':
-      return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked'];
-    case 'supporting_cast':
-      return ['<:glossystaremoji:1545004043699626004> Custom GIF search unlocked', '<:star:1545002693368750193> Additional media permissions'];
-    case 'principal_cast':
+    case 'civilian':
+      return ['🎬 Welcome to the cast! Start your journey.'];
+    case 'sidekick':
+      return ['⭐ Supporting role unlocked - You\'re gaining recognition!'];
+    case 'hero':
       return [
         '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '👑 Principal Cast privileges',
+        '🦸 Hero status - You\'re a recognized member of the cast',
       ];
-    case 'lead_cast':
+    case 'champion':
       return [
         '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
         '<:star:1545002693368750193> Additional media permissions',
-        '👑 Lead Cast privileges',
+        '🏆 Champion privileges',
+      ];
+    case 'guardian':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🛡️ Guardian status - Trusted cast member',
+      ];
+    case 'superhero':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🦸‍♂️ Superhero privileges',
+        '💎 Rare shop access',
+      ];
+    case 'anti_hero':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🌑 Anti-Hero status - Walk the darker path',
+        '💎 Rare shop access',
+      ];
+    case 'rogue':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🗡️ Rogue privileges',
+        '💎 Rare shop access',
+      ];
+    case 'renegade':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '⚡ Renegade status',
+        '💎 Rare shop access',
+      ];
+    case 'outlaw':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🎯 Outlaw privileges',
+        '💎 Rare shop access',
+      ];
+    case 'villain':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '😈 Villain status - Embrace your role',
+        '💎 Rare shop access',
+      ];
+    case 'mastermind':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🧠 Mastermind privileges',
+        '� Rare shop access',
+        '�👑 VIP status',
+      ];
+    case 'kingpin':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '👑 Kingpin status - Rule the underworld',
+        '💎 Rare shop access',
+        '👑 VIP status',
+      ];
+    case 'overlord':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '🏰 Overlord privileges',
+        '💎 Rare shop access',
+        '👑 VIP status',
+      ];
+    case 'tyrant':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '⚔️ Tyrant status - Absolute power',
+        '💎 Rare shop access',
+        '👑 VIP status',
+      ];
+    case 'emperor':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '👑 Emperor privileges - Supreme ruler',
+        '💎 Rare shop access',
+        '👑 VIP status',
+      ];
+    case 'saint':
+      return [
+        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
+        '<:star:1545002693368750193> Additional media permissions',
+        '😇 Saint status - Maximum enlightenment',
+        '💎 Rare shop access',
+        '👑 VIP status',
         '💎 Mythic shop access',
       ];
     default:

@@ -38,7 +38,7 @@ export const helpCommand: Command = {
         title: `${EMOJIS.DCROWN} Custom GIF`,
         description: 'Search and share custom GIFs',
         fields: [
-          { name: '`.c <query>`', value: 'Search for a custom GIF (Featured Extra+ or Guest Star)', inline: false },
+          { name: '`.c <query>`', value: 'Search for a custom GIF (Hero+ or Guest Star)', inline: false },
         ],
       },
       shop: {

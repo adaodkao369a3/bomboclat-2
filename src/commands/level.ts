@@ -51,10 +51,11 @@ export const levelCommand: Command = {
     // Format role name
     const roleDisplay = formatRoleName(userData.current_progression_role);
 
-    // Build the full role progression ladder - shows every role they'll unlock
-    // down the line, marked with ✅ if already earned or ❌ if not yet, plus
-    // the XP each one kicks in at.
-    const roleLadder = PROGRESSION_ROLE_KEYS.map((roleKey) => {
+    // Build role progression ladder - show achieved roles + next one
+    const currentRoleIndex = PROGRESSION_ROLE_KEYS.indexOf(userData.current_progression_role as any);
+    const maxRoleIndex = Math.min(currentRoleIndex + 1, PROGRESSION_ROLE_KEYS.length - 1);
+    
+    const roleLadder = PROGRESSION_ROLE_KEYS.slice(0, maxRoleIndex + 1).map((roleKey) => {
       const requiredLevel = XP_CONFIG.ROLE_LEVEL_REQUIREMENTS[roleKey];
       const achieved = currentLevel >= requiredLevel;
       const icon = achieved ? '<:greenglossytickcheckmark:1545126564247633970>' : '<:glossyredcancelx:1545126551673241731>';

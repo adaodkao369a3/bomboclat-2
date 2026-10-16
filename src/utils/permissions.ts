@@ -26,7 +26,7 @@ export function canManageResiduals(member: GuildMember): boolean {
   );
 }
 
-export async function hasFeaturedExtra(member: GuildMember): Promise<boolean> {
+export async function hasHeroRole(member: GuildMember): Promise<boolean> {
   // Hero role or higher progression roles (Level 10+), or Guest Star (boosters)
   const heroId = await getRoleId('hero');
   const championId = await getRoleId('champion');
@@ -64,7 +64,10 @@ export async function hasFeaturedExtra(member: GuildMember): Promise<boolean> {
   ) as boolean;
 }
 
-export async function hasSupportingCast(member: GuildMember): Promise<boolean> {
+// Backward compatibility alias
+export const hasFeaturedExtra = hasHeroRole;
+
+export async function hasChampionRole(member: GuildMember): Promise<boolean> {
   // Champion role or higher progression roles (Level 20+)
   const championId = await getRoleId('champion');
   const guardianId = await getRoleId('guardian');
@@ -98,6 +101,9 @@ export async function hasSupportingCast(member: GuildMember): Promise<boolean> {
     (saintId && member.roles.cache.has(saintId))
   ) as boolean;
 }
+
+// Backward compatibility alias
+export const hasSupportingCast = hasChampionRole;
 
 export function isBotOwner(member: GuildMember): boolean {
   // Only Director is bot owner
