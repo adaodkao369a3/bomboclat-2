@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Partials, Collection, ActivityType } from 'd
 import { connect as connectDB, disconnect as disconnectDB } from './database/client';
 import { DISCORD_TOKEN, PREFIX, ADMIN_PREFIX, DEV_GUILD_ID } from './config/index';
 import { registerCommands } from './commands/index';
+import { registerSlashCommands } from './commands/slash/index';
 import { handleXPMessage } from './services/messageHandler';
 import { sendWelcomeMessage, sendBoosterThankYou, giftBoosterResiduals, hasBoosterRole } from './services/welcome';
 import { Command } from './commands/index';
@@ -35,6 +36,12 @@ client.once('ready', async () => {
   
   // Register legacy commands
   await registerCommands(client);
+  
+  // Register slash commands (only in dev mode to avoid spamming Discord API)
+  if (DEV_GUILD_ID) {
+    console.log('Registering slash commands to dev guild...');
+    await registerSlashCommands(DEV_GUILD_ID);
+  }
   
   // Start voice XP ticker
   startVoiceTicker();
