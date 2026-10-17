@@ -205,7 +205,7 @@ export const clipCommand: Command = {
         embed.addFields({ name: "Director's Note", value: directorsNote, inline: false });
       }
 
-      embed.setFooter({ text: 'MI BOMBO Studios' });
+      embed.setFooter({ text: 'Bombo Studios' });
 
       // Send to Bombo Times channel
       const bomboTimesChannel = message.guild?.channels.cache.get(CHANNELS.BOMBO_TIMES);

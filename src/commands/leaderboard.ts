@@ -18,9 +18,9 @@ export const leaderboardCommand: Command = {
     // Create embed
     const embed = new EmbedBuilder()
       .setTitle('<:ladder:1545126567145906246> TOP CAST')
-      .setDescription('The most active members of MI BOMBO Studios')
+      .setDescription('The most active members of Mi Bombo')
       .setColor(0x4900ff)
-      .setFooter({ text: 'MI BOMBO Studios' });
+      .setFooter({ text: 'Bombo Studios' });
 
     // Add leaderboard entries
     leaderboard.forEach((entry, index) => {

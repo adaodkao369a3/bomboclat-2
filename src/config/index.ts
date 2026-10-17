@@ -362,16 +362,16 @@ export const WELCOME_MESSAGES: string[] = [
 
 // Randomized booster ("Guest Star") message lines, sent to the red carpet channel.
 export const BOOST_MESSAGES: string[] = [
-  '{user} just boosted MI BOMBO Studios {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
+  '{user} just boosted Mi Bombo {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
   'Red carpet\'s rolled out for {user} {crown2} thanks for boosting. Guest Star, 40 residuals, custom gifs — all unlocked.',
   '{user} boosted the server {crown} that\'s Guest Star status unlocked, plus a 40 residual gift {money}.',
   'Big thanks to {user} for boosting {pink} — Guest Star role, 40 residuals, and custom gifs, all yours now.',
   '{user} just stepped onto the red carpet {sunglasses} Guest Star status and 40 residuals are locked in.',
-  'MI BOMBO Studios just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
+  'Mi Bombo just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
   '{user} boosted the server {money} that\'s a 40 residual thank-you gift and Guest Star perks headed your way.',
   'Thank you {user} for the boost {crown2} you\'re Guest Star now, 40 residuals and custom gifs unlocked.',
-  '{user} just gave MI BOMBO Studios a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
-  'Red carpet moment: {user} boosted MI BOMBO Studios {crown} Guest Star unlocked, 40 residuals gifted.',
+  '{user} just gave Mi Bombo a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
+  'Red carpet moment: {user} boosted Mi Bombo {crown} Guest Star unlocked, 40 residuals gifted.',
 ];
 
 // Database Schema

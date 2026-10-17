@@ -76,7 +76,7 @@ client.once('ready', async () => {
   // Schedule daily audit at 04:00 America/New_York
   scheduleDailyAudit();
   
-  console.log('🤖 MI BOMBO Studios is online!');
+  console.log('🎬 Bombo Studios is online.');
 });
 
 client.on('guildMemberAdd', async (member) => {

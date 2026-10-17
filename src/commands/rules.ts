@@ -40,7 +40,7 @@ export const rulesCommand: Command = {
 
     // 2. Server + Bomboclat / progression
     const serverEmbed = new EmbedBuilder()
-      .setTitle(`${EMOJIS.GLOSSY_STAR} MI BOMBO Studios`)
+      .setTitle(`${EMOJIS.GLOSSY_STAR} Bombo Studios`)
       .setDescription('════════════════\n' +
         '__**Welcome to the studio**__ — a place for **chat, games, gambling, bots, and a whole cast.**\n\n' +
         `${EMOJIS.POKEBALL_SUCCESS} __**PROGRESSION**__\n` +

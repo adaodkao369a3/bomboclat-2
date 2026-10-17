@@ -1,9 +1,46 @@
-import { EmbedBuilder, GuildMember } from 'discord.js';
+import { EmbedBuilder, GuildMember, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
 import { getNextProgressionThreshold } from '../services/xp.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
+import { getUnlockedPerks } from '../services/levelUpNotification.js';
+
+function getAvailableCommands(role: string): string[] {
+  const commands: string[] = [];
+
+  // Basic commands available to everyone
+  commands.push('`.profile` - View your studio profile');
+  commands.push('`.level` - Check your level and XP progress');
+  commands.push('`.res` - Get information about residuals');
+  commands.push('`.leaderboard` - View the XP leaderboard');
+  commands.push('`.residuals` - View the residuals leaderboard');
+  commands.push('`.help` - Get help with commands');
+  commands.push('`.rules` - View the server rules');
+
+  // Role-specific commands
+  if (role === 'hero' || role === 'champion' || role === 'guardian' ||
+      role === 'superhero' || role === 'anti_hero' || role === 'rogue' ||
+      role === 'renegade' || role === 'outlaw' || role === 'villain' ||
+      role === 'mastermind' || role === 'kingpin' || role === 'overlord' ||
+      role === 'tyrant' || role === 'emperor' || role === 'saint') {
+    commands.push('`.c <query>` - Custom GIF search (Hero+ perk)');
+  }
+
+  if (role === 'superhero' || role === 'anti_hero' || role === 'rogue' ||
+      role === 'renegade' || role === 'outlaw' || role === 'villain' ||
+      role === 'mastermind' || role === 'kingpin' || role === 'overlord' ||
+      role === 'tyrant' || role === 'emperor' || role === 'saint') {
+    commands.push('`.shop` - Access the rare shop (Superhero+ perk)');
+    commands.push('`.manage` - Manage your colors and archetypes');
+  }
+
+  if (role === 'emperor' || role === 'saint') {
+    commands.push('`.shop` - Access the mythic shop (Emperor/Saint perk)');
+  }
+
+  return commands;
+}
 
 export const profileCommand: Command = {
   name: 'profile',
@@ -67,8 +104,61 @@ export const profileCommand: Command = {
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields(fields)
-      .setFooter({ text: 'MI BOMBO Studios' });
+      .setFooter({ text: 'Bombo Studios' });
 
-    await message.reply({ embeds: [embed] });
+    // Create button
+    const row = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('toggle_commands')
+          .setLabel('Commands')
+          .setStyle(ButtonStyle.Primary)
+      );
+
+    const sentMessage = await message.reply({ embeds: [embed], components: [row] });
+
+    // Create button collector
+    const collector = sentMessage.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      time: 300000, // 5 minutes
+      filter: (i) => i.customId === 'toggle_commands' && i.user.id === message.author.id,
+    });
+
+    let showingCommands = false;
+
+    collector.on('collect', async (interaction) => {
+      if (!showingCommands) {
+        // Show commands
+        const availableCommands = getAvailableCommands(currentRole);
+        const perks = getUnlockedPerks(currentRole);
+
+        const commandsEmbed = new EmbedBuilder()
+          .setTitle('📋 Available Commands')
+          .setDescription(`**Your Role:** ${roleDisplay}\n\n**Commands:**\n${availableCommands.join('\n')}\n\n**Your Perks:**\n${perks.join('\n')}`)
+          .setColor(0x4900ff)
+          .setFooter({ text: 'Bombo Studios' });
+
+        const backRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('toggle_commands')
+              .setLabel('Back to Profile')
+              .setStyle(ButtonStyle.Secondary)
+          );
+
+        await interaction.update({ embeds: [commandsEmbed], components: [backRow] });
+        showingCommands = true;
+      } else {
+        // Show profile
+        await interaction.update({ embeds: [embed], components: [row] });
+        showingCommands = false;
+      }
+    });
+
+    collector.on('end', (_collected, reason) => {
+      if (reason === 'time') {
+        sentMessage.edit({ components: [] }).catch(console.error);
+      }
+    });
   },
 };

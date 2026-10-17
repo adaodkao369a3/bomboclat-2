@@ -54,7 +54,7 @@ export const resCommand: Command = {
         { name: 'Lifetime Earned', value: `\`${residualData.lifetime_earned.toLocaleString()}\``, inline: true },
         { name: 'Lifetime Spent', value: `\`${residualData.lifetime_spent.toLocaleString()}\``, inline: true },
       ])
-      .setFooter({ text: 'MI BOMBO Studios' });
+      .setFooter({ text: 'Bombo Studios' });
 
     await message.reply({ embeds: [embed] });
   },

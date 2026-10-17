@@ -10,7 +10,7 @@ function isRoleMilestone(level: number): boolean {
   return Object.values(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS).includes(level as any);
 }
 
-function getUnlockedPerks(role: string): string[] {
+export function getUnlockedPerks(role: string): string[] {
   switch (role) {
     case 'civilian':
       return ['🎬 Welcome to the cast! Start your journey.'];
@@ -149,7 +149,7 @@ export async function sendLevelUpNotification(
       : 'Keep going to unlock the next progression perk.';
 
     const embed = new EmbedBuilder()
-      .setTitle(result.roleChanged ? '<a:oldtelephone:1529443123602653225> PROMOTION ALERT!' : '<:greenglossytickcheckmark:1545126564247633970> LEVEL UP!')
+      .setTitle(result.roleChanged ? '<a:oldtelephone:1561008142169677954> PROMOTION ALERT!' : '<:greenglossytickcheckmark:1545126564247633970> LEVEL UP!')
       .setDescription(
         result.roleChanged
           ? `**${displayName}** has been promoted to <:ladder:1545126567145906246> **${formatRole(currentRole)}**!`
@@ -163,7 +163,7 @@ export async function sendLevelUpNotification(
         { name: 'Current Role', value: formatRole(currentRole), inline: true },
         { name: 'Perks Unlocked', value: perksText, inline: false },
       )
-      .setFooter({ text: 'MI BOMBO Studios' })
+      .setFooter({ text: 'Bombo Studios' })
       .setThumbnail(avatarUrl);
 
     const castingChannel = guild.channels.cache.get(CHANNELS.CASTING);
