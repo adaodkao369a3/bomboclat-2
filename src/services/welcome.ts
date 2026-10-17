@@ -69,7 +69,7 @@ export async function sendWelcomeMessage(member: GuildMember, testChannel?: any)
       .setDescription(line)
       .setColor(0x9b5de5)
       .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Member #${member.guild.memberCount} - Mi Bombo` })
+      .setFooter({ text: `Member #${member.guild.memberCount} - Bombo` })
       .setTimestamp();
 
     // Use welcome.png as the image
@@ -112,7 +112,7 @@ export async function sendBoosterThankYou(member: GuildMember, testChannel?: any
     const embed = new EmbedBuilder()
       .setDescription(line)
       .setColor(0xF47FFF)
-      .setFooter({ text: `Guest Star #${guestStarCountValue} - Mi Bombo` })
+      .setFooter({ text: `Guest Star #${guestStarCountValue} - Bombo` })
       .setTimestamp();
 
     // Use booster.png as the thumbnail (right side of embed)

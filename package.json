@@ -1,7 +1,7 @@
 {
   "name": "bomboclat",
   "version": "1.0.0",
-  "description": "TypeScript Discord bot for MI BOMBO Studios",
+  "description": "TypeScript Discord bot for Bombo Studios",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",

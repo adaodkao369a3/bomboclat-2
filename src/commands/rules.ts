@@ -4,8 +4,6 @@ import { Command } from './index.js';
 
 const RULES_GIF = 'https://i.pinimg.com/originals/13/c3/e8/13c3e803a85dff90e46d084990bc0fb1.gif';
 const BOMBOCLAT_GIF = 'https://i.pinimg.com/originals/68/f1/42/68f142cc473e62240c593f7290d263ab.gif';
-const BOCCHI_GIF = 'https://64.media.tumblr.com/472e8404c397f14fb0945b4f30f2b8f3/ad833584756fe657-27/s640x960/26afc151c01117a1906b592b15288001fc55c0d5.gif';
-const BOMBO_GAMES_GIF = 'https://i.pinimg.com/originals/1b/dc/23/1bdc2395fe777608278d713286b7aee1.gif';
 const ENDING_GIF = 'https://giffiles.alphacoders.com/221/221952.gif';
 
 export const rulesCommand: Command = {
@@ -18,7 +16,7 @@ export const rulesCommand: Command = {
 
     // 1. Discord server rules
     const rulesEmbed = new EmbedBuilder()
-      .setTitle(`${EMOJIS.STAR} WELCOME TO MI BOMBO`)
+      .setTitle(`${EMOJIS.STAR} WELCOME TO BOMBO`)
       .setDescription('════════════════\n'+
         'Before you step onto the set, here are a few things that keep the production fun for everyone\n\n' +
         '**1.** __**Respect the cast.**__ Treat everyone with basic respect; no harassment, bullying, or targeted abuse\n\n' +
@@ -34,7 +32,7 @@ export const rulesCommand: Command = {
       .setColor(0xffc919)
       .setImage(RULES_GIF)
       .setThumbnail(message.client.user?.displayAvatarURL() || null)
-      .setFooter({ text: 'Cameras are rolling. Get freaky up in here.' });
+      .setFooter({ text: 'Cameras are rolling.' });
 
     await channel.send({ embeds: [rulesEmbed] });
 
@@ -84,55 +82,13 @@ export const rulesCommand: Command = {
 
     await channel.send({ embeds: [serverEmbed] });
 
-    // 3. Bocchi AI
-    const bocchiEmbed = new EmbedBuilder()
-      .setTitle('<:nosapechi:1545822258960801863> MEET BOCCHI CHAN') // Keeping bocchi-specific emojis as they're not in the main config
-      .setDescription('════════════════\n\n' +
-        '__**Bocchi**__ is __**MI BOMBO**__\'s own AI companion, made to be a fun, awkward little presence around the studio.\n\n' +
-        '<:bocchilike:1545822253759856782> __**AI Companion**__ — Shy, awkward, introverted, and genuinely kind.\n\n' +
-        '<:sapechi:1545822261880033360> __**Context Aware**__ — Understands conversations and remembers useful details when eligible.\n\n' +
-        '<a:bocchicringe:1545822251704651917> __**Reactions**__ — Joins in with memes, GIFs, deadpan humor, and occasional panic.\n\n' +
-        '<a:bocchicampuchia:1545822249582596116> __**Personality**__ — Short, awkward, deadpan, and a little absurd.\n\n' +
-        'Basically treat her like another member of the cast. She might answer normally. She might panic. Probably both. <:kirakirachi:1545822256473571418>' 
-      )
-      .setColor(0xffbdfb)
-      .setImage(BOCCHI_GIF)
-      .setFooter({ text: 'Please be nice to Bocchi. She is trying her best.' });
-
-    await channel.send({ embeds: [bocchiEmbed] });
-
-
-    // 4. Bombo Games
-    const gamesEmbed = new EmbedBuilder()
-      .setTitle('<:bob:1545825919770300506> BOMBO GAMES')
-      .setDescription('════════════════\n\n' +
-        '__**Bombo Games**__ is MI BOMBO\'s chaotic game-night bot — built for competition, gambling, and messing around with friends\n' +
-        
-        '<:swords:1545829059978858516> __**Multiplayer**__ — Wordle, duels, trials, Impostor, Simon Says & more\n' +
-        '<:cards:1545829082196086904> __**Gambling**__ — Slots, blackjack, dice, roulette, bombs & coin flips\n' +
-        '<a:cd:1543859826113908786> __**Wheels**__ — PFP, Truth or Dare, Punishment & Acting\n' +
-        `${EMOJIS.DCROWN} __**Titles & Quizzes**__ — Compete for unique titles and test your knowledge\n` +
-        '<:rod:1545829066760921268> __**Fishing**__ — Cast a line and see what you catch <a:fish:1545829080149262456>\n' +
-        '<:quote1:1545829064391000184> __**Quotes**__ — Turn memorable messages into quotes <:quote2:1545829062021353512>\n' +
-        `${EMOJIS.BOMBOCOIN} __**Bombo Coins**__ — Earn, spend, compete, and build your balance\n\n` +
-        'Theres always something to play, and the arcade keeps growing.\n\n' +
-        'Use __**.help**__ to see the current games and features'
-      )
-      .setColor(0xff0000)
-      .setImage(BOMBO_GAMES_GIF)
-      .setFooter({ text: 'The arcade is open. Do try to lose everything.' });
-
-    await channel.send({ embeds: [gamesEmbed] });
-
-
-
-    // 5. Closing / studio welcome
+    // 3. Closing / studio welcome
     const endingEmbed = new EmbedBuilder()
       .setTitle(`${EMOJIS.STARICON} THAT'S A WRAP`)
       .setDescription('════════════════\n\n' +
         'And that\'s the production.\n\n' +
         'Well, that\'s pretty much everything.\n\n' +
-        'Find your people. Join the conversation. Try the games. Talk to the bots. Make something ridiculous.\n\n' +
+        'Find your people. Join the conversation. Make something ridiculous.\n\n' +
         'There is no script for what happens next.\n' +
         '════════════════\n\n' +
         '**The rest is up to you. You\'re part of the cast now.**\n' +
@@ -140,7 +96,7 @@ export const rulesCommand: Command = {
       )
       .setColor(0x14dcff)
       .setImage(ENDING_GIF)
-      .setFooter({ text: 'Welcome to the studio. mi bomboclat...' });
+      .setFooter({ text: 'Welcome to the studio. bomboclat...' });
 
     await channel.send({ embeds: [endingEmbed] });
   },

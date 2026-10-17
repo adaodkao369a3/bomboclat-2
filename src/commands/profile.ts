@@ -105,7 +105,7 @@ export const profileCommand: Command = {
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields(fields)
-      .setFooter({ text: 'MI BOMBO Studios' });
+      .setFooter({ text: 'Bombo Studios' });
 
     // Create button
     const row = new ActionRowBuilder<ButtonBuilder>()
@@ -137,7 +137,7 @@ export const profileCommand: Command = {
           .setTitle('📋 Available Commands')
           .setDescription(`**Your Role:** ${roleDisplay}\n\n**Commands:**\n${availableCommands.join('\n')}\n\n**Your Perks:**\n${perks.join('\n')}`)
           .setColor(0x4900ff)
-          .setFooter({ text: 'MI BOMBO Studios' });
+          .setFooter({ text: 'Bombo Studios' });
 
         const backRow = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(

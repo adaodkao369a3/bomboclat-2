@@ -107,7 +107,7 @@ export const EMOJIS = {
   DCROWN: '<a:dcrown:1545829074956591234>',
   ORANGE_HEART: '<a:orangeheartexclaim:1529443126328950785>',
   PINK_HEART: '<a:pinkheartexclaim:1529443130104090734>',
-  PROFILE: '<:profile:1561014903660093440>',
+  PROFILE: '<:profile:1561015893150924850>',
 };
 
 // XP Configuration
@@ -349,30 +349,30 @@ export const EMOJI_REVIEW_CHANNEL_ID = '1545394590851276891';
 
 // Randomized welcome message lines. {user} = mention, {count} = member number.
 export const WELCOME_MESSAGES: string[] = [
-  '{user} just walked onto the set. Welcome to Mi Bombo <:theatre:1558592490662138017> — introduce yourself and start your journey from Audience to Lead Cast <a:typing:1558592831914909830>.',
-  'Say hello to {user}, our newest face at Mi Bombo <a:blobsunglasses:1558593448506822768>. Your story starts here <a:sparkles:1558594196921909278>.',
-  '{user} has entered the building <a:sparklyheart:1558593730943131748> — welcome to Mi Bombo. Grab a seat, the show is just getting started <:theatre:1558592490662138017>.',
-  'The casting call is complete — {user} is officially part of Mi Bombo <:mikucool:1558595810889957377>.',
-  'New face on set: {user} <a:blobsunglasses:1558593448506822768> Welcome to Mi Bombo. Make yourself at home <:theatre:1558592490662138017>.',
-  '{user} just joined Mi Bombo. Member #{count} <a:typing:1558592831914909830> — the community keeps growing <a:sparkles:1558594196921909278>.',
-  'The spotlight welcomes {user} to Mi Bombo <a:sparklyheart:1558593730943131748>. Glad to have you here <:theatre:1558592490662138017>.',
-  '{user} has arrived on set. Mi Bombo welcomes its newest star <a:blobsunglasses:1558593448506822768><a:sparkles:1558594196921909278>.',
-  'One more face, one more story — welcome to Mi Bombo, {user} <:mikucool:1558595810889957377>.',
-  '{user} is officially part of the Mi Bombo cast <a:typing:1558592831914909830>. Let\'s see where your story takes you <:theatre:1558592490662138017>.',
+  '{user} just walked onto the set. Welcome to Bombo <:theatre:1558592490662138017> — introduce yourself and start your journey from Audience to Lead Cast <a:typing:1558592831914909830>.',
+  'Say hello to {user}, our newest face at Bombo <a:blobsunglasses:1558593448506822768>. Your story starts here <a:sparkles:1558594196921909278>.',
+  '{user} has entered the building <a:sparklyheart:1558593730943131748> — welcome to Bombo. Grab a seat, the show is just getting started <:theatre:1558592490662138017>.',
+  'The casting call is complete — {user} is officially part of Bombo <:mikucool:1558595810889957377>.',
+  'New face on set: {user} <a:blobsunglasses:1558593448506822768> Welcome to Bombo. Make yourself at home <:theatre:1558592490662138017>.',
+  '{user} just joined Bombo. Member #{count} <a:typing:1558592831914909830> — the community keeps growing <a:sparkles:1558594196921909278>.',
+  'The spotlight welcomes {user} to Bombo <a:sparklyheart:1558593730943131748>. Glad to have you here <:theatre:1558592490662138017>.',
+  '{user} has arrived on set. Bombo welcomes its newest star <a:blobsunglasses:1558593448506822768><a:sparkles:1558594196921909278>.',
+  'One more face, one more story — welcome to Bombo, {user} <:mikucool:1558595810889957377>.',
+  '{user} is officially part of the Bombo cast <a:typing:1558592831914909830>. Let\'s see where your story takes you <:theatre:1558592490662138017>.',
 ];
 
 // Randomized booster ("Guest Star") message lines, sent to the red carpet channel.
 export const BOOST_MESSAGES: string[] = [
-  '{user} just boosted Mi Bombo {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
+  '{user} just boosted Bombo {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
   'Red carpet\'s rolled out for {user} {crown2} thanks for boosting. Guest Star, 40 residuals, custom gifs — all unlocked.',
   '{user} boosted the server {crown} that\'s Guest Star status unlocked, plus a 40 residual gift {money}.',
   'Big thanks to {user} for boosting {pink} — Guest Star role, 40 residuals, and custom gifs, all yours now.',
   '{user} just stepped onto the red carpet {sunglasses} Guest Star status and 40 residuals are locked in.',
-  'Mi Bombo just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
+  'Bombo just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
   '{user} boosted the server {money} that\'s a 40 residual thank-you gift and Guest Star perks headed your way.',
   'Thank you {user} for the boost {crown2} you\'re Guest Star now, 40 residuals and custom gifs unlocked.',
-  '{user} just gave Mi Bombo a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
-  'Red carpet moment: {user} boosted Mi Bombo {crown} Guest Star unlocked, 40 residuals gifted.',
+  '{user} just gave Bombo a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
+  'Red carpet moment: {user} boosted Bombo {crown} Guest Star unlocked, 40 residuals gifted.',
 ];
 
 // Database Schema
