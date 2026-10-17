@@ -5,6 +5,7 @@ import { getNextProgressionThreshold } from '../services/xp.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { Command } from './index.js';
 import { getUnlockedPerks } from '../services/levelUpNotification.js';
+import { EMOJIS } from '../config/index.js';
 
 function getAvailableCommands(role: string): string[] {
   const commands: string[] = [];
@@ -99,12 +100,12 @@ export const profileCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle('<:star:1545002693368750193> STUDIO PROFILE')
+      .setTitle(`${EMOJIS.PROFILE} STUDIO PROFILE`)
       .setDescription(`**${target.displayName}**\n\`${roleDisplay}\``)
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields(fields)
-      .setFooter({ text: 'Bombo Studios' });
+      .setFooter({ text: 'MI BOMBO Studios' });
 
     // Create button
     const row = new ActionRowBuilder<ButtonBuilder>()
@@ -136,7 +137,7 @@ export const profileCommand: Command = {
           .setTitle('📋 Available Commands')
           .setDescription(`**Your Role:** ${roleDisplay}\n\n**Commands:**\n${availableCommands.join('\n')}\n\n**Your Perks:**\n${perks.join('\n')}`)
           .setColor(0x4900ff)
-          .setFooter({ text: 'Bombo Studios' });
+          .setFooter({ text: 'MI BOMBO Studios' });
 
         const backRow = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(

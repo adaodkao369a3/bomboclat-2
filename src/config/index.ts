@@ -107,6 +107,7 @@ export const EMOJIS = {
   DCROWN: '<a:dcrown:1545829074956591234>',
   ORANGE_HEART: '<a:orangeheartexclaim:1529443126328950785>',
   PINK_HEART: '<a:pinkheartexclaim:1529443130104090734>',
+  PROFILE: '<:profile:1561014903660093440>',
 };
 
 // XP Configuration
