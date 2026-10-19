@@ -9,7 +9,7 @@ import {
   AttachmentBuilder,
   TextChannel,
 } from 'discord.js';
-import { CHANNELS, ROLES } from '../config/index.js';
+import { CHANNELS, ROLES, EMOJIS } from '../config/index.js';
 import type { Guild, GuildMember, Role } from 'discord.js';
 import { getUser } from '../database/client.js';
 import {
@@ -648,7 +648,7 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
           const roleName = member?.guild.roles.cache.get(archetype.role_id || '')?.name || archetypeRoleName(archetype.name, archetype.tier);
           let message = `${isFreeGrant ? '✅ Free archetype claimed successfully!' : '✅ Archetype purchased successfully!'}`;
           if (result.refund && result.refund > 0) {
-            message += `\n<a:cash:1545126549035024524> Refunded ${result.refund} residuals (50% of previous archetype)`;
+            message += `\n${EMOJIS.CASH} Refunded ${result.refund} residuals (50% of previous archetype)`;
           }
           message += roleAssigned ? `\n<:3dmovie:1542345279070806067> Role assigned: **${roleName}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
           

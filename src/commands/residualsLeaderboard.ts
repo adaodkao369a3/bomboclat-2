@@ -23,7 +23,19 @@ export const residualsLeaderboardCommand: Command = {
     const userId = message.author.id;
 
     // Fetch all guild members to filter leaderboard
-    const guildMembers = await message.guild.members.fetch();
+    let guildMembers;
+    try {
+      guildMembers = await message.guild.members.fetch();
+    } catch (error: any) {
+      if (error.code === 130000) { // Rate limit error
+        await message.reply('⏳ The bot is being rate limited. Please try again in a few seconds.');
+        return;
+      }
+      console.error('Error fetching guild members:', error);
+      await message.reply('❌ Failed to fetch guild members. Please try again later.');
+      return;
+    }
+
     const guildMemberIds = new Set(guildMembers.map(m => m.user.id));
 
     // Fetch all leaderboard entries (no pagination yet)
@@ -108,7 +120,7 @@ function createLeaderboardEmbed(
   total: number
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
-    .setTitle('<:coin:1545126549035024524> RESIDUALS LEADERBOARD')
+    .setTitle('<a:cash:1545126549035024524> RESIDUALS LEADERBOARD')
     .setDescription(`The wealthiest members of Bombo Studios`)
     .setColor(0xFFD700)
     .setFooter({ text: `Page ${page}/${totalPages} • ${total} members with residuals` });

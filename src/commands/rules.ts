@@ -16,7 +16,7 @@ export const rulesCommand: Command = {
 
     // 1. Discord server rules
     const rulesEmbed = new EmbedBuilder()
-      .setTitle(`${EMOJIS.STAR} WELCOME TO BOMBO`)
+      .setTitle(`${EMOJIS.STAR} WELCOME TO MI BOMBO`)
       .setDescription('════════════════\n'+
         'Before you step onto the set, here are a few things that keep the production fun for everyone\n\n' +
         '**1.** __**Respect the cast.**__ Treat everyone with basic respect; no harassment, bullying, or targeted abuse\n\n' +
@@ -41,7 +41,7 @@ export const rulesCommand: Command = {
       .setTitle(`${EMOJIS.GLOSSY_STAR} Bombo Studios`)
       .setDescription('════════════════\n' +
         '__**Welcome to the studio**__ — a place for **chat, games, gambling, bots, and a whole cast.**\n\n' +
-        `${EMOJIS.POKEBALL_SUCCESS} __**PROGRESSION**__\n` +
+        `<:rightarrow:1558430026624536656> __**PROGRESSION**__\n` +
         'Earn **XP** through normal activity and climb the cast ladder. Every level brings a new role, higher status, and **perks to unlock.**\n\n' +
         `${EMOJIS.GREEN_GLOSSY_TICK} __**LEVEL PERKS**__\n` +
         'Each **level** comes with its own **perks and unlocks.** Use __**.level**__ to check your current level, progress, and available perks. ' + `${EMOJIS.HEARTICON}\n\n` +
@@ -63,7 +63,7 @@ export const rulesCommand: Command = {
         '　' + `${EMOJIS.LADDER} **Sidekick**\n` +
         `${EMOJIS.LADDER} **Civilian** ${EMOJIS.CIVILIAN}\n\n` +
         `${EMOJIS.CASH} __**RESIDUALS**__\n` +
-        'Your studio currency. **Earn Residuals through progression and activities, then spend them in the shop ' + `${EMOJIS.MONEY}**\n\n` +
+        'Your studio currency. **Earn Residuals through progression and activities, then spend them in the shop ' + `${EMOJIS.CASH}**\n\n` +
         '__**Shop: **__\n' +
         `${EMOJIS.CROWN2} Buy __**custom roles**__\n` +
         `${EMOJIS.PALETTE} Buy __**custom colors**__\n\n` +

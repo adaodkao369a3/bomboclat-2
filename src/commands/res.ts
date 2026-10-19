@@ -45,12 +45,12 @@ export const resCommand: Command = {
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle(`${EMOJIS.MONEY} Residuals`)
+      .setTitle(`${EMOJIS.CASH} Residuals`)
       .setDescription(`**${target.displayName}**`)
       .setColor(0x4900ff)
       .setThumbnail(target.user.displayAvatarURL())
       .addFields([
-        { name: `${EMOJIS.MONEY} Current Balance`, value: `\`${residualData.balance.toLocaleString()}\``, inline: true },
+        { name: `${EMOJIS.CASH} Current Balance`, value: `\`${residualData.balance.toLocaleString()}\``, inline: true },
         { name: 'Lifetime Earned', value: `\`${residualData.lifetime_earned.toLocaleString()}\``, inline: true },
         { name: 'Lifetime Spent', value: `\`${residualData.lifetime_spent.toLocaleString()}\``, inline: true },
       ])
