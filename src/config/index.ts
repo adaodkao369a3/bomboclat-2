@@ -512,6 +512,18 @@ ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS min_level INTEGER DEFAULT 0;
 ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
 ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
 
+-- Part 3: Drop old price_band column that is no longer used
+DO $$
+BEGIN
+  ALTER TABLE shop_colors ALTER COLUMN price_band DROP NOT NULL;
+EXCEPTION
+  WHEN undefined_column THEN
+    -- Column already dropped or doesn't exist, continue
+    NULL;
+END $$;
+
+ALTER TABLE shop_colors DROP COLUMN IF EXISTS price_band;
+
 -- Unique index to prevent double-charging on color purchases
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_colors_unique ON user_colors(user_id, color_id);
 
