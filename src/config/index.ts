@@ -476,6 +476,7 @@ ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS min_level INTEGER DEFAULT 0
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS max_holders INTEGER;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS monthly BOOLEAN DEFAULT false;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
 
 -- Part 4: Drop old columns that are no longer used
 -- First drop NOT NULL constraint from slot_group
