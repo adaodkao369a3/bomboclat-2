@@ -477,6 +477,22 @@ ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS max_holders INTEGER;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS monthly BOOLEAN DEFAULT false;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
 
+-- Part 4: Drop old columns that are no longer used
+-- First drop NOT NULL constraint from slot_group
+DO $$
+BEGIN
+  ALTER TABLE shop_archetypes ALTER COLUMN slot_group DROP NOT NULL;
+EXCEPTION
+  WHEN undefined_column THEN
+    -- Column already dropped or doesn't exist, continue
+    NULL;
+END $$;
+
+-- Then drop the old columns (safe to run multiple times)
+ALTER TABLE shop_archetypes DROP COLUMN IF EXISTS min_role;
+ALTER TABLE shop_archetypes DROP COLUMN IF EXISTS slot_group;
+ALTER TABLE shop_archetypes DROP COLUMN IF EXISTS image_url;
+
 -- Shop colors table
 CREATE TABLE IF NOT EXISTS shop_colors (
   id SERIAL PRIMARY KEY,
