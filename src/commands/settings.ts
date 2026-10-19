@@ -22,6 +22,30 @@ export const settingsCommand: Command = {
     const key = subcommand;
     const action = args[1]?.toLowerCase();
 
+    // Handle unknown_entity_powers subcommand
+    if (key === 'unknown_entity_powers') {
+      if (action === 'get' || !action) {
+        const value = await getSetting('unknown_entity_powers');
+        const isEnabled = value === 'true';
+        await message.reply(`📝 Unknown Entity powers: ${isEnabled ? '✅ ENABLED' : '❌ DISABLED'}`);
+        return;
+      }
+
+      if (action === 'set') {
+        const newValue = args[2]?.toLowerCase();
+        if (newValue !== 'true' && newValue !== 'false') {
+          await message.reply('❌ Please provide "true" or "false". Usage: $settings unknown_entity_powers set <true|false>');
+          return;
+        }
+        await setSetting('unknown_entity_powers', newValue, message.author.id);
+        await message.reply(`✅ Unknown Entity powers ${newValue === 'true' ? 'ENABLED' : 'DISABLED'}`);
+        return;
+      }
+
+      await message.reply('❌ Usage: $settings unknown_entity_powers <get|set> [true|false]');
+      return;
+    }
+
     // Handle clip_channels subcommand
     if (key === 'clip_channels') {
       const clipAction = action || 'list';

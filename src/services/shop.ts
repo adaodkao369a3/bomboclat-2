@@ -1,28 +1,16 @@
-import { join } from 'path';
 import { getClient } from '../database/client.js';
-
-// Local archetype artwork lives in the `image/` folder at the project root
-// (same place assets/fonts/Roboto-Bold.ttf lives) instead of being hotlinked
-// from random sites, which was fragile (dead links, rate limits, hotlink
-// blocks). Files are loaded straight off disk in shopImages.ts.
-const IMAGE_DIR = join(process.cwd(), 'image');
-const archetypeImage = (filename: string): string => join(IMAGE_DIR, filename);
-
-// Shared color pricing so purchase, sale, and display logic never drift
-// out of sync with each other.
-export const COLOR_PRICE_MAP: Record<string, number> = { common: 200, uncommon: 500, rare: 800 };
-export function getColorPrice(priceBand: string): number {
-  return COLOR_PRICE_MAP[priceBand] || 200;
-}
+import { COLORS_CONFIG, RETIRED_COLORS } from '../config/colors.js';
+import { ARCHETYPES_CONFIG } from '../config/archetypes.js';
 
 export interface ShopArchetype {
   id: number;
   name: string;
   tier: string;
   price: number;
-  min_role: string | null;
-  slot_group: string;
-  image_url: string | null;
+  min_level: number;
+  max_holders: number | null;
+  monthly: boolean;
+  active: boolean;
   role_id: string | null;
 }
 
@@ -30,7 +18,11 @@ export interface ShopColor {
   id: number;
   name: string;
   hex: string;
-  price_band: string;
+  price: number;
+  tier: string;
+  min_level: number;
+  active: boolean;
+  sort_order: number;
   role_id: string | null;
 }
 
@@ -41,6 +33,9 @@ export interface UserArchetype {
   slot_index: number;
   acquired_at: Date;
   free_grant: boolean;
+  name: string;
+  tier: string;
+  price: number;
 }
 
 export interface UserColor {
@@ -50,64 +45,41 @@ export interface UserColor {
   active: boolean;
   acquired_at: Date;
   free_grant: boolean;
+  name: string;
+  hex: string;
+  price: number;
 }
 
 // Seed shop archetypes (idempotent).
-//
-// image_url is intentionally left blank here for each entry — this is where
-// real archetype artwork gets filled in directly in code (not via .env).
-// Fill in a URL per archetype below, redeploy, and it will pick up automatically
-// (the ON CONFLICT DO UPDATE below means editing values here and redeploying
-// updates existing rows, it isn't just a first-boot insert).
 export async function seedShopArchetypes(): Promise<void> {
   const client = await getClient();
   try {
-    // "Documentary Host" was renamed to "Ceo of Sex" (meme reference, not an
-    // NSFW role). Rename the row in place first so its id, role_id, and any
-    // existing owners carry over instead of leaving an orphaned old row and
-    // creating a brand new one on the ON CONFLICT (name) upsert below.
-    await client.query(
-      `UPDATE shop_archetypes SET name = 'Ceo of Sex'
-       WHERE name = 'Documentary Host'
-         AND NOT EXISTS (SELECT 1 FROM shop_archetypes WHERE name = 'Ceo of Sex')`
-    );
+    // First, delete all old archetypes (nobody owns any, so safe to remove)
+    await client.query('DELETE FROM shop_archetypes');
 
-    const archetypes: Omit<ShopArchetype, 'id'>[] = [
-      // Standard archetypes - Category 1 (6 types × 5 slots each = 30 total)
-      { name: 'Comedy Relief', tier: 'standard', price: 200, min_role: null, slot_group: 'comedy', image_url: archetypeImage('Comedy Relief.jpg'), role_id: null },
-      { name: 'Drama King', tier: 'standard', price: 250, min_role: null, slot_group: 'drama', image_url: archetypeImage('drama king.png'), role_id: null },
-      { name: 'Action Hero', tier: 'standard', price: 300, min_role: null, slot_group: 'action', image_url: archetypeImage('action hero.jpg'), role_id: null },
-      { name: 'Romantic Lead', tier: 'standard', price: 350, min_role: null, slot_group: 'romance', image_url: archetypeImage('romantic lead.jpg'), role_id: null },
-      { name: 'Mystery Solver', tier: 'standard', price: 400, min_role: null, slot_group: 'mystery', image_url: archetypeImage('mystery solver.jpg'), role_id: null },
-      { name: 'Sci-Fi Explorer', tier: 'standard', price: 220, min_role: null, slot_group: 'scifi', image_url: archetypeImage('scifi.jpg'), role_id: null },
-      // Standard archetypes - Category 2 (4 types × 5 slots each = 20 total)
-      { name: 'Fantasy Mage', tier: 'standard2', price: 280, min_role: null, slot_group: 'fantasy', image_url: archetypeImage('mage.jpg'), role_id: null },
-      { name: 'Horror Survivor', tier: 'standard2', price: 320, min_role: null, slot_group: 'horror', image_url: archetypeImage('horror survivor.jpg'), role_id: null },
-      { name: 'Thriller Spy', tier: 'standard2', price: 380, min_role: null, slot_group: 'thriller', image_url: archetypeImage('thriller spy.jpg'), role_id: null },
-      // Legendary archetypes (6 types × 1-2 slots each)
-      { name: 'Cinematic Legend', tier: 'legendary', price: 1000, min_role: null, slot_group: 'legendary', image_url: archetypeImage('cinematic legen.jpg'), role_id: null },
-      { name: 'Box Office Star', tier: 'legendary', price: 1200, min_role: null, slot_group: 'boxoffice', image_url: archetypeImage('box offic.jpg'), role_id: null },
-      { name: 'Award Winner', tier: 'legendary', price: 1500, min_role: null, slot_group: 'awards', image_url: archetypeImage('award winner.jpg'), role_id: null },
-      { name: 'Cult Classic', tier: 'legendary', price: 1800, min_role: null, slot_group: 'cult', image_url: archetypeImage('cult classic.png'), role_id: null },
-      { name: 'Festival Favorite', tier: 'legendary', price: 2000, min_role: null, slot_group: 'festival', image_url: archetypeImage('festival favorite.jpg'), role_id: null },
-      { name: 'Ceo of Sex', tier: 'legendary', price: 450, min_role: null, slot_group: 'documentary', image_url: archetypeImage('ceo of sex.jpg'), role_id: null },
-      // Mythic archetypes (gate behind Lead Cast)
-      { name: 'Director\'s Cut', tier: 'mythic', price: 5000, min_role: 'lead_cast', slot_group: 'mythic', image_url: archetypeImage('directors cut.jpg'), role_id: null },
-      { name: 'Oscar Winner', tier: 'mythic', price: 7500, min_role: 'lead_cast', slot_group: 'mythic', image_url: archetypeImage('oscar winner.jpg'), role_id: null },
-    ];
-
-    for (const archetype of archetypes) {
+    // Insert new archetypes from config
+    for (const archetypeConfig of ARCHETYPES_CONFIG) {
       await client.query(
-        `INSERT INTO shop_archetypes (name, tier, price, min_role, slot_group, image_url, role_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO shop_archetypes (name, tier, price, min_level, max_holders, monthly, active, role_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (name) DO UPDATE SET
            tier = EXCLUDED.tier,
            price = EXCLUDED.price,
-           min_role = EXCLUDED.min_role,
-           slot_group = EXCLUDED.slot_group,
-           image_url = NULLIF(EXCLUDED.image_url, ''),
+           min_level = EXCLUDED.min_level,
+           max_holders = EXCLUDED.max_holders,
+           monthly = EXCLUDED.monthly,
+           active = EXCLUDED.active,
            role_id = COALESCE(EXCLUDED.role_id, shop_archetypes.role_id)`,
-        [archetype.name, archetype.tier, archetype.price, archetype.min_role, archetype.slot_group, archetype.image_url || null, archetype.role_id || null]
+        [
+          archetypeConfig.name,
+          archetypeConfig.tier,
+          archetypeConfig.price,
+          archetypeConfig.minLevel,
+          archetypeConfig.maxHolders,
+          archetypeConfig.monthly,
+          true, // active
+          null, // role_id will be set by $shop
+        ]
       );
     }
   } finally {
@@ -119,39 +91,39 @@ export async function seedShopArchetypes(): Promise<void> {
 export async function seedShopColors(): Promise<void> {
   const client = await getClient();
   try {
-    const colors: Omit<ShopColor, 'id'>[] = [
-      // Common colors (200-400 range)
-      { name: 'Crimson Red', hex: '#DC143C', price_band: 'common', role_id: null },
-      { name: 'Ocean Blue', hex: '#4169E1', price_band: 'common', role_id: null },
-      { name: 'Forest Green', hex: '#228B22', price_band: 'common', role_id: null },
-      { name: 'Golden Yellow', hex: '#FFD700', price_band: 'common', role_id: null },
-      { name: 'Royal Purple', hex: '#7851A9', price_band: 'common', role_id: null },
-      { name: 'Hot Pink', hex: '#FF69B4', price_band: 'common', role_id: null },
-      // Uncommon colors (400-700 range)
-      { name: 'Sapphire', hex: '#0F52BA', price_band: 'uncommon', role_id: null },
-      { name: 'Emerald', hex: '#50C878', price_band: 'uncommon', role_id: null },
-      { name: 'Ruby', hex: '#E0115F', price_band: 'uncommon', role_id: null },
-      { name: 'Amethyst', hex: '#9966CC', price_band: 'uncommon', role_id: null },
-      { name: 'Topaz', hex: '#FFC87C', price_band: 'uncommon', role_id: null },
-      { name: 'Turquoise', hex: '#40E0D0', price_band: 'uncommon', role_id: null },
-      // Rare colors (700-1000 range)
-      { name: 'Diamond White', hex: '#F0F8FF', price_band: 'rare', role_id: null },
-      { name: 'Midnight Black', hex: '#191970', price_band: 'rare', role_id: null },
-      { name: 'Sunset Orange', hex: '#FF4500', price_band: 'rare', role_id: null },
-      { name: 'Aurora Green', hex: '#00FF7F', price_band: 'rare', role_id: null },
-      { name: 'Platinum Silver', hex: '#E5E4E2', price_band: 'rare', role_id: null },
-      { name: 'Galaxy Purple', hex: '#4B0082', price_band: 'rare', role_id: null },
-    ];
-
-    for (const color of colors) {
+    // First, set all retired colors to inactive
+    for (const retiredName of RETIRED_COLORS) {
       await client.query(
-        `INSERT INTO shop_colors (name, hex, price_band, role_id)
-         VALUES ($1, $2, $3, $4)
+        `UPDATE shop_colors
+         SET active = false
+         WHERE name = $1`,
+        [retiredName]
+      );
+    }
+
+    // Insert or update new colors from config
+    for (const colorConfig of COLORS_CONFIG) {
+      await client.query(
+        `INSERT INTO shop_colors (name, hex, price, tier, min_level, active, sort_order, role_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (name) DO UPDATE SET
            hex = EXCLUDED.hex,
-           price_band = EXCLUDED.price_band,
+           price = EXCLUDED.price,
+           tier = EXCLUDED.tier,
+           min_level = EXCLUDED.min_level,
+           active = EXCLUDED.active,
+           sort_order = EXCLUDED.sort_order,
            role_id = COALESCE(EXCLUDED.role_id, shop_colors.role_id)`,
-        [color.name, color.hex, color.price_band, color.role_id || null]
+        [
+          colorConfig.name,
+          colorConfig.hex,
+          colorConfig.price,
+          colorConfig.tier,
+          colorConfig.minLevel,
+          true, // active
+          colorConfig.sortOrder,
+          null, // role_id will be set by $shop
+        ]
       );
     }
   } finally {
@@ -163,19 +135,75 @@ export async function seedShopColors(): Promise<void> {
 export async function getShopArchetypes(): Promise<ShopArchetype[]> {
   const client = await getClient();
   try {
-    const result = await client.query('SELECT * FROM shop_archetypes ORDER BY tier, price');
+    const result = await client.query('SELECT * FROM shop_archetypes WHERE active = true ORDER BY sort_order, name');
     return result.rows;
   } finally {
     client.release();
   }
 }
 
-// Get all shop colors
+// Get archetypes grouped by tier with holder counts
+export async function getShopArchetypesByTier(): Promise<Record<string, (ShopArchetype & { currentHolders: number })[]>> {
+  const client = await getClient();
+  try {
+    const result = await client.query(
+      `SELECT sa.*, COUNT(ua.user_id) as current_holders
+       FROM shop_archetypes sa
+       LEFT JOIN user_archetypes ua ON sa.id = ua.archetype_id
+       WHERE sa.active = true
+       GROUP BY sa.id
+       ORDER BY sa.sort_order, sa.name`
+    );
+    const archetypes = result.rows as (ShopArchetype & { current_holders: string })[];
+    const grouped: Record<string, (ShopArchetype & { currentHolders: number })[]> = {};
+
+    for (const archetype of archetypes) {
+      if (!grouped[archetype.tier]) {
+        grouped[archetype.tier] = [];
+      }
+      grouped[archetype.tier].push({
+        ...archetype,
+        currentHolders: parseInt(archetype.current_holders),
+      });
+    }
+
+    return grouped;
+  } finally {
+    client.release();
+  }
+}
+
+// Get all shop colors (only active ones)
 export async function getShopColors(): Promise<ShopColor[]> {
   const client = await getClient();
   try {
-    const result = await client.query('SELECT * FROM shop_colors ORDER BY price_band, name');
+    const result = await client.query(
+      'SELECT * FROM shop_colors WHERE active = true ORDER BY sort_order, name'
+    );
     return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
+// Get colors grouped by tier
+export async function getShopColorsByTier(): Promise<Record<string, ShopColor[]>> {
+  const client = await getClient();
+  try {
+    const result = await client.query(
+      'SELECT * FROM shop_colors WHERE active = true ORDER BY sort_order, name'
+    );
+    const colors = result.rows as ShopColor[];
+    const grouped: Record<string, ShopColor[]> = {};
+
+    for (const color of colors) {
+      if (!grouped[color.tier]) {
+        grouped[color.tier] = [];
+      }
+      grouped[color.tier].push(color);
+    }
+
+    return grouped;
   } finally {
     client.release();
   }
@@ -186,7 +214,7 @@ export async function getUserArchetypes(userId: string): Promise<UserArchetype[]
   const client = await getClient();
   try {
     const result = await client.query(
-      `SELECT ua.*, sa.name, sa.tier, sa.slot_group, sa.price
+      `SELECT ua.*, sa.name, sa.tier, sa.price
        FROM user_archetypes ua
        JOIN shop_archetypes sa ON ua.archetype_id = sa.id
        WHERE ua.user_id = $1
@@ -204,7 +232,7 @@ export async function getUserColors(userId: string): Promise<UserColor[]> {
   const client = await getClient();
   try {
     const result = await client.query(
-      `SELECT uc.*, sc.name, sc.hex, sc.price_band
+      `SELECT uc.*, sc.name, sc.hex, sc.price
        FROM user_colors uc
        JOIN shop_colors sc ON uc.color_id = sc.id
        WHERE uc.user_id = $1
@@ -217,88 +245,7 @@ export async function getUserColors(userId: string): Promise<UserColor[]> {
   }
 }
 
-const SHOP_SLOT_CAPS: Record<string, number> = {
-  comedy: 5,
-  drama: 5,
-  action: 5,
-  romance: 5,
-  mystery: 5,
-  scifi: 5,
-  fantasy: 5,
-  horror: 5,
-  thriller: 5,
-  legendary: 2,
-  boxoffice: 2,
-  awards: 2,
-  cult: 2,
-  festival: 2,
-  documentary: 2,
-  mythic: 1,
-};
 
-async function checkCanPurchaseArchetype(
-  client: import('pg').PoolClient,
-  userId: string,
-  archetypeId: number
-): Promise<{ canPurchase: boolean; reason?: string }> {
-  const archetypeResult = await client.query(
-    'SELECT * FROM shop_archetypes WHERE id = $1',
-    [archetypeId]
-  );
-  if (archetypeResult.rows.length === 0) {
-    return { canPurchase: false, reason: 'Archetype not found' };
-  }
-
-  const archetype = archetypeResult.rows[0] as ShopArchetype;
-  const userResult = await client.query(
-    'SELECT current_progression_role FROM users WHERE user_id = $1 FOR UPDATE',
-    [userId]
-  );
-
-  if (userResult.rows.length === 0) {
-    return { canPurchase: false, reason: 'User not found' };
-  }
-
-  if (archetype.min_role) {
-    const roleHierarchy = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
-    const userRole = userResult.rows[0].current_progression_role;
-    const userRoleIndex = roleHierarchy.indexOf(userRole);
-    const requiredRoleIndex = roleHierarchy.indexOf(archetype.min_role);
-
-    if (userRoleIndex < requiredRoleIndex) {
-      return { canPurchase: false, reason: `Requires ${archetype.min_role.replace('_', ' ')} role or higher` };
-    }
-  }
-
-  const maxSlots = SHOP_SLOT_CAPS[archetype.slot_group] || 1;
-  const currentSlotsResult = await client.query(
-    `SELECT COUNT(*) as count
-     FROM user_archetypes ua
-     JOIN shop_archetypes sa ON ua.archetype_id = sa.id
-     WHERE ua.user_id = $1 AND sa.slot_group = $2`,
-    [userId, archetype.slot_group]
-  );
-
-  const currentSlots = Number(currentSlotsResult.rows[0].count);
-  if (currentSlots >= maxSlots) {
-    return { canPurchase: false, reason: `Slot cap reached for ${archetype.slot_group} (max ${maxSlots})` };
-  }
-
-  return { canPurchase: true };
-}
-
-// Check if user can purchase archetype (slot cap + tier gating)
-export async function canPurchaseArchetype(
-  userId: string,
-  archetypeId: number
-): Promise<{ canPurchase: boolean; reason?: string }> {
-  const client = await getClient();
-  try {
-    return await checkCanPurchaseArchetype(client, userId, archetypeId);
-  } finally {
-    client.release();
-  }
-}
 
 export async function purchaseArchetype(
   userId: string,
@@ -311,63 +258,98 @@ export async function purchaseArchetype(
 
     // Get archetype details
     const archetypeResult = await client.query(
-      'SELECT price, tier, min_role FROM shop_archetypes WHERE id = $1',
+      'SELECT * FROM shop_archetypes WHERE id = $1 FOR UPDATE',
       [archetypeId]
     );
     if (archetypeResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return { success: false, reason: 'Archetype not found' };
     }
-    const archetype = archetypeResult.rows[0];
+    const archetype = archetypeResult.rows[0] as ShopArchetype;
 
-    // Check tier gating
-    if (archetype.min_role) {
-      const userResult = await client.query(
-        'SELECT current_progression_role FROM users WHERE user_id = $1',
-        [userId]
+    // Check if archetype is active
+    if (!archetype.active) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'This archetype is no longer available' };
+    }
+
+    // Check level gate
+    const userResult = await client.query(
+      'SELECT current_level FROM users WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'User not found' };
+    }
+    const userLevel = userResult.rows[0].current_level;
+
+    if (userLevel < archetype.min_level) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: `Unlocks at level ${archetype.min_level}` };
+    }
+
+    // Check server-wide holder cap (unless unlimited)
+    if (archetype.max_holders !== null) {
+      const holdersResult = await client.query(
+        'SELECT COUNT(*) as count FROM user_archetypes WHERE archetype_id = $1',
+        [archetypeId]
       );
-      const userRole = userResult.rows[0]?.current_progression_role;
-      
-      const roleHierarchy = ['audience', 'extra', 'featured_extra', 'supporting_cast', 'principal_cast', 'lead_cast'];
-      const userRoleIndex = roleHierarchy.indexOf(userRole);
-      const requiredRoleIndex = roleHierarchy.indexOf(archetype.min_role);
-      
-      if (userRoleIndex < requiredRoleIndex) {
+      const currentHolders = parseInt(holdersResult.rows[0].count);
+      if (currentHolders >= archetype.max_holders) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Requires ${archetype.min_role.replace('_', ' ')} role or higher` };
+        return { success: false, reason: `All ${archetype.max_holders} spots are taken` };
       }
     }
 
-    // Check if user already owns this archetype
-    const existingResult = await client.query(
-      'SELECT archetype_id, free_grant FROM user_archetypes WHERE user_id = $1',
-      [userId]
-    );
-    
+    // Unknown Entity is special: no limit, no refund, doesn't replace existing archetype
+    const isUnknownEntity = archetype.name === 'Unknown Entity';
+
+    // For Unknown Entity, check if user already has an active (non-expired) subscription
+    if (isUnknownEntity) {
+      const existingExpiryResult = await client.query(
+        `SELECT expires_at FROM role_expiry
+         WHERE user_id = $1 AND archetype_id = $2 AND expires_at > CURRENT_TIMESTAMP`,
+        [userId, archetypeId]
+      );
+
+      if (existingExpiryResult.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return { success: false, reason: 'You already have an active Unknown Entity subscription. Wait for it to expire before renewing.' };
+      }
+    }
+
     let refundAmount = 0;
     let balanceBefore = 0;
 
-    // If user already has an archetype, remove it and refund 50%
-    if (existingResult.rows.length > 0) {
-      const existingArchetype = existingResult.rows[0];
-      
-      // Get price of existing archetype for refund
-      const existingPriceResult = await client.query(
-        'SELECT price FROM shop_archetypes WHERE id = $1',
-        [existingArchetype.archetype_id]
-      );
-      const existingPrice = existingPriceResult.rows[0].price;
-      
-      // Only refund if it wasn't a free grant
-      if (!existingArchetype.free_grant) {
-        refundAmount = Math.floor(existingPrice * 0.5);
-      }
-      
-      // Remove existing archetype
-      await client.query(
-        'DELETE FROM user_archetypes WHERE user_id = $1',
+    // If user already has an archetype and this isn't Unknown Entity, remove it and refund 50%
+    if (!isUnknownEntity) {
+      const existingResult = await client.query(
+        'SELECT archetype_id, free_grant FROM user_archetypes WHERE user_id = $1',
         [userId]
       );
+
+      if (existingResult.rows.length > 0) {
+        const existingArchetype = existingResult.rows[0];
+
+        // Get price of existing archetype for refund
+        const existingPriceResult = await client.query(
+          'SELECT price FROM shop_archetypes WHERE id = $1',
+          [existingArchetype.archetype_id]
+        );
+        const existingPrice = existingPriceResult.rows[0].price;
+
+        // Only refund if it wasn't a free grant
+        if (!existingArchetype.free_grant) {
+          refundAmount = Math.floor(existingPrice * 0.5);
+        }
+
+        // Remove existing archetype
+        await client.query(
+          'DELETE FROM user_archetypes WHERE user_id = $1',
+          [userId]
+        );
+      }
     }
 
     // Check user balance (unless free grant) - use FOR UPDATE to prevent race conditions
@@ -377,9 +359,9 @@ export async function purchaseArchetype(
         [userId]
       );
       balanceBefore = balanceResult.rows[0].total_residuals_balance;
-      
+
       const netCost = archetype.price - refundAmount;
-      
+
       if (balanceBefore < netCost) {
         await client.query('ROLLBACK');
         return { success: false, reason: `Insufficient residuals (need ${netCost}, have ${balanceBefore})` };
@@ -393,16 +375,6 @@ export async function purchaseArchetype(
          WHERE user_id = $2`,
         [netCost, userId]
       );
-      
-      // Add refund if applicable
-      if (refundAmount > 0) {
-        await client.query(
-          `UPDATE users
-           SET total_residuals_balance = total_residuals_balance + $1
-           WHERE user_id = $2`,
-          [refundAmount, userId]
-        );
-      }
     } else {
       // For free grants, still lock the user row for consistency
       await client.query(
@@ -411,12 +383,26 @@ export async function purchaseArchetype(
       );
     }
 
-    // Add new archetype (always slot 0 since only one allowed)
+    // Add new archetype (always slot 0 since only one allowed, except Unknown Entity)
     await client.query(
       `INSERT INTO user_archetypes (user_id, archetype_id, slot_index, free_grant)
        VALUES ($1, $2, 0, $3)`,
       [userId, archetypeId, freeGrant]
     );
+
+    // For Unknown Entity (monthly), add expiry record (30 days from now)
+    if (isUnknownEntity) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      await client.query(
+        `INSERT INTO role_expiry (user_id, archetype_id, expires_at)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, archetype_id) DO UPDATE SET
+           expires_at = EXCLUDED.expires_at`,
+        [userId, archetypeId, expiresAt]
+      );
+    }
 
     // Log transaction
     if (!freeGrant) {
@@ -478,10 +464,29 @@ export async function purchaseColor(
     }
     const color = colorResult.rows[0] as ShopColor;
 
-    // Determine price based on band
-    const price = getColorPrice(color.price_band);
+    // Check if color is active
+    if (!color.active) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'This color is no longer available' };
+    }
 
-    // Check if user already owns this specific color
+    // Check level gate
+    const userResult = await client.query(
+      'SELECT current_level FROM users WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: 'User not found' };
+    }
+    const userLevel = userResult.rows[0].current_level;
+
+    if (userLevel < color.min_level) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: `Unlocks at level ${color.min_level}` };
+    }
+
+    // Check if user already owns this specific color (unique index handles this, but check for better error message)
     const ownedResult = await client.query(
       'SELECT id FROM user_colors WHERE user_id = $1 AND color_id = $2',
       [userId, colorId]
@@ -501,9 +506,9 @@ export async function purchaseColor(
       );
       balanceBefore = balanceResult.rows[0].total_residuals_balance;
 
-      if (balanceBefore < price) {
+      if (balanceBefore < color.price) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Insufficient residuals (need ${price}, have ${balanceBefore})` };
+        return { success: false, reason: `Insufficient residuals (need ${color.price}, have ${balanceBefore})` };
       }
 
       // Deduct residuals
@@ -512,13 +517,7 @@ export async function purchaseColor(
          SET total_residuals_balance = total_residuals_balance - $1,
              lifetime_residuals_spent = lifetime_residuals_spent + $1
          WHERE user_id = $2`,
-        [price, userId]
-      );
-    } else {
-      // For free grants, still lock the user row for consistency
-      await client.query(
-        'SELECT total_residuals_balance FROM users WHERE user_id = $1 FOR UPDATE',
-        [userId]
+        [color.price, userId]
       );
     }
 
@@ -535,7 +534,7 @@ export async function purchaseColor(
       await client.query(
         `INSERT INTO residual_transactions (user_id, amount, balance_before, balance_after, transaction_type, source, reason)
          VALUES ($1, $2, $3, $4, 'purchase', 'shop_purchase', 'Color purchase')`,
-        [userId, -price, balanceBefore, balanceBefore - price]
+        [userId, -color.price, balanceBefore, balanceBefore - color.price]
       );
     }
 
@@ -604,7 +603,7 @@ export async function sellColors(
     await client.query('BEGIN');
 
     const ownedResult = await client.query(
-      `SELECT uc.color_id, uc.free_grant, sc.name, sc.price_band, sc.role_id
+      `SELECT uc.color_id, uc.free_grant, sc.name, sc.price, sc.role_id
        FROM user_colors uc
        JOIN shop_colors sc ON uc.color_id = sc.id
        WHERE uc.user_id = $1 AND uc.color_id = ANY($2::int[])`,
@@ -619,7 +618,7 @@ export async function sellColors(
     const sold = ownedResult.rows.map((row: any) => ({
       colorId: row.color_id,
       name: row.name,
-      refund: row.free_grant ? 0 : Math.floor(getColorPrice(row.price_band) * 0.5),
+      refund: row.free_grant ? 0 : Math.floor(row.price * 0.5),
       roleId: row.role_id,
     }));
     const refundTotal = sold.reduce((sum: number, item: { refund: number }) => sum + item.refund, 0);
@@ -733,15 +732,62 @@ export async function hasBoosterFreeGrants(userId: string): Promise<{ archetype:
       [userId]
     );
     const colorResult = await client.query(
-      `SELECT COUNT(*) as count FROM user_colors 
+      `SELECT COUNT(*) as count FROM user_colors
        WHERE user_id = $1 AND free_grant = TRUE`,
       [userId]
     );
-    
+
     return {
       archetype: parseInt(archetypeResult.rows[0].count) === 0,
       color: parseInt(colorResult.rows[0].count) === 0,
     };
+  } finally {
+    client.release();
+  }
+}
+
+// Check and remove expired monthly archetypes (e.g., Unknown Entity)
+// Returns list of { userId, archetypeId, archetypeName } for removed roles
+export async function checkExpiredRoles(): Promise<Array<{ userId: string; archetypeId: number; archetypeName: string }>> {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Find expired roles
+    const expiredResult = await client.query(
+      `SELECT re.user_id, re.archetype_id, sa.name as archetype_name
+       FROM role_expiry re
+       JOIN shop_archetypes sa ON re.archetype_id = sa.id
+       WHERE re.expires_at <= CURRENT_TIMESTAMP`
+    );
+
+    const expired = expiredResult.rows.map((row: any) => ({
+      userId: row.user_id,
+      archetypeId: row.archetype_id,
+      archetypeName: row.archetype_name,
+    }));
+
+    if (expired.length > 0) {
+      // Remove from user_archetypes
+      await client.query(
+        `DELETE FROM user_archetypes
+         WHERE (user_id, archetype_id) IN (
+           SELECT user_id, archetype_id FROM role_expiry WHERE expires_at <= CURRENT_TIMESTAMP
+         )`
+      );
+
+      // Remove from role_expiry
+      await client.query(
+        `DELETE FROM role_expiry WHERE expires_at <= CURRENT_TIMESTAMP`
+      );
+    }
+
+    await client.query('COMMIT');
+    return expired;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error checking expired roles:', error);
+    return [];
   } finally {
     client.release();
   }

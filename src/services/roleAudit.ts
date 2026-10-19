@@ -2,6 +2,7 @@ import { Guild, GuildMember } from 'discord.js';
 import { getUser, getOrCreateUser, getClient } from '../database/client.js';
 import { synchronizeProgressionRoles, getProgressionRolePlan } from './xp.js';
 import { getRoleId } from './managedRoles.js';
+import { checkExpiredRoles } from './shop.js';
 
 export interface AuditSummary {
   membersChecked: number;
@@ -26,6 +27,34 @@ export async function runRoleAudit(guild: Guild): Promise<AuditSummary> {
   };
 
   try {
+    // Check for expired monthly archetypes (e.g., Unknown Entity)
+    const expiredRoles = await checkExpiredRoles();
+    if (expiredRoles.length > 0) {
+      console.log(`[roleAudit] Removed ${expiredRoles.length} expired archetype subscriptions`);
+      for (const expired of expiredRoles) {
+        console.log(`  - User ${expired.userId}: ${expired.archetypeName} expired`);
+        // Remove the Discord role from the user
+        try {
+          const member = await guild.members.fetch(expired.userId).catch(() => null);
+          if (member) {
+            // Get the archetype role ID from shop_archetypes
+            const dbClient = await getClient();
+            const roleResult = await dbClient.query(
+              'SELECT role_id FROM shop_archetypes WHERE id = $1',
+              [expired.archetypeId]
+            );
+            dbClient.release();
+            if (roleResult.rows.length > 0 && roleResult.rows[0].role_id) {
+              await member.roles.remove(roleResult.rows[0].role_id);
+              console.log(`    Removed Discord role ${roleResult.rows[0].role_id} from ${member.user.username}`);
+            }
+          }
+        } catch (error) {
+          console.error(`    Failed to remove Discord role for user ${expired.userId}:`, error);
+        }
+      }
+    }
+
     // Check audit mode
     const mode = await getAuditMode();
 

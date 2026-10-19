@@ -471,6 +471,12 @@ CREATE TABLE IF NOT EXISTS shop_archetypes (
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS role_id TEXT;
 
+-- Part 4: Archetype shop upgrades
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS min_level INTEGER DEFAULT 0;
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS max_holders INTEGER;
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS monthly BOOLEAN DEFAULT false;
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+
 -- Shop colors table
 CREATE TABLE IF NOT EXISTS shop_colors (
   id SERIAL PRIMARY KEY,
@@ -482,6 +488,16 @@ CREATE TABLE IF NOT EXISTS shop_colors (
 
 -- Idempotent upgrade for existing shop_colors rows (role_id support)
 ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS role_id TEXT;
+
+-- Part 3: Color shop upgrades
+ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS price INTEGER;
+ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS tier TEXT;
+ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS min_level INTEGER DEFAULT 0;
+ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+ALTER TABLE shop_colors ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+
+-- Unique index to prevent double-charging on color purchases
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_colors_unique ON user_colors(user_id, color_id);
 
 -- User archetypes table
 CREATE TABLE IF NOT EXISTS user_archetypes (
@@ -699,4 +715,15 @@ CREATE TABLE IF NOT EXISTS public.managed_roles (
   template JSONB,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Part 6: Role expiry table for monthly archetypes (Unknown Entity)
+CREATE TABLE IF NOT EXISTS role_expiry (
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  archetype_id INTEGER NOT NULL REFERENCES shop_archetypes(id) ON DELETE CASCADE,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, archetype_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_role_expiry_expires_at ON role_expiry(expires_at);
 `;

@@ -15,7 +15,6 @@ import {
   setColorActive,
   sellColors,
   sellArchetype,
-  getColorPrice,
 } from '../services/shop.js';
 import { Command } from './index.js';
 
@@ -226,7 +225,7 @@ async function handleSellColors(interaction: any, userId: string, userColors: an
 
   for (const uc of userColors) {
     const color = colorRoleById.get(uc.color_id);
-    const price = color ? getColorPrice(color.price_band) : 0;
+    const price = color ? color.price : 0;
     const refund = uc.free_grant ? 0 : Math.floor(price * 0.5);
     const refundText = uc.free_grant ? 'Free (no refund)' : `${refund} residuals`;
 
@@ -258,7 +257,7 @@ async function handleSellColors(interaction: any, userId: string, userColors: an
     let totalRefund = 0;
     const colorDetails = selectedColors.map((uc: any) => {
       const color = colorRoleById.get(uc.color_id);
-      const price = color ? getColorPrice(color.price_band) : 0;
+      const price = color ? color.price : 0;
       const refund = uc.free_grant ? 0 : Math.floor(price * 0.5);
       totalRefund += refund;
       return { name: uc.name, refund };

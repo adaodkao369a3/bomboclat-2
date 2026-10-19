@@ -1,8 +1,10 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
+import { getResidualsLeaderboard } from '../database/client.js';
 import { EMOJIS } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
+import { cooldownMessage, setAuthorHeader, setStandardFooter } from '../ui/index.js';
 import { Command } from './index.js';
 
 export const resCommand: Command = {
@@ -13,7 +15,7 @@ export const resCommand: Command = {
     // Cooldown check
     const remaining = getRemaining(message.author.id, 'res');
     if (remaining > 0) {
-      await message.reply(`<a:typing:1529443144901464205> Please wait ${remaining} seconds before using .res again.`);
+      await message.reply(cooldownMessage(remaining));
       return;
     }
     setCooldown(message.author.id, 'res', 15);
@@ -43,18 +45,20 @@ export const resCommand: Command = {
       return;
     }
 
+    // Get rank on residuals leaderboard
+    const { entries: allEntries } = await getResidualsLeaderboard(1000, 0);
+    const rank = allEntries.findIndex(e => e.user_id === target.user.id) + 1;
+    const rankText = rank > 0 ? `#${rank} richest` : 'Not ranked';
+
     // Create embed
     const embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.CASH} Residuals`)
-      .setDescription(`**${target.displayName}**`)
+      .setDescription(`__${target.displayName}__\n-# ${EMOJIS.CASH} ${residualData.balance.toLocaleString()} residuals\n\nLifetime earned: ${residualData.lifetime_earned.toLocaleString()}\nLifetime spent: ${residualData.lifetime_spent.toLocaleString()}\n${rankText}`)
       .setColor(0x4900ff)
-      .setThumbnail(target.user.displayAvatarURL())
-      .addFields([
-        { name: `${EMOJIS.CASH} Current Balance`, value: `\`${residualData.balance.toLocaleString()}\``, inline: true },
-        { name: 'Lifetime Earned', value: `\`${residualData.lifetime_earned.toLocaleString()}\``, inline: true },
-        { name: 'Lifetime Spent', value: `\`${residualData.lifetime_spent.toLocaleString()}\``, inline: true },
-      ])
-      .setFooter({ text: 'Bombo Studios' });
+      .setThumbnail(target.user.displayAvatarURL());
+
+    setAuthorHeader(embed, target.displayName, target.user.displayAvatarURL());
+    setStandardFooter(embed);
 
     await message.reply({ embeds: [embed] });
   },

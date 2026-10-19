@@ -540,6 +540,37 @@ export async function getResidualsLeaderboard(limit: number = 10, offset: number
   }
 }
 
+/**
+ * Get XP totals by source (message and voice)
+ */
+export async function getXPBySource(userId: string): Promise<{ message: number; voice: number }> {
+  const client = await getClient();
+  try {
+    const result = await client.query<{ source: string; total: string }>(
+      `SELECT source, SUM(amount) as total
+       FROM xp_transactions
+       WHERE user_id = $1 AND source IN ('message', 'voice')
+       GROUP BY source`,
+      [userId]
+    );
+
+    let messageXP = 0;
+    let voiceXP = 0;
+
+    for (const row of result.rows) {
+      if (row.source === 'message') {
+        messageXP = parseInt(row.total) || 0;
+      } else if (row.source === 'voice') {
+        voiceXP = parseInt(row.total) || 0;
+      }
+    }
+
+    return { message: messageXP, voice: voiceXP };
+  } finally {
+    client.release();
+  }
+}
+
 function mapRowToUser(row: User): User {
   return {
     user_id: row.user_id,

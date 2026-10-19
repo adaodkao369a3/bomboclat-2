@@ -1,12 +1,17 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { getResidualsLeaderboard } from '../database/client.js';
+import { isMemberInGuild } from '../services/memberCache.js';
 import { Command } from './index.js';
 
 const ENTRIES_PER_PAGE = 10;
+const MAX_PAGES = 5; // Top 50 total
 
 interface PaginationState {
   page: number;
   totalPages: number;
+  userId: string;
+  guildId: string;
+  timestamp: number;
 }
 
 const paginationStates = new Map<string, PaginationState>();
@@ -21,39 +26,28 @@ export const residualsLeaderboardCommand: Command = {
     }
 
     const userId = message.author.id;
+    const guildId = message.guild.id;
 
-    // Fetch all guild members to filter leaderboard
-    let guildMembers;
-    try {
-      guildMembers = await message.guild.members.fetch();
-    } catch (error: any) {
-      if (error.code === 130000) { // Rate limit error
-        await message.reply('⏳ The bot is being rate limited. Please try again in a few seconds.');
-        return;
-      }
-      console.error('Error fetching guild members:', error);
-      await message.reply('❌ Failed to fetch guild members. Please try again later.');
-      return;
-    }
-
-    const guildMemberIds = new Set(guildMembers.map(m => m.user.id));
-
-    // Fetch all leaderboard entries (no pagination yet)
+    // Fetch all leaderboard entries
     const { entries: allEntries } = await getResidualsLeaderboard(1000, 0); // Fetch up to 1000
 
-    // Filter to only members currently in the guild
-    const guildEntries = allEntries.filter(entry => guildMemberIds.has(entry.user_id));
+    // Filter to only members currently in the guild (use cache if available)
+    const guildEntries = allEntries.filter(entry => {
+      const inGuild = isMemberInGuild(guildId, entry.user_id);
+      // If cache is stale/null, assume they're in guild (fallback)
+      return inGuild !== false;
+    });
+
     const filteredTotal = guildEntries.length;
-
-    // Initial page load
+    const totalPages = Math.min(Math.ceil(filteredTotal / ENTRIES_PER_PAGE), MAX_PAGES);
     const page = 1;
-    const totalPages = Math.ceil(filteredTotal / ENTRIES_PER_PAGE);
 
-    paginationStates.set(userId, { page, totalPages });
+    // Store pagination state
+    paginationStates.set(userId, { page, totalPages, userId, guildId, timestamp: Date.now() });
 
     const entries = guildEntries.slice(0, ENTRIES_PER_PAGE);
     const embed = createLeaderboardEmbed(entries, page, totalPages, filteredTotal);
-    const row = createPaginationButtons(page, totalPages);
+    const row = createPaginationButtons(userId, page, totalPages);
 
     const msg = await message.reply({ embeds: [embed], components: [row] });
 
@@ -61,11 +55,15 @@ export const residualsLeaderboardCommand: Command = {
     try {
       const collector = msg.createMessageComponentCollector({
         componentType: ComponentType.Button,
-        time: 60000, // 1 minute timeout
+        time: 300000, // 5 minutes
       });
 
       collector.on('collect', async (interaction) => {
-        if (interaction.user.id !== userId) {
+        // Verify ownership using customId
+        const parts = interaction.customId.split(':');
+        const buttonUserId = parts[1];
+
+        if (buttonUserId !== interaction.user.id) {
           await interaction.reply({ content: '❌ You cannot use this pagination.', flags: [1 << 6] });
           return;
         }
@@ -76,13 +74,13 @@ export const residualsLeaderboardCommand: Command = {
         if (!currentState) return;
 
         let newPage = currentState.page;
-        if (interaction.customId === 'prev' && currentState.page > 1) {
+        if (interaction.customId === 'reslb_prev' && currentState.page > 1) {
           newPage = currentState.page - 1;
-        } else if (interaction.customId === 'next' && currentState.page < currentState.totalPages) {
+        } else if (interaction.customId === 'reslb_next' && currentState.page < currentState.totalPages) {
           newPage = currentState.page + 1;
-        } else if (interaction.customId === 'first') {
+        } else if (interaction.customId === 'reslb_first') {
           newPage = 1;
-        } else if (interaction.customId === 'last') {
+        } else if (interaction.customId === 'reslb_last') {
           newPage = currentState.totalPages;
         }
 
@@ -91,19 +89,16 @@ export const residualsLeaderboardCommand: Command = {
           const endIdx = startIdx + ENTRIES_PER_PAGE;
           const newEntries = guildEntries.slice(startIdx, endIdx);
 
-          paginationStates.set(userId, { page: newPage, totalPages: currentState.totalPages });
+          paginationStates.set(userId, { ...currentState, page: newPage, timestamp: Date.now() });
 
           const newEmbed = createLeaderboardEmbed(newEntries, newPage, currentState.totalPages, filteredTotal);
-          const newRow = createPaginationButtons(newPage, currentState.totalPages);
+          const newRow = createPaginationButtons(userId, newPage, currentState.totalPages);
 
           await msg.edit({ embeds: [newEmbed], components: [newRow] });
-        } else {
-          await msg.edit({ components: [row] }); // Reset button states
         }
       });
 
       collector.on('end', () => {
-        // Remove buttons when collector ends
         msg.edit({ components: [] }).catch(() => {});
         paginationStates.delete(userId);
       });
@@ -121,7 +116,7 @@ function createLeaderboardEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle('<a:cash:1545126549035024524> RESIDUALS LEADERBOARD')
-    .setDescription(`The wealthiest members of Bombo Studios`)
+    .setDescription('The wealthiest members of Bombo Studios')
     .setColor(0xFFD700)
     .setFooter({ text: `Page ${page}/${totalPages} • ${total} members with residuals` });
 
@@ -130,20 +125,19 @@ function createLeaderboardEmbed(
     return embed;
   }
 
+  // Build description with entries (no embed fields, no backticks)
+  let description = '';
   entries.forEach((entry, index) => {
     const rank = (page - 1) * ENTRIES_PER_PAGE + index + 1;
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-    embed.addFields({
-      name: `${medal} ${entry.username}`,
-      value: `💰 ${entry.total_residuals_balance.toLocaleString()} residuals\n📊 Lifetime earned: ${entry.lifetime_residuals_earned.toLocaleString()}`,
-      inline: false,
-    });
+    description += `${medal} __${entry.username}__\n-# ${entry.total_residuals_balance.toLocaleString()} residuals • Lifetime: ${entry.lifetime_residuals_earned.toLocaleString()}\n\n`;
   });
 
+  embed.setDescription(description);
   return embed;
 }
 
-function createPaginationButtons(page: number, totalPages: number): ActionRowBuilder<ButtonBuilder> {
+function createPaginationButtons(userId: string, page: number, totalPages: number): ActionRowBuilder<ButtonBuilder> {
   const row = new ActionRowBuilder<ButtonBuilder>();
 
   const isFirst = page === 1;
@@ -151,22 +145,27 @@ function createPaginationButtons(page: number, totalPages: number): ActionRowBui
 
   row.addComponents(
     new ButtonBuilder()
-      .setCustomId('first')
+      .setCustomId(`reslb_first:${userId}`)
       .setLabel('⏮')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(isFirst),
     new ButtonBuilder()
-      .setCustomId('prev')
+      .setCustomId(`reslb_prev:${userId}`)
       .setLabel('◀')
       .setStyle(ButtonStyle.Primary)
       .setDisabled(isFirst),
     new ButtonBuilder()
-      .setCustomId('next')
+      .setCustomId(`reslb_page:${userId}`)
+      .setLabel(`Page ${page}/${totalPages}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(`reslb_next:${userId}`)
       .setLabel('▶')
       .setStyle(ButtonStyle.Primary)
       .setDisabled(isLast),
     new ButtonBuilder()
-      .setCustomId('last')
+      .setCustomId(`reslb_last:${userId}`)
       .setLabel('⏭')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(isLast)

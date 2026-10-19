@@ -1,47 +1,133 @@
-import { EmbedBuilder, GuildMember, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+import { EmbedBuilder, GuildMember, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { getUser } from '../database/client.js';
+import { getUserArchetypes, getUserColors } from '../services/shop.js';
 import { getResidualsInfo } from '../services/residuals.js';
 import { getNextProgressionThreshold } from '../services/xp.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
-import { Command } from './index.js';
+import { cooldownMessage, setAuthorHeader, setStandardFooter } from '../ui/index.js';
 import { getUnlockedPerks } from '../services/levelUpNotification.js';
 import { EMOJIS } from '../config/index.js';
+import { getAvailableCommands } from './registry.js';
+import { Command } from './index.js';
+import { registerInteractionHandler, parseCustomId, isInteractionExpired } from '../interactions/index.js';
 
-function getAvailableCommands(role: string): string[] {
-  const commands: string[] = [];
+const PROFILE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
-  // Basic commands available to everyone
-  commands.push('`.profile` - View your studio profile');
-  commands.push('`.level` - Check your level and XP progress');
-  commands.push('`.res` - Get information about residuals');
-  commands.push('`.leaderboard` - View the XP leaderboard');
-  commands.push('`.residuals` - View the residuals leaderboard');
-  commands.push('`.help` - Get help with commands');
-  commands.push('`.rules` - View the server rules');
+// Register interaction handler for profile namespace
+registerInteractionHandler('profile', async (interaction) => {
+  if (!interaction.isButton()) return;
 
-  // Role-specific commands
-  if (role === 'hero' || role === 'champion' || role === 'guardian' ||
-      role === 'superhero' || role === 'anti_hero' || role === 'rogue' ||
-      role === 'renegade' || role === 'outlaw' || role === 'villain' ||
-      role === 'mastermind' || role === 'kingpin' || role === 'overlord' ||
-      role === 'tyrant' || role === 'emperor' || role === 'saint') {
-    commands.push('`.c <query>` - Custom GIF search (Hero+ perk)');
+  const parts = parseCustomId(interaction.customId);
+  const action = parts[1];
+  const ownerId = parts[2];
+  const targetUserId = parts[3];
+
+  // Verify ownership
+  if (ownerId !== interaction.user.id) {
+    await interaction.reply({ content: '❌ You cannot use this button.', flags: [1 << 6] });
+    return;
   }
 
-  if (role === 'superhero' || role === 'anti_hero' || role === 'rogue' ||
-      role === 'renegade' || role === 'outlaw' || role === 'villain' ||
-      role === 'mastermind' || role === 'kingpin' || role === 'overlord' ||
-      role === 'tyrant' || role === 'emperor' || role === 'saint') {
-    commands.push('`.shop` - Access the rare shop (Superhero+ perk)');
-    commands.push('`.manage` - Manage your colors and archetypes');
+  // Check if message expired
+  if (isInteractionExpired(interaction, PROFILE_TIMEOUT)) {
+    await interaction.reply({
+      content: '⏱️ This menu expired. Run `.profile` again.',
+      ephemeral: true,
+    });
+    await interaction.message.edit({ components: [] }).catch(console.error);
+    return;
   }
 
-  if (role === 'emperor' || role === 'saint') {
-    commands.push('`.shop` - Access the mythic shop (Emperor/Saint perk)');
+  // Fetch fresh data
+  const userData = await getUser(targetUserId);
+  if (!userData) {
+    await interaction.reply({ content: '❌ User not found in database.', ephemeral: true });
+    return;
   }
 
-  return commands;
-}
+  const currentLevel = userData.current_level;
+  const currentRole = userData.current_progression_role;
+  const nextRoleThreshold = getNextProgressionThreshold(currentRole);
+  const roleDisplay = currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  const residualData = await getResidualsInfo(targetUserId);
+  const residualsBalance = residualData?.balance || 0;
+
+  const userArchetypes = await getUserArchetypes(targetUserId);
+  const userColors = await getUserColors(targetUserId);
+
+  const guild = interaction.guild;
+  const targetMember = guild?.members.cache.get(targetUserId);
+
+  if (action === 'commands') {
+    // Show commands view
+    const userRoles = targetMember?.roles.cache.map(r => r.name) || [];
+    const availableCommands = getAvailableCommands(currentLevel, userRoles);
+    const perks = getUnlockedPerks(currentRole);
+
+    const commandsEmbed = new EmbedBuilder()
+      .setTitle('📋 Available Commands')
+      .setDescription(`__Your Role:__ ${roleDisplay}\n\n__Commands:__\n${availableCommands.map(cmd => `• ${cmd.name} - ${cmd.description}`).join('\n')}\n\n__Your Perks:__\n${perks.join('\n')}`)
+      .setColor(0x4900ff);
+
+    setStandardFooter(commandsEmbed);
+
+    const backRow = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`profile_back:${ownerId}:${targetUserId}`)
+          .setLabel('Back to Profile')
+          .setStyle(ButtonStyle.Secondary)
+      );
+
+    await interaction.update({ embeds: [commandsEmbed], components: [backRow] });
+  } else if (action === 'back') {
+    // Rebuild profile embed
+    let description = `__${targetMember?.displayName || 'Unknown'}__\n-# ${roleDisplay}\n\n`;
+    description += `__Level__\n-# ${currentLevel}\n\n`;
+    description += `__${EMOJIS.CASH} Residuals__\n-# ${residualsBalance.toLocaleString()}\n\n`;
+
+    if (nextRoleThreshold > 0) {
+      const eligibility = userData.promotion_eligibility_percentage || 0;
+      description += `__Promotion Eligibility__\n-# ${Math.floor(eligibility)}% (Level ${nextRoleThreshold})\n\n`;
+    }
+
+    if (userArchetypes.length > 0) {
+      const archetype = userArchetypes[0];
+      description += `__Archetype Role__\n-# ${archetype.name}\n\n`;
+    }
+
+    if (userColors.length > 0) {
+      const activeColor = userColors.find(c => c.active);
+      if (activeColor) {
+        description += `__Color Role__\n-# ${activeColor.name}\n\n`;
+      }
+    }
+
+    const avatarUrl = targetMember?.user.displayAvatarURL();
+    const profileEmbed = new EmbedBuilder()
+      .setTitle(`${EMOJIS.PROFILE} STUDIO PROFILE`)
+      .setDescription(description)
+      .setColor(0x4900ff);
+
+    if (avatarUrl) {
+      profileEmbed.setThumbnail(avatarUrl);
+    }
+
+    setAuthorHeader(profileEmbed, targetMember?.displayName || 'Unknown', avatarUrl || null);
+    setStandardFooter(profileEmbed);
+
+    const commandsRow = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`profile_commands:${ownerId}:${targetUserId}`)
+          .setLabel('Commands')
+          .setStyle(ButtonStyle.Primary)
+      );
+
+    await interaction.update({ embeds: [profileEmbed], components: [commandsRow] });
+  }
+});
 
 export const profileCommand: Command = {
   name: 'profile',
@@ -51,7 +137,7 @@ export const profileCommand: Command = {
     // Cooldown check
     const remaining = getRemaining(message.author.id, 'profile');
     if (remaining > 0) {
-      await message.reply(`⏱️ Please wait ${remaining} seconds before using .profile again.`);
+      await message.reply(cooldownMessage(remaining));
       return;
     }
     setCooldown(message.author.id, 'profile', 15);
@@ -83,83 +169,57 @@ export const profileCommand: Command = {
     const residualData = await getResidualsInfo(target.user.id);
     const residualsBalance = residualData?.balance || 0;
 
+    // Get owned shop items
+    const userArchetypes = await getUserArchetypes(target.user.id);
+    const userColors = await getUserColors(target.user.id);
+
     // Format role name
     const roleDisplay = currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-    // Build embed fields
-    const fields = [
-      { name: 'Level', value: currentLevel.toString(), inline: true },
-      { name: `${EMOJIS.CASH} Residuals`, value: `\`${residualsBalance.toLocaleString()}\``, inline: true },
-    ];
+    // Build description
+    let description = `__${target.displayName}__\n-# ${roleDisplay}\n\n`;
+    description += `__Level__\n-# ${currentLevel}\n\n`;
+    description += `__${EMOJIS.CASH} Residuals__\n-# ${residualsBalance.toLocaleString()}\n\n`;
 
     // Add promotion eligibility if not at max role
     if (nextRoleThreshold > 0) {
       const eligibility = userData.promotion_eligibility_percentage || 0;
-      fields.push({ name: '<:ladder:1545126567145906246> Promotion Eligibility', value: `\`${Math.floor(eligibility)}%\` (Level ${nextRoleThreshold})`, inline: true });
+      description += `__Promotion Eligibility__\n-# ${Math.floor(eligibility)}% (Level ${nextRoleThreshold})\n\n`;
+    }
+
+    // Add archetype role if owned
+    if (userArchetypes.length > 0) {
+      const archetype = userArchetypes[0];
+      description += `__Archetype Role__\n-# ${archetype.name}\n\n`;
+    }
+
+    // Add color role if owned
+    if (userColors.length > 0) {
+      const activeColor = userColors.find(c => c.active);
+      if (activeColor) {
+        description += `__Color Role__\n-# ${activeColor.name}\n\n`;
+      }
     }
 
     // Create embed
     const embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.PROFILE} STUDIO PROFILE`)
-      .setDescription(`**${target.displayName}**\n\`${roleDisplay}\``)
+      .setDescription(description)
       .setColor(0x4900ff)
-      .setThumbnail(target.user.displayAvatarURL())
-      .addFields(fields)
-      .setFooter({ text: 'Bombo Studios' });
+      .setThumbnail(target.user.displayAvatarURL());
 
-    // Create button
+    setAuthorHeader(embed, target.displayName, target.user.displayAvatarURL());
+    setStandardFooter(embed);
+
+    // Create button with per-owner customId
     const row = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId('toggle_commands')
+          .setCustomId(`profile_commands:${message.author.id}:${target.user.id}`)
           .setLabel('Commands')
           .setStyle(ButtonStyle.Primary)
       );
 
-    const sentMessage = await message.reply({ embeds: [embed], components: [row] });
-
-    // Create button collector
-    const collector = sentMessage.createMessageComponentCollector({
-      componentType: ComponentType.Button,
-      time: 300000, // 5 minutes
-      filter: (i) => i.customId === 'toggle_commands' && i.user.id === message.author.id,
-    });
-
-    let showingCommands = false;
-
-    collector.on('collect', async (interaction) => {
-      if (!showingCommands) {
-        // Show commands
-        const availableCommands = getAvailableCommands(currentRole);
-        const perks = getUnlockedPerks(currentRole);
-
-        const commandsEmbed = new EmbedBuilder()
-          .setTitle('📋 Available Commands')
-          .setDescription(`**Your Role:** ${roleDisplay}\n\n**Commands:**\n${availableCommands.join('\n')}\n\n**Your Perks:**\n${perks.join('\n')}`)
-          .setColor(0x4900ff)
-          .setFooter({ text: 'Bombo Studios' });
-
-        const backRow = new ActionRowBuilder<ButtonBuilder>()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('toggle_commands')
-              .setLabel('Back to Profile')
-              .setStyle(ButtonStyle.Secondary)
-          );
-
-        await interaction.update({ embeds: [commandsEmbed], components: [backRow] });
-        showingCommands = true;
-      } else {
-        // Show profile
-        await interaction.update({ embeds: [embed], components: [row] });
-        showingCommands = false;
-      }
-    });
-
-    collector.on('end', (_collected, reason) => {
-      if (reason === 'time') {
-        sentMessage.edit({ components: [] }).catch(console.error);
-      }
-    });
+    await message.reply({ embeds: [embed], components: [row] });
   },
 };

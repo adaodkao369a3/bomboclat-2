@@ -1,14 +1,11 @@
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import type { ShopArchetype, ShopColor } from './shop.js';
 import { join } from 'path';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
+import { ARCHETYPE_TIER_SYMBOLS } from '../config/archetypes.js';
 
-export const COLOR_BAND_SYMBOLS: Record<string, string> = { common: '', uncommon: '❈', rare: '❂' };
-export const ARCHETYPE_TIER_SYMBOLS: Record<string, string> = { standard: '⟡', standard2: '⟐', legendary: '⚜', mythic: '⁂' };
-
-export function formatColorName(name: string, priceBand: string): string {
-  const symbol = COLOR_BAND_SYMBOLS[priceBand] || '';
-  return `${symbol} ${name.toLowerCase()}`;
+export function formatColorName(name: string): string {
+  return name.toLowerCase();
 }
 
 export function formatArchetypeName(name: string, tier: string): string {
@@ -47,23 +44,6 @@ const TEXT_COLOR = '#f2f3f5';
 const COLOR_HEIGHT_SCALE = 0.75;
 // Space reserved below each square archetype image for its name label.
 const ARCHETYPE_LABEL_HEIGHT = 40;
-
-/**
- * Loads an archetype image whether it's a remote URL or a local file path
- * (archetype artwork now lives under the project's `image/` folder). Local
- * files are read into a Buffer ourselves rather than handed to loadImage as
- * a bare path string, so behavior doesn't depend on how the canvas library
- * chooses to interpret path-like strings.
- */
-async function loadArchetypeImage(source: string): Promise<any> {
-  if (/^https?:\/\//i.test(source)) {
-    return loadImage(source);
-  }
-  if (existsSync(source)) {
-    return loadImage(readFileSync(source));
-  }
-  throw new Error(`Archetype image not found on disk: ${source}`);
-}
 
 function getRows<T>(items: T[], columns: number): T[][] {
   const rows: T[][] = [];
@@ -264,9 +244,13 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       const x = OUTER_PADDING + index * (rowTileWidth + TILE_GAP);
       const radius = 14;
 
-      if (archetype.image_url) {
+      // Generate image path from archetype name (lowercase with hyphens)
+      const slug = archetype.name.toLowerCase().replace(/\s+/g, '-');
+      const imagePath = join(process.cwd(), 'image', `${slug}.png`);
+
+      if (existsSync(imagePath)) {
         try {
-          const image = await loadArchetypeImage(archetype.image_url);
+          const image = await loadImage(imagePath);
           drawRoundedImage(ctx, image, x, y, rowImageSize, rowImageSize, radius);
         } catch (error) {
           console.error(`Failed to load archetype image for "${archetype.name}":`, error);

@@ -9,7 +9,7 @@
     "dev": "ts-node src/index.ts",
     "dev:watch": "tsc && nodemon dist/src/index.js",
     "clean": "rimraf dist",
-    "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js && node dist/tests/shop.test.js && node dist/tests/voiceHandler.test.js && node dist/tests/residualsLeaderboard.test.js && node dist/tests/roleAudit.test.js && node dist/tests/syncRoles.test.js",
+    "test": "tsc && node dist/tests/xp.test.js && node dist/tests/permissions.test.js && node dist/tests/clip.test.js && node dist/tests/shop.test.js && node dist/tests/voiceHandler.test.js && node dist/tests/residualsLeaderboard.test.js && node dist/tests/roleAudit.test.js && node dist/tests/syncRoles.test.js && node dist/tests/roleGif.test.js && node dist/tests/part6.test.js",
     "deploy:dev": "tsc && node scripts/deploy-commands.js dev",
     "deploy:global": "tsc && node scripts/deploy-commands.js global",
     "deploy:sync": "tsc && node scripts/deploy-commands.js sync",

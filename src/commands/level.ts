@@ -1,8 +1,9 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
-import { getUser } from '../database/client.js';
-import { calculateProgressPercentage, PROGRESSION_ROLE_KEYS } from '../services/xp.js';
-import { XP_CONFIG, EMOJIS } from '../config/index.js';
+import { getUser, getLeaderboard, getXPBySource } from '../database/client.js';
+import { calculateXPForLevel, calculateXPRemaining, PROGRESSION_ROLE_KEYS } from '../services/xp.js';
+import { XP_CONFIG } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
+import { cooldownMessage, setAuthorHeader, setStandardFooter } from '../ui/index.js';
 import { Command } from './index.js';
 
 function formatRoleName(role: string): string {
@@ -12,12 +13,13 @@ function formatRoleName(role: string): string {
 export const levelCommand: Command = {
   name: 'level',
   allowedPrefix: '.',
+  aliases: ['lvl'],
   async execute(message, args, _prefix) {
 
     // Cooldown check
     const remaining = getRemaining(message.author.id, 'level');
     if (remaining > 0) {
-      await message.reply(`⏱️ Please wait ${remaining} seconds before using .level again.`);
+      await message.reply(cooldownMessage(remaining));
       return;
     }
     setCooldown(message.author.id, 'level', 10);
@@ -40,41 +42,65 @@ export const levelCommand: Command = {
       return;
     }
 
-    // Calculate XP progress using centralized functions
     const currentLevel = userData.current_level;
-    const xpProgress = calculateProgressPercentage(userData.current_xp, currentLevel);
+    const currentXP = userData.current_xp;
+    const currentRole = userData.current_progression_role;
+    const roleDisplay = formatRoleName(currentRole);
 
-    // Create progress bar
-    const progressBars = Math.floor(xpProgress / 10);
-    const progressBar = '<a:pokeballsuccess:1545003084948701265>'.repeat(progressBars) + '☆'.repeat(10 - progressBars);
+    // Calculate XP for current and next level
+    const currentLevelXP = calculateXPForLevel(currentLevel);
+    const nextLevelXP = calculateXPForLevel(currentLevel + 1);
+    const xpToNext = calculateXPRemaining(currentXP, currentLevel);
+    const progressPercentage = Math.min(Math.max(((currentXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100, 0), 100);
 
-    // Format role name
-    const roleDisplay = formatRoleName(userData.current_progression_role);
+    // Consistent progress bar (filled emoji for progress, empty for remaining)
+    const filledBars = Math.floor(progressPercentage / 10);
+    const progressBar = '⬛'.repeat(filledBars) + '⬜'.repeat(10 - filledBars);
 
-    // Build role progression ladder - show achieved roles + next one
-    const currentRoleIndex = PROGRESSION_ROLE_KEYS.indexOf(userData.current_progression_role as any);
-    const maxRoleIndex = Math.min(currentRoleIndex + 1, PROGRESSION_ROLE_KEYS.length - 1);
+    // Get XP by source (chat and voice)
+    const xpBySource = await getXPBySource(target.user.id);
+
+    // Get XP leaderboard rank
+    const leaderboard = await getLeaderboard(100);
+    const rank = leaderboard.findIndex(e => e.user_id === target.user.id) + 1;
+    const rankText = rank > 0 ? `#${rank}` : 'Not ranked';
+
+    // Role ladder - current role + next two
+    const currentRoleIndex = PROGRESSION_ROLE_KEYS.indexOf(currentRole as any);
+    const maxRoleIndex = Math.min(currentRoleIndex + 2, PROGRESSION_ROLE_KEYS.length - 1);
     
-    const roleLadder = PROGRESSION_ROLE_KEYS.slice(0, maxRoleIndex + 1).map((roleKey) => {
+    const roleLadder = PROGRESSION_ROLE_KEYS.slice(currentRoleIndex, maxRoleIndex + 1).map((roleKey) => {
       const requiredLevel = XP_CONFIG.ROLE_LEVEL_REQUIREMENTS[roleKey];
       const achieved = currentLevel >= requiredLevel;
-      const icon = achieved ? '<:greenglossytickcheckmark:1545126564247633970>' : '<:glossyredcancelx:1545126551673241731>';
-      const isCurrent = roleKey === userData.current_progression_role;
-      const marker = isCurrent ? ` ${EMOJIS.CROWN}` : '';
-      return `${icon} **${formatRoleName(roleKey)}**${marker}`;
+      const icon = achieved ? '✅' : '🔒';
+      const isCurrent = roleKey === currentRole;
+      const marker = isCurrent ? ' ← Current' : '';
+      return `${icon} __${formatRoleName(roleKey)}__ (Level ${requiredLevel})${marker}`;
     }).join('\n');
 
     // Create embed
     const embed = new EmbedBuilder()
       .setTitle('<:ladder:1545126567145906246> LEVEL PROGRESS')
-      .setDescription(`**${target.displayName}**\n\`${roleDisplay}\` ${EMOJIS.CROWN}`)
+      .setDescription(
+        `__${target.displayName}__\n` +
+        `-# Level ${currentLevel} • ${roleDisplay}\n\n` +
+        `__XP Progress__\n` +
+        `-# ${currentXP.toLocaleString()} / ${nextLevelXP.toLocaleString()} XP\n` +
+        `-# ${xpToNext.toLocaleString()} XP to go\n` +
+        `${progressBar} ${Math.floor(progressPercentage)}%\n\n` +
+        `__Earned from chat and voice__\n` +
+        `-# Chat: ${xpBySource.message.toLocaleString()} XP\n` +
+        `-# Voice: ${xpBySource.voice.toLocaleString()} XP\n\n` +
+        `__Leaderboard Rank__\n` +
+        `-# ${rankText}\n\n` +
+        `__Role Ladder__\n` +
+        roleLadder
+      )
       .setColor(0x4900ff)
-      .setThumbnail(target.user.displayAvatarURL())
-      .addFields([
-        { name: 'XP Progress', value: `${progressBar} ${Math.floor(xpProgress)}%`, inline: false },
-        { name: '<:crown:1529443082406461521> Role Progression', value: roleLadder, inline: false },
-      ])
-      .setFooter({ text: 'Bombo Studios' });
+      .setThumbnail(target.user.displayAvatarURL());
+
+    setAuthorHeader(embed, target.displayName, target.user.displayAvatarURL());
+    setStandardFooter(embed);
 
     await message.reply({ embeds: [embed] });
   },

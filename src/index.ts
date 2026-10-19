@@ -9,6 +9,9 @@ import { Command } from './commands/index';
 import { startVoiceTicker, registerGuild } from './services/voiceHandler';
 import { seedManagedRoles, ensureManagedRoles, loadRoleIdCache, refreshAllRoleTemplates } from './services/managedRoles';
 import { startupRoleCheck, runRoleAudit, isAuditOverdue, setLastAuditRun } from './services/roleAudit';
+import { routeInteraction } from './interactions/index';
+import { getActiveTransform, applyTransform } from './services/transform.js';
+import { checkExpiredRoles } from './services/shop.js';
 
 // Extend Client to include commands
 class ExtendedClient extends Client {
@@ -75,7 +78,10 @@ client.once('ready', async () => {
   
   // Schedule daily audit at 04:00 America/New_York
   scheduleDailyAudit();
-  
+
+  // Schedule short interval check for expired roles (every 5 minutes)
+  scheduleExpiredRoleCheck();
+
   console.log('🎬 Bombo Studios is online.');
 });
 
@@ -101,12 +107,13 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
 client.on('interactionCreate', async (interaction) => {
   try {
+    // Route through the interaction router first
+    await routeInteraction(interaction);
+
+    // Handle slash commands
     if (interaction.isChatInputCommand()) {
       const { handleSlashCommand } = await import('./commands/slash/index');
       await handleSlashCommand(interaction);
-    } else if (interaction.isButton()) {
-      const { handleButtonInteraction } = await import('./commands/slash/index');
-      await handleButtonInteraction(interaction);
     } else if (interaction.isModalSubmit()) {
       const { handleModalSubmit } = await import('./commands/slash/index');
       await handleModalSubmit(interaction);
@@ -128,35 +135,85 @@ client.on('messageCreate', async (message) => {
     // Handle XP for all messages first
     await handleXPMessage(message);
 
-    // Ignore bot messages for commands
-    if (message.author.bot) return;
-    
+    // Ignore bot messages for commands (but handle transform webhook messages)
+    if (message.author.bot) {
+      // Skip XP for webhook messages (they're reposts of transformed messages)
+      if (message.webhookId) return;
+      return;
+    }
+
     // Ignore DMs
     if (!message.guild) return;
-    
+
+    // Check for active transform
+    const activeTransform = getActiveTransform(message.author.id, message.channel.id);
+    if (activeTransform) {
+      // Ignore attachments (leave those messages alone)
+      if (message.attachments.size > 0) return;
+
+      // Delete original message
+      await message.delete().catch(() => {});
+
+      // Rewrite text
+      const rewrittenText = applyTransform(message.content, activeTransform.style);
+
+      // Post via webhook (no pings allowed)
+      try {
+        const webhook = await client.fetchWebhook(activeTransform.webhookId, activeTransform.webhookToken);
+        await webhook.send({
+          content: rewrittenText,
+          username: `${message.member?.displayName || message.author.username} (transformed)`,
+          avatarURL: message.author.displayAvatarURL({ size: 128 }),
+          allowedMentions: { parse: [] },
+        });
+      } catch (error) {
+        console.error('Failed to send transformed message via webhook:', error);
+      }
+
+      // Don't process commands from transformed messages
+      return;
+    }
+
     // Get content
     const content = message.content.trim();
-    
+
     // Check if it's a command
     if (content.startsWith(PREFIX) || content.startsWith(ADMIN_PREFIX)) {
       const usedPrefix = content.startsWith(PREFIX) ? PREFIX : ADMIN_PREFIX;
       const args = content.slice(usedPrefix.length).trim().split(/\s+/);
       const commandName = args.shift()?.toLowerCase();
-      
+
       if (!commandName) return;
-      
-      // Find and execute command using prefix-aware key
+
+      // Try to find the command (check for multi-word commands)
+      let finalCommand: Command | null = null;
+      let remainingArgs = args;
+
+      // First try exact match
       const commandKey = `${usedPrefix}:${commandName}`;
-      const command = client.commands.get(commandKey);
-      
+      finalCommand = client.commands.get(commandKey) || null;
+
+      // If not found, try with additional args for multi-word commands (e.g., "rules studio")
+      if (!finalCommand && args.length > 0) {
+        for (let i = 1; i <= args.length; i++) {
+          const multiWordName = [commandName, ...args.slice(0, i)].join(' ');
+          const multiWordKey = `${usedPrefix}:${multiWordName}`;
+          finalCommand = client.commands.get(multiWordKey) || null;
+          if (finalCommand) {
+            remainingArgs = args.slice(i);
+            break;
+          }
+        }
+      }
+
       // Also try 'both' prefix if specific prefix not found
-      const fallbackCommand = !command ? client.commands.get(`both:${commandName}`) : null;
-      
-      const finalCommand = command || fallbackCommand;
-      
+      if (!finalCommand) {
+        finalCommand = client.commands.get(`both:${commandName}`) || null;
+      }
+
       if (finalCommand) {
         try {
-          await finalCommand.execute(message, args, usedPrefix);
+          await finalCommand.execute(message, remainingArgs, usedPrefix);
         } catch (error) {
           console.error(`Error executing command ${commandName}:`, error);
           await message.reply('❌ An error occurred while executing this command.');
@@ -174,7 +231,7 @@ function scheduleDailyAudit(): void {
     try {
       const guild = DEV_GUILD_ID ? client.guilds.cache.get(DEV_GUILD_ID) : client.guilds.cache.first();
       if (!guild) return;
-      
+
       if (await isAuditOverdue()) {
         console.log('[roleAudit] Running scheduled daily audit...');
         const auditSummary = await runRoleAudit(guild);
@@ -185,10 +242,47 @@ function scheduleDailyAudit(): void {
       console.error('[roleAudit] Error in scheduled audit:', error);
     }
   };
-  
+
   // Check every minute if it's time to run the audit
   setInterval(checkAndRunAudit, 60000);
   console.log('[roleAudit] Daily audit scheduler started (checks every minute)');
+}
+
+function scheduleExpiredRoleCheck(): void {
+  const checkExpired = async () => {
+    try {
+      const guild = DEV_GUILD_ID ? client.guilds.cache.get(DEV_GUILD_ID) : client.guilds.cache.first();
+      if (!guild) return;
+
+      const expired = await checkExpiredRoles();
+      if (expired.length > 0) {
+        console.log(`[expiredRoles] Removing ${expired.length} expired archetype subscriptions`);
+        for (const record of expired) {
+          const member = await guild.members.fetch(record.userId).catch(() => null);
+          if (member) {
+            // Get the archetype role ID from shop_archetypes
+            const { getClient } = await import('./database/client.js');
+            const client = await getClient();
+            const roleResult = await client.query(
+              'SELECT role_id FROM shop_archetypes WHERE id = $1',
+              [record.archetypeId]
+            );
+            if (roleResult.rows.length > 0 && roleResult.rows[0].role_id) {
+              await member.roles.remove(roleResult.rows[0].role_id).catch(() => {});
+              console.log(`  - Removed role from ${member.user.username}: ${record.archetypeName}`);
+            }
+            client.release();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[expiredRoles] Error checking expired roles:', error);
+    }
+  };
+
+  // Check every 5 minutes
+  setInterval(checkExpired, 5 * 60 * 1000);
+  console.log('[expiredRoles] Short interval check started (every 5 minutes)');
 }
 
 async function main() {
