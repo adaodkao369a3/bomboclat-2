@@ -82,7 +82,7 @@ client.once('ready', async () => {
   // Schedule short interval check for expired roles (every 5 minutes)
   scheduleExpiredRoleCheck();
 
-  console.log('🎬 Bombo Studios is online.');
+  console.log('🎬 MI BOMBO Studios is online.');
 });
 
 client.on('guildMemberAdd', async (member) => {
@@ -97,8 +97,8 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   try {
     // Fire the thank-you message + residual gift the moment the Guest Star role is newly assigned
     if (!hasBoosterRole(oldMember) && hasBoosterRole(newMember)) {
-      await sendBoosterThankYou(newMember);
-      await giftBoosterResiduals(newMember);
+      const gifted = await giftBoosterResiduals(newMember);
+      await sendBoosterThankYou(newMember, undefined, gifted);
     }
   } catch (error) {
     console.error('Unhandled error in guildMemberUpdate handler:', error);

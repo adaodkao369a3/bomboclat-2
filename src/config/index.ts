@@ -340,39 +340,40 @@ export const BOOST_GIF_QUERIES = [
   'star red carpet',
 ];
 
-// Residuals gifted automatically when someone boosts (becomes Guest Star)
-export const BOOST_RESIDUAL_GIFT = 40;
+// Residuals gifted automatically (once per person) when someone boosts (becomes Guest Star)
+export const BOOST_RESIDUAL_GIFT = 1000;
 
 // Emoji Submission Configuration
 export const EMOJI_XP_THRESHOLD = 3600;
 export const EMOJI_REVIEW_CHANNEL_ID = '1545394590851276891';
 
-// Randomized welcome message lines. {user} = mention, {count} = member number.
+// Randomized welcome message lines - one line each. {user} = mention, {count} = member number.
 export const WELCOME_MESSAGES: string[] = [
-  '{user} just walked onto the set. Welcome to Bombo <:theatre:1558592490662138017> — introduce yourself and start your journey from Audience to Lead Cast <a:typing:1558592831914909830>.',
-  'Say hello to {user}, our newest face at Bombo <a:blobsunglasses:1558593448506822768>. Your story starts here <a:sparkles:1558594196921909278>.',
-  '{user} has entered the building <a:sparklyheart:1558593730943131748> — welcome to Bombo. Grab a seat, the show is just getting started <:theatre:1558592490662138017>.',
-  'The casting call is complete — {user} is officially part of Bombo <:mikucool:1558595810889957377>.',
-  'New face on set: {user} <a:blobsunglasses:1558593448506822768> Welcome to Bombo. Make yourself at home <:theatre:1558592490662138017>.',
-  '{user} just joined Bombo. Member #{count} <a:typing:1558592831914909830> — the community keeps growing <a:sparkles:1558594196921909278>.',
-  'The spotlight welcomes {user} to Bombo <a:sparklyheart:1558593730943131748>. Glad to have you here <:theatre:1558592490662138017>.',
-  '{user} has arrived on set. Bombo welcomes its newest star <a:blobsunglasses:1558593448506822768><a:sparkles:1558594196921909278>.',
-  'One more face, one more story — welcome to Bombo, {user} <:mikucool:1558595810889957377>.',
-  '{user} is officially part of the Bombo cast <a:typing:1558592831914909830>. Let\'s see where your story takes you <:theatre:1558592490662138017>.',
+  '{user} just walked onto the set, welcome to MI BOMBO <:theatre:1558592490662138017>',
+  'Say hello to {user}, our newest face <a:blobsunglasses:1558593448506822768>',
+  '{user} has entered the building <a:sparklyheart:1558593730943131748>',
+  'The casting call is complete, {user} is officially MI BOMBO <:mikucool:1558595810889957377>',
+  'New face on set: {user}, make yourself at home <:theatre:1558592490662138017>',
+  '{user} is member #{count} of MI BOMBO <a:typing:1558592831914909830>',
+  'The spotlight finds {user}, welcome to MI BOMBO <a:sparklyheart:1558593730943131748>',
+  '{user} has arrived, MI BOMBO just got a new star <a:sparkles:1558594196921909278>',
+  'One more face, one more story, welcome {user} <:mikucool:1558595810889957377>',
+  '{user} joined the cast, let the story begin <a:typing:1558592831914909830>',
 ];
 
-// Randomized booster ("Guest Star") message lines, sent to the red carpet channel.
+// Randomized booster ("Guest Star") opening lines, sent to the red carpet channel.
+// The perks list is added underneath by services/welcome.ts. {user} = mention.
 export const BOOST_MESSAGES: string[] = [
-  '{user} just boosted Bombo {crown} Welcome to Guest Star — 40 residuals and custom gif access are on their way {money}.',
-  'Red carpet\'s rolled out for {user} {crown2} thanks for boosting. Guest Star, 40 residuals, custom gifs — all unlocked.',
-  '{user} boosted the server {crown} that\'s Guest Star status unlocked, plus a 40 residual gift {money}.',
-  'Big thanks to {user} for boosting {pink} — Guest Star role, 40 residuals, and custom gifs, all yours now.',
-  '{user} just stepped onto the red carpet {sunglasses} Guest Star status and 40 residuals are locked in.',
-  'Bombo just got a boost from {user} {crown} enjoy your 40 residuals and custom gif access.',
-  '{user} boosted the server {money} that\'s a 40 residual thank-you gift and Guest Star perks headed your way.',
-  'Thank you {user} for the boost {crown2} you\'re Guest Star now, 40 residuals and custom gifs unlocked.',
-  '{user} just gave Bombo a boost {orange} Guest Star role, 40 residuals, custom gif access — thank you.',
-  'Red carpet moment: {user} boosted Bombo {crown} Guest Star unlocked, 40 residuals gifted.',
+  '{user} just boosted MI BOMBO {crown} the red carpet is rolled out {money}',
+  'Red carpet\'s rolled out for {user} {crown2} thanks for the boost',
+  '{user} boosted the server {crown} welcome to the Guest Stars {money}',
+  'Big thanks to {user} for boosting {pink}',
+  '{user} just stepped onto the red carpet {sunglasses}',
+  'MI BOMBO just got a boost from {user} {crown}',
+  'Thank you {user} for the boost {crown2} you\'re a Guest Star now',
+  '{user} just gave MI BOMBO a boost {orange} thank you',
+  'Red carpet moment: {user} boosted MI BOMBO {crown}',
+  '{user} boosted the server {money} Guest Star unlocked',
 ];
 
 // Database Schema
@@ -477,6 +478,9 @@ ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS max_holders INTEGER;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS monthly BOOLEAN DEFAULT false;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
 ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+-- Permanent persona identifier (code never matches personas by display name)
+ALTER TABLE shop_archetypes ADD COLUMN IF NOT EXISTS persona_key TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS shop_archetypes_persona_key_idx ON shop_archetypes(persona_key);
 
 -- Part 4: Drop old columns that are no longer used
 -- First drop NOT NULL constraint from slot_group
@@ -525,9 +529,6 @@ END $$;
 
 ALTER TABLE shop_colors DROP COLUMN IF EXISTS price_band;
 
--- Unique index to prevent double-charging on color purchases
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_colors_unique ON user_colors(user_id, color_id);
-
 -- User archetypes table
 CREATE TABLE IF NOT EXISTS user_archetypes (
   id SERIAL PRIMARY KEY,
@@ -547,6 +548,9 @@ CREATE TABLE IF NOT EXISTS user_colors (
   acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   free_grant BOOLEAN DEFAULT FALSE
 );
+
+-- Unique index to prevent double-charging on color purchases
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_colors_unique ON user_colors(user_id, color_id);
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_xp_transactions_user_id ON xp_transactions(user_id);

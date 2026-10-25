@@ -6,8 +6,9 @@ import {
   WELCOME_MESSAGES,
   BOOST_MESSAGES,
   BOOST_RESIDUAL_GIFT,
+  BOOSTER_ROLE_LABEL,
 } from '../config/index.js';
-import { getOrCreateUser } from '../database/client.js';
+import { getOrCreateUser, getClient } from '../database/client.js';
 import { ResidualsService } from './residuals.js';
 import { assignRolesOnJoin } from './roleAudit.js';
 import { readFileSync } from 'fs';
@@ -69,7 +70,7 @@ export async function sendWelcomeMessage(member: GuildMember, testChannel?: any)
       .setDescription(line)
       .setColor(0x9b5de5)
       .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Member #${member.guild.memberCount} - Bombo` })
+      .setFooter({ text: `Member #${member.guild.memberCount} - MI BOMBO` })
       .setTimestamp();
 
     // Use welcome.png as the image
@@ -94,7 +95,7 @@ export async function sendWelcomeMessage(member: GuildMember, testChannel?: any)
  * @param member - The guild member who boosted
  * @param testChannel - Optional channel to send to for testing (if provided, skips residual gifting)
  */
-export async function sendBoosterThankYou(member: GuildMember, testChannel?: any): Promise<void> {
+export async function sendBoosterThankYou(member: GuildMember, testChannel?: any, gifted: boolean = true): Promise<void> {
   try {
     const channel = testChannel || member.guild.channels.cache.get(CHANNELS.BOOSTER_THANKYOU);
     if (!channel || !channel.isTextBased()) {
@@ -111,8 +112,9 @@ export async function sendBoosterThankYou(member: GuildMember, testChannel?: any
 
     const embed = new EmbedBuilder()
       .setDescription(line)
+      .addFields({ name: `${EMOJIS.CROWN} Your Guest Star perks`, value: buildBoosterPerks(gifted), inline: false })
       .setColor(0xF47FFF)
-      .setFooter({ text: `Guest Star #${guestStarCountValue} - Bombo` })
+      .setFooter({ text: `Guest Star #${guestStarCountValue} - MI BOMBO` })
       .setTimestamp();
 
     // Use booster.png as the thumbnail (right side of embed)
@@ -133,12 +135,46 @@ export async function sendBoosterThankYou(member: GuildMember, testChannel?: any
 }
 
 /**
+ * The list of things a Guest Star gets. Keep this in sync with what the bot
+ * really does (XP multiplier in xp.ts, access in permissions.ts, and the
+ * target protection in perish.ts / transform.ts).
+ */
+export function buildBoosterPerks(gifted: boolean = true): string {
+  const gift = gifted
+    ? `${EMOJIS.MONEY} **${BOOST_RESIDUAL_GIFT.toLocaleString('en-US')} residuals**, a one-time thank-you gift`
+    : `${EMOJIS.MONEY} Your one-time residual gift was already claimed on your first boost`;
+  return [
+    `${EMOJIS.CROWN} The **${BOOSTER_ROLE_LABEL}** role`,
+    gift,
+    `${EMOJIS.FIRE} **+25% XP** on messages and voice`,
+    `${EMOJIS.GLOSSY_STAR} **Custom GIF search** with \`.c\`, unlocked from the start`,
+    `${EMOJIS.CROWN2} **Protected** from \`.perish\` and \`.transform\``,
+  ].join('\n');
+}
+
+/**
  * Gifts a one-time residual bonus to a new Guest Star. Safe to call even if
  * the user has no DB row yet.
  */
-export async function giftBoosterResiduals(member: GuildMember): Promise<void> {
+export async function giftBoosterResiduals(member: GuildMember): Promise<boolean> {
   try {
     await getOrCreateUser(member.user.id, member.user.username, member.user.displayName);
+
+    // One gift per person, ever, so boosting/unboosting can't be farmed
+    const client = await getClient();
+    try {
+      const prior = await client.query(
+        "SELECT 1 FROM residual_transactions WHERE user_id = $1 AND source = 'boost' LIMIT 1",
+        [member.user.id]
+      );
+      if (prior.rows.length > 0) {
+        console.log(`[booster] ${member.user.id} already received the boost gift; skipping.`);
+        return false;
+      }
+    } finally {
+      client.release();
+    }
+
     const result = await ResidualsService.awardResiduals(
       member.user.id,
       BOOST_RESIDUAL_GIFT,
@@ -147,15 +183,13 @@ export async function giftBoosterResiduals(member: GuildMember): Promise<void> {
     );
     if (result === null) {
       console.error(`[booster] Failed to gift ${BOOST_RESIDUAL_GIFT} residuals to ${member.user.id}`);
-    } else {
-      console.log(`[booster] Gifted ${BOOST_RESIDUAL_GIFT} residuals to ${member.user.id} (Guest Star boost)`);
-      
-      // Note: Free archetype and color grants are handled through the shop UI
-      // Users can claim their free Standard archetype and Common color via the shop
-      // The shop system tracks free grant eligibility separately
+      return false;
     }
+    console.log(`[booster] Gifted ${BOOST_RESIDUAL_GIFT} residuals to ${member.user.id} (Guest Star boost)`);
+    return true;
   } catch (error) {
     console.error('[booster] Failed to gift booster residuals:', error);
+    return false;
   }
 }
 

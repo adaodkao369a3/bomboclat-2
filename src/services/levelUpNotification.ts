@@ -80,8 +80,8 @@ export function getUnlockedPerks(role: string): string[] {
         '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
         '<:star:1545002693368750193> Additional media permissions',
         '🧠 Mastermind privileges',
-        '� Rare shop access',
-        '�👑 VIP status',
+        '💎 Rare shop access',
+        '👑 VIP status',
       ];
     case 'kingpin':
       return [
@@ -163,7 +163,7 @@ export async function sendLevelUpNotification(
         { name: 'Current Role', value: formatRole(currentRole), inline: true },
         { name: 'Perks Unlocked', value: perksText, inline: false },
       )
-      .setFooter({ text: 'Bombo Studios' })
+      .setFooter({ text: 'MI BOMBO Studios' })
       .setThumbnail(avatarUrl);
 
     const castingChannel = guild.channels.cache.get(CHANNELS.CASTING);

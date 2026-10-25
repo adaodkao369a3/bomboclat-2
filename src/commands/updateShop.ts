@@ -1,10 +1,7 @@
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, AttachmentBuilder, TextChannel } from 'discord.js';
 import { CHANNELS } from '../config/index.js';
-import type { Guild } from 'discord.js';
 import {
-  getShopArchetypes,
   getShopArchetypesByTier,
-  getShopColors,
   getShopColorsByTier,
   seedShopArchetypes,
   seedShopColors,
@@ -14,6 +11,7 @@ import {
 import { generateColorGridImage, generateArchetypeGridImage } from '../services/shopImages.js';
 import { isBotOwner } from '../utils/permissions.js';
 import { Command } from './index.js';
+import { unlockLine } from '../services/shopText.js';
 import { TIER_SYMBOLS, COLOR_TIERS } from '../config/colors.js';
 import { PERSONA_TIER_SYMBOLS, PERSONA_TIERS } from '../config/archetypes.js';
 
@@ -86,16 +84,14 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
       const buffer = generateColorGridImage(chunk);
       const file = new AttachmentBuilder(buffer, { name: filename });
 
-      const firstColor = chunk[0];
-      const unlockLevel = firstColor.min_level;
       const embed = new EmbedBuilder()
         .setTitle(chunkTitle)
-        .setDescription(`Unlocks at level ${unlockLevel}. Pick one below to buy or equip it.`)
+        .setDescription(unlockLine(chunk, 'buy or equip'))
         .setColor(0x4900ff)
         .setImage(`attachment://${filename}`);
 
       const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId(`shop_select_color_${tier.replace(/\s+/g, '_')}_${chunkIndex}`)
+        .setCustomId(`shop:pickcolor:${tier.replace(/\s+/g, '_')}:${chunkIndex}`)
         .setPlaceholder(`Select a ${tier.toLowerCase()} color`)
         .setMinValues(1)
         .setMaxValues(1);
@@ -106,12 +102,12 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
           new StringSelectMenuOptionBuilder()
             .setLabel(`${formattedName} - ${color.price} residuals`)
             .setValue(color.id.toString())
-            .setDescription(color.hex)
+            .setDescription(`Level ${color.min_level} · ${color.hex}`)
         );
       }
 
       // Find and edit existing message by customId
-      const customId = `shop_select_color_${tier.replace(/\s+/g, '_')}_${chunkIndex}`;
+      const customId = `shop:pickcolor:${tier.replace(/\s+/g, '_')}:${chunkIndex}`;
       const existingMessages = await shopChannel.messages.fetch({ limit: 100 });
       const existing = existingMessages.find(
         msg => msg.author.id === shopChannel.client.user?.id &&
@@ -138,7 +134,7 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
 }
 
 async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: Record<string, (ShopArchetype & { currentHolders: number })[]>): Promise<void> {
-  for (const tier of [PERSONA_TIERS.LEGENDARY, PERSONA_TIERS.ELITE, PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.SPECIAL] as const) {
+  for (const tier of [PERSONA_TIERS.SPECIAL, PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.ELITE, PERSONA_TIERS.LEGENDARY] as const) {
     const tierArchetypes = archetypesByTier[tier];
     if (!tierArchetypes || tierArchetypes.length === 0) continue;
 
@@ -146,7 +142,7 @@ async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: R
     const title = `${symbol} ${tier}`;
 
     // Split into chunks of max 6 archetypes per embed
-    const chunks: ShopArchetype[][] = [];
+    const chunks: (ShopArchetype & { currentHolders: number })[][] = [];
     for (let i = 0; i < tierArchetypes.length; i += 6) {
       chunks.push(tierArchetypes.slice(i, i + 6));
     }
@@ -160,16 +156,14 @@ async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: R
       const buffer = await generateArchetypeGridImage(chunk);
       const file = new AttachmentBuilder(buffer, { name: filename });
 
-      const firstArchetype = chunk[0];
-      const unlockLevel = firstArchetype.min_level;
       const embed = new EmbedBuilder()
         .setTitle(chunkTitle)
-        .setDescription(`Unlocks at level ${unlockLevel}. Pick one below to buy it.`)
+        .setDescription(unlockLine(chunk, 'buy'))
         .setColor(0x4900ff)
         .setImage(`attachment://${filename}`);
 
       const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId(`shop_select_archetype_${tier.replace(/\s+/g, '_')}_${chunkIndex}`)
+        .setCustomId(`shop:pickpersona:${tier.replace(/\s+/g, '_')}:${chunkIndex}`)
         .setPlaceholder(`Select a ${tier.toLowerCase()} persona`)
         .setMinValues(1)
         .setMaxValues(1);
@@ -181,12 +175,12 @@ async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: R
           new StringSelectMenuOptionBuilder()
             .setLabel(`${formattedName} - ${archetype.price} residuals`)
             .setValue(archetype.id.toString())
-            .setDescription(`Holders: ${holdersText}`)
+            .setDescription(`Level ${archetype.min_level} · Holders: ${holdersText}${archetype.monthly ? ' (monthly)' : ''}`)
         );
       }
 
       // Find and edit existing message by customId
-      const customId = `shop_select_archetype_${tier.replace(/\s+/g, '_')}_${chunkIndex}`;
+      const customId = `shop:pickpersona:${tier.replace(/\s+/g, '_')}:${chunkIndex}`;
       const existingMessages = await shopChannel.messages.fetch({ limit: 100 });
       const existing = existingMessages.find(
         msg => msg.author.id === shopChannel.client.user?.id &&

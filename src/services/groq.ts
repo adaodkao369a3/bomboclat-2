@@ -91,7 +91,7 @@ export async function generateText(prompt: string, systemInstruction?: string): 
 export async function generateClipSummary(messages: Array<{ author: string; content: string }>): Promise<{ title: string; summary: string } | null> {
   const messageText = messages.map(msg => `${msg.author}: ${msg.content}`).join('\n');
   
-  const prompt = `Based on these Discord messages, create a funny summary for Bombo Studios.
+  const prompt = `Based on these Discord messages, create a funny summary for MI BOMBO Studios.
 
 Messages:
 ${messageText}

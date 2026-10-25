@@ -114,9 +114,9 @@ function createLeaderboardEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle('<:ladder:1545126567145906246> TOP CAST')
-    .setDescription('The most active members of Bombo')
+    .setDescription('The most active members of MI BOMBO')
     .setColor(0x4900ff)
-    .setFooter({ text: 'Bombo Studios' });
+    .setFooter({ text: 'MI BOMBO Studios' });
 
   if (entries.length === 0) {
     embed.setDescription('No members have XP yet.');

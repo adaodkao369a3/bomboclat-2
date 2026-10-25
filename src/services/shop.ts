@@ -1,9 +1,11 @@
 import { getClient } from '../database/client.js';
 import { COLORS_CONFIG, RETIRED_COLORS } from '../config/colors.js';
-import { PERSONAS_CONFIG } from '../config/archetypes.js';
+import { PERSONAS_CONFIG, PERSONA_KEYS } from '../config/archetypes.js';
+import { levelTooLow } from './shopText.js';
 
 export interface ShopArchetype {
   id: number;
+  persona_key: string | null;
   name: string;
   tier: string;
   price: number;
@@ -30,6 +32,9 @@ export interface UserArchetype {
   id: number;
   user_id: string;
   archetype_id: number;
+  persona_key: string | null;
+  role_id: string | null;
+  monthly: boolean;
   slot_index: number;
   acquired_at: Date;
   free_grant: boolean;
@@ -51,34 +56,59 @@ export interface UserColor {
 }
 
 // Seed shop personas (idempotent).
+// Personas are identified by their permanent persona_key. Display names can
+// change in the config without losing owners, role IDs or holder counts.
 export async function seedShopArchetypes(): Promise<void> {
   const client = await getClient();
   try {
-    // First, delete all old personas (nobody owns any, so safe to remove)
-    await client.query('DELETE FROM shop_archetypes');
+    const keys = PERSONAS_CONFIG.map(p => p.key);
 
-    // Insert new personas from config
+    // Backfill: rows created before persona_key existed are matched by name once.
     for (const personaConfig of PERSONAS_CONFIG) {
       await client.query(
-        `INSERT INTO shop_archetypes (name, tier, price, min_level, max_holders, monthly, active, role_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (name) DO UPDATE SET
+        `UPDATE shop_archetypes SET persona_key = $1
+         WHERE persona_key IS NULL AND name = $2
+           AND NOT EXISTS (SELECT 1 FROM shop_archetypes WHERE persona_key = $1)`,
+        [personaConfig.key, personaConfig.name]
+      );
+    }
+
+    // Retire personas that are no longer in the config. Rows nobody owns are
+    // removed; rows people own are only hidden (never DELETE owned rows).
+    await client.query(
+      'UPDATE shop_archetypes SET active = false WHERE persona_key IS NULL OR NOT (persona_key = ANY($1::text[]))',
+      [keys]
+    );
+    await client.query(
+      `DELETE FROM shop_archetypes sa
+       WHERE (sa.persona_key IS NULL OR NOT (sa.persona_key = ANY($1::text[])))
+         AND NOT EXISTS (SELECT 1 FROM user_archetypes ua WHERE ua.archetype_id = sa.id)`,
+      [keys]
+    );
+
+    // Insert / update personas from config (role_id is kept)
+    for (const personaConfig of PERSONAS_CONFIG) {
+      await client.query(
+        `INSERT INTO shop_archetypes (persona_key, name, tier, price, min_level, max_holders, monthly, active, sort_order, role_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, NULL)
+         ON CONFLICT (persona_key) DO UPDATE SET
+           name = EXCLUDED.name,
            tier = EXCLUDED.tier,
            price = EXCLUDED.price,
            min_level = EXCLUDED.min_level,
            max_holders = EXCLUDED.max_holders,
            monthly = EXCLUDED.monthly,
-           active = EXCLUDED.active,
-           role_id = COALESCE(EXCLUDED.role_id, shop_archetypes.role_id)`,
+           active = true,
+           sort_order = EXCLUDED.sort_order`,
         [
+          personaConfig.key,
           personaConfig.name,
           personaConfig.tier,
           personaConfig.price,
           personaConfig.minLevel,
           personaConfig.maxHolders,
           personaConfig.monthly,
-          true, // active
-          null, // role_id will be set by $shop
+          personaConfig.sortOrder,
         ]
       );
     }
@@ -214,10 +244,15 @@ export async function getUserArchetypes(userId: string): Promise<UserArchetype[]
   const client = await getClient();
   try {
     const result = await client.query(
-      `SELECT ua.*, sa.name, sa.tier, sa.price
+      `SELECT ua.*, sa.persona_key, sa.role_id, sa.monthly, sa.name, sa.tier, sa.price
        FROM user_archetypes ua
        JOIN shop_archetypes sa ON ua.archetype_id = sa.id
        WHERE ua.user_id = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM role_expiry re
+           WHERE re.user_id = ua.user_id AND re.archetype_id = ua.archetype_id
+             AND re.expires_at <= CURRENT_TIMESTAMP
+         )
        ORDER BY ua.slot_index, ua.acquired_at`,
       [userId]
     );
@@ -273,7 +308,10 @@ export async function purchaseArchetype(
       return { success: false, reason: 'This archetype is no longer available' };
     }
 
-    // Check level gate (only for Unknown Entity, others can buy at any level with enough cash)
+    // Unknown Entity is special: no limit, no refund, doesn't replace existing archetype
+    const isUnknownEntity = archetype.persona_key === PERSONA_KEYS.UNKNOWN_ENTITY;
+
+    // Level gate (checked below)
     const userResult = await client.query(
       'SELECT current_level FROM users WHERE user_id = $1 FOR UPDATE',
       [userId]
@@ -284,10 +322,22 @@ export async function purchaseArchetype(
     }
     const userLevel = userResult.rows[0].current_level;
 
-    // Only Unknown Entity has a hard level requirement
-    if (isUnknownEntity && userLevel < archetype.min_level) {
+    // Every persona is level-gated
+    if (userLevel < archetype.min_level) {
       await client.query('ROLLBACK');
-      return { success: false, reason: `Unlocks at level ${archetype.min_level}` };
+      return { success: false, reason: levelTooLow(archetype.min_level) };
+    }
+
+    // Already owns this persona? (checked before the cap so the message is accurate)
+    if (!isUnknownEntity) {
+      const alreadyOwned = await client.query(
+        'SELECT 1 FROM user_archetypes WHERE user_id = $1 AND archetype_id = $2',
+        [userId, archetypeId]
+      );
+      if (alreadyOwned.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return { success: false, reason: 'You already own this persona' };
+      }
     }
 
     // Check server-wide holder cap (unless unlimited)
@@ -302,9 +352,6 @@ export async function purchaseArchetype(
         return { success: false, reason: `All ${archetype.max_holders} spots are taken` };
       }
     }
-
-    // Unknown Entity is special: no limit, no refund, doesn't replace existing archetype
-    const isUnknownEntity = archetype.name === 'Unknown Entity';
 
     // For Unknown Entity, check if user already has an active (non-expired) subscription
     if (isUnknownEntity) {
@@ -326,12 +373,20 @@ export async function purchaseArchetype(
     // If user already has an archetype and this isn't Unknown Entity, remove it and refund 50%
     if (!isUnknownEntity) {
       const existingResult = await client.query(
-        'SELECT archetype_id, free_grant FROM user_archetypes WHERE user_id = $1',
+        `SELECT ua.archetype_id, ua.free_grant
+         FROM user_archetypes ua
+         JOIN shop_archetypes sa ON sa.id = ua.archetype_id
+         WHERE ua.user_id = $1 AND sa.monthly = false`,
         [userId]
       );
 
       if (existingResult.rows.length > 0) {
         const existingArchetype = existingResult.rows[0];
+
+        if (existingArchetype.archetype_id === archetypeId) {
+          await client.query('ROLLBACK');
+          return { success: false, reason: 'You already own this persona' };
+        }
 
         // Get price of existing archetype for refund
         const existingPriceResult = await client.query(
@@ -347,8 +402,8 @@ export async function purchaseArchetype(
 
         // Remove existing archetype
         await client.query(
-          'DELETE FROM user_archetypes WHERE user_id = $1',
-          [userId]
+          'DELETE FROM user_archetypes WHERE user_id = $1 AND archetype_id = $2',
+          [userId, existingArchetype.archetype_id]
         );
       }
     }
@@ -471,7 +526,7 @@ export async function purchaseColor(
       return { success: false, reason: 'This color is no longer available' };
     }
 
-    // Get user data (no level gate for colors - just need cash)
+    // Get user data (colors are level-gated)
     const userResult = await client.query(
       'SELECT current_level FROM users WHERE user_id = $1 FOR UPDATE',
       [userId]
@@ -480,7 +535,10 @@ export async function purchaseColor(
       await client.query('ROLLBACK');
       return { success: false, reason: 'User not found' };
     }
-    // Colors can be purchased at any level - minLevel is for display only
+    if (userResult.rows[0].current_level < color.min_level) {
+      await client.query('ROLLBACK');
+      return { success: false, reason: levelTooLow(color.min_level) };
+    }
 
     // Check if user already owns this specific color (unique index handles this, but check for better error message)
     const ownedResult = await client.query(
@@ -673,7 +731,7 @@ export async function sellArchetype(
       `SELECT ua.archetype_id, ua.free_grant, sa.name, sa.price, sa.role_id
        FROM user_archetypes ua
        JOIN shop_archetypes sa ON ua.archetype_id = sa.id
-       WHERE ua.user_id = $1`,
+       WHERE ua.user_id = $1 AND sa.monthly = false`,
       [userId]
     );
 
@@ -691,7 +749,7 @@ export async function sellArchetype(
     );
     const balanceBefore = balanceResult.rows[0].total_residuals_balance;
 
-    await client.query('DELETE FROM user_archetypes WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM user_archetypes WHERE user_id = $1 AND archetype_id = $2', [userId, owned.archetype_id]);
 
     if (refund > 0) {
       await client.query(

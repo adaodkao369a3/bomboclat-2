@@ -116,7 +116,7 @@ function createLeaderboardEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle('<a:cash:1545126549035024524> RESIDUALS LEADERBOARD')
-    .setDescription('The wealthiest members of Bombo Studios')
+    .setDescription('The wealthiest members of MI BOMBO Studios')
     .setColor(0xFFD700)
     .setFooter({ text: `Page ${page}/${totalPages} • ${total} members with residuals` });
 
