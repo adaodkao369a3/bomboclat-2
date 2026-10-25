@@ -4,6 +4,8 @@
  */
 
 export interface PersonaConfig {
+  /** Permanent identifier. Never change it, even if the display name changes. */
+  key: string;
   name: string;
   tier: string;
   price: number;
@@ -13,6 +15,15 @@ export interface PersonaConfig {
   sortOrder: number;
   signatureColor: string;
 }
+
+/** Keys of personas that have special behaviour in code */
+export const PERSONA_KEYS = {
+  UNKNOWN_ENTITY: 'unknown-entity',
+  THE_COMEDIAN: 'the-comedian',
+} as const;
+
+/** Low → high, the order tiers are shown in shop and help */
+export const PERSONA_TIER_ORDER: string[] = ['Special', 'High-status', 'Elite', 'Legendary'];
 
 export const PERSONA_TIERS = {
   LEGENDARY: 'Legendary',
@@ -24,7 +35,7 @@ export const PERSONA_TIERS = {
 export const PERSONA_TIER_SYMBOLS: Record<string, string> = {
   [PERSONA_TIERS.LEGENDARY]: '👑',
   [PERSONA_TIERS.ELITE]: '⚔️',
-  [PERSONA_TIERS.HIGH_STATUS]: '�',
+  [PERSONA_TIERS.HIGH_STATUS]: '🛡️',
   [PERSONA_TIERS.SPECIAL]: '🎭',
 };
 
@@ -71,6 +82,7 @@ export const PERSONA_SIGNATURE_COLORS: Record<string, string> = {
 export const PERSONAS_CONFIG: PersonaConfig[] = [
   // Legendary Tier (Level 90+) - 5000 residuals
   {
+    key: 'lord-of-the-heian-era',
     name: 'Lord of the Heian Era',
     tier: PERSONA_TIERS.LEGENDARY,
     price: 5000,
@@ -81,6 +93,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Lord of the Heian Era'],
   },
   {
+    key: 'the-angels',
     name: 'The Angels',
     tier: PERSONA_TIERS.LEGENDARY,
     price: 5000,
@@ -91,6 +104,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['The Angels'],
   },
   {
+    key: 'witches-of-sin',
     name: 'Witches of Sin',
     tier: PERSONA_TIERS.LEGENDARY,
     price: 5000,
@@ -101,6 +115,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Witches of Sin'],
   },
   {
+    key: 's-class-heroes',
     name: 'S-Class Heroes',
     tier: PERSONA_TIERS.LEGENDARY,
     price: 5000,
@@ -111,6 +126,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['S-Class Heroes'],
   },
   {
+    key: 'the-espada',
     name: 'The Espada',
     tier: PERSONA_TIERS.LEGENDARY,
     price: 5000,
@@ -122,6 +138,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
   },
   // Elite Tier (Level 70+) - 3000 residuals (6 items)
   {
+    key: 'the-hashira',
     name: 'The Hashira',
     tier: PERSONA_TIERS.ELITE,
     price: 3000,
@@ -132,6 +149,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['The Hashira'],
   },
   {
+    key: 'the-wizard-king',
     name: 'The Wizard King',
     tier: PERSONA_TIERS.ELITE,
     price: 3000,
@@ -142,6 +160,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['The Wizard King'],
   },
   {
+    key: 'the-seven-shadows',
     name: 'The Seven Shadows',
     tier: PERSONA_TIERS.ELITE,
     price: 3000,
@@ -152,6 +171,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['The Seven Shadows'],
   },
   {
+    key: 'soul-society',
     name: 'Soul Society',
     tier: PERSONA_TIERS.ELITE,
     price: 3000,
@@ -162,6 +182,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Soul Society'],
   },
   {
+    key: 'zoldyck-family',
     name: 'Zoldyck Family',
     tier: PERSONA_TIERS.ELITE,
     price: 3000,
@@ -172,6 +193,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Zoldyck Family'],
   },
   {
+    key: 'viltrumites',
     name: 'Viltrumites',
     tier: PERSONA_TIERS.ELITE,
     price: 3000,
@@ -183,6 +205,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
   },
   // High-status Tier (Level 50+) - 2000 residuals (6 items with Control Devil moved here)
   {
+    key: 'special-division-4',
     name: 'Special Division 4',
     tier: PERSONA_TIERS.HIGH_STATUS,
     price: 2000,
@@ -193,6 +216,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Special Division 4'],
   },
   {
+    key: 'the-jedi-council',
     name: 'The Jedi Council',
     tier: PERSONA_TIERS.HIGH_STATUS,
     price: 2000,
@@ -203,6 +227,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['The Jedi Council'],
   },
   {
+    key: 'straw-hat-pirates',
     name: 'Straw Hat Pirates',
     tier: PERSONA_TIERS.HIGH_STATUS,
     price: 2000,
@@ -213,6 +238,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Straw Hat Pirates'],
   },
   {
+    key: 'jobros',
     name: 'Jobros',
     tier: PERSONA_TIERS.HIGH_STATUS,
     price: 2000,
@@ -223,6 +249,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Jobros'],
   },
   {
+    key: 'egoists',
     name: 'Egoists',
     tier: PERSONA_TIERS.HIGH_STATUS,
     price: 2000,
@@ -233,6 +260,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['Egoists'],
   },
   {
+    key: 'control-devil',
     name: 'Control Devil',
     tier: PERSONA_TIERS.HIGH_STATUS,
     price: 2000,
@@ -244,6 +272,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
   },
   // Special Tier (Level 30+) - 5000 residuals (Unknown Entity keeps level 100 requirement)
   {
+    key: 'the-comedian',
     name: 'The Comedian',
     tier: PERSONA_TIERS.SPECIAL,
     price: 5000,
@@ -254,6 +283,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['The Comedian'],
   },
   {
+    key: 'ceo-of-sex',
     name: 'CEO of Sex',
     tier: PERSONA_TIERS.SPECIAL,
     price: 5000,
@@ -264,6 +294,7 @@ export const PERSONAS_CONFIG: PersonaConfig[] = [
     signatureColor: PERSONA_SIGNATURE_COLORS['CEO of Sex'],
   },
   {
+    key: 'unknown-entity',
     name: 'Unknown Entity',
     tier: PERSONA_TIERS.SPECIAL,
     price: 5000,

@@ -1,11 +1,18 @@
 import { applyUwu, applyTsundere } from '../src/services/transform.js';
 import { SCHEMA } from '../src/config/index.js';
-import { ARCHETYPES_CONFIG } from '../src/config/archetypes.js';
+import { PERSONAS_CONFIG } from '../src/config/archetypes.js';
 import { checkExpiredRoles } from '../src/services/shop.js';
 import { perishCommand } from '../src/commands/perish.js';
 import { transformCommand } from '../src/commands/transform.js';
 import { settingsCommand } from '../src/commands/settings.js';
 import { registerTransform, getActiveTransform, removeTransform } from '../src/services/transform.js';
+
+let failed = 0;
+const origLog = console.log;
+console.log = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && args[0].startsWith('✗')) failed++;
+  origLog(...args);
+};
 
 console.log('Running Part 6 tests...\n');
 
@@ -19,9 +26,9 @@ if (SCHEMA.includes('role_expiry') && SCHEMA.includes('expires_at')) {
 
 // Test 2: Unknown Entity has monthly flag in config
 console.log('\nTest 2: Unknown Entity monthly flag...');
-const unknownEntity = ARCHETYPES_CONFIG.find(a => a.name === 'Unknown Entity');
-if (unknownEntity && unknownEntity.monthly === true && unknownEntity.minLevel === 100 && unknownEntity.price === 1500) {
-  console.log('✓ Test 2 passed: Unknown Entity configured as monthly (level 100, 1500 residuals)');
+const unknownEntity = PERSONAS_CONFIG.find(a => a.name === 'Unknown Entity');
+if (unknownEntity && unknownEntity.monthly === true && unknownEntity.minLevel === 100 && unknownEntity.maxHolders === null) {
+  console.log('✓ Test 2 passed: Unknown Entity configured as monthly (level 100, unlimited holders)');
 } else {
   console.log('✗ Test 2 failed: Unknown Entity not configured correctly');
 }
@@ -105,4 +112,8 @@ console.log('\nTest 10: Commands exported from index...');
 // So we'll just verify the files exist
 console.log('✓ Test 10 passed: Commands files exist and are structured correctly');
 
+if (failed > 0) {
+  console.log(`\n${failed} Part 6 test(s) FAILED`);
+  process.exit(1);
+}
 console.log('\n✓ All Part 6 tests passed!');

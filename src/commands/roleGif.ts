@@ -1,23 +1,25 @@
 import { EmbedBuilder } from 'discord.js';
-import { ROLE_GIF_COMMANDS } from '../config/roleGifCommands.js';
+import { ROLE_GIF_COMMANDS, type RoleGifCommand } from '../config/roleGifCommands.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { getUserArchetypes } from '../services/shop.js';
+import { PERSONAS_CONFIG } from '../config/archetypes.js';
 import { Command } from './index.js';
 
-function createRoleGifCommand(roleGif: { role: string; name: string; query: string; caption: string }): Command {
+function createRoleGifCommand(roleGif: RoleGifCommand): Command {
   return {
     name: roleGif.name,
     allowedPrefix: '.',
     async execute(message, _args, _prefix) {
       const userId = message.author.id;
 
-      // Check if user owns the required archetype role in the database
+      // Ownership comes from the purchase record (persona key), never from role names
       const userArchetypes = await getUserArchetypes(userId);
-      const ownsRole = userArchetypes.some(ua => ua.name === roleGif.role);
+      const ownsRole = userArchetypes.some(ua => ua.persona_key === roleGif.persona);
 
       if (!ownsRole) {
-        await message.reply(`❌ This command requires the **${roleGif.role}** archetype role.`);
+        const personaName = PERSONAS_CONFIG.find(p => p.key === roleGif.persona)?.name ?? 'the required';
+        await message.reply(`❌ This command requires the **${personaName}** persona.`);
         return;
       }
 

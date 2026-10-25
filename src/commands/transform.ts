@@ -1,4 +1,5 @@
 import { getUserArchetypes } from '../services/shop.js';
+import { PERSONA_KEYS } from '../config/archetypes.js';
 import { getSetting, setSetting, logStaffAction } from '../services/settings.js';
 import { ROLES } from '../config/index.js';
 import { isStaff } from '../utils/permissions.js';
@@ -37,7 +38,7 @@ export const transformCommand: Command = {
 
     // Check if user has Unknown Entity or The Comedian
     const userArchetypes = await getUserArchetypes(message.author.id);
-    const hasValidArchetype = userArchetypes.some(a => a.name === 'Unknown Entity' || a.name === 'The Comedian');
+    const hasValidArchetype = userArchetypes.some(a => a.persona_key === PERSONA_KEYS.UNKNOWN_ENTITY || a.persona_key === PERSONA_KEYS.THE_COMEDIAN);
 
     if (!hasValidArchetype) {
       await message.reply('❌ Only Unknown Entity or The Comedian holders can use this command.');
@@ -85,7 +86,7 @@ export const transformCommand: Command = {
     }
 
     const targetArchetypes = await getUserArchetypes(target.id);
-    const targetHasUnknownEntity = targetArchetypes.some(a => a.name === 'Unknown Entity');
+    const targetHasUnknownEntity = targetArchetypes.some(a => a.persona_key === PERSONA_KEYS.UNKNOWN_ENTITY);
     if (targetHasUnknownEntity) {
       await message.reply('❌ You cannot target other Unknown Entity holders.');
       return;

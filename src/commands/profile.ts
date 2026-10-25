@@ -7,7 +7,7 @@ import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { cooldownMessage, setAuthorHeader, setStandardFooter } from '../ui/index.js';
 import { getUnlockedPerks } from '../services/levelUpNotification.js';
 import { EMOJIS } from '../config/index.js';
-import { getAvailableCommands } from './registry.js';
+import { getAvailableCommands, CommandAccess } from './registry.js';
 import { Command } from './index.js';
 import { registerInteractionHandler, parseCustomId, isInteractionExpired } from '../interactions/index.js';
 
@@ -65,14 +65,35 @@ registerInteractionHandler('profile', async (interaction) => {
   const targetMember = guild?.members.cache.get(targetUserId);
 
   if (action === 'commands') {
-    // Show commands view
-    const userRoles = targetMember?.roles.cache.map(r => r.name) || [];
-    const availableCommands = getAvailableCommands(currentLevel, userRoles);
-    const perks = getUnlockedPerks(currentRole);
+    // Show the commands the person pressing the button can use right now.
+    // Personas come from the database purchase record (by persona key),
+    // never from Discord role names.
+    const viewerData = ownerId === targetUserId ? userData : await getUser(ownerId);
+    const viewerLevel = viewerData?.current_level ?? 0;
+    const viewerRole = viewerData?.current_progression_role ?? currentRole;
+    const viewerPersonas = ownerId === targetUserId ? userArchetypes : await getUserArchetypes(ownerId);
+    const ownedKeys = viewerPersonas.map(a => a.persona_key).filter((k): k is string => !!k);
+    const availableCommands = getAvailableCommands(viewerLevel, ownedKeys);
+    const perks = getUnlockedPerks(viewerRole);
+    const viewerRoleDisplay = viewerRole.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+
+    const generalLines = availableCommands
+      .filter(cmd => cmd.access !== CommandAccess.ROLE)
+      .map(cmd => `• .${cmd.name} - ${cmd.description}`);
+
+    let personaText = '';
+    for (const persona of viewerPersonas) {
+      const lines = availableCommands
+        .filter(cmd => cmd.access === CommandAccess.ROLE && cmd.accessValue === persona.persona_key)
+        .map(cmd => `• .${cmd.name} - ${cmd.description.replace(/ \([^)]*\)$/, '')}`);
+      if (lines.length > 0) {
+        personaText += `\n\n__${persona.name}__\n${lines.join('\n')}`;
+      }
+    }
 
     const commandsEmbed = new EmbedBuilder()
       .setTitle('📋 Available Commands')
-      .setDescription(`__Your Role:__ ${roleDisplay}\n\n__Commands:__\n${availableCommands.map(cmd => `• ${cmd.name} - ${cmd.description}`).join('\n')}\n\n__Your Perks:__\n${perks.join('\n')}`)
+      .setDescription(`__Your Role:__ ${viewerRoleDisplay}\n\n__Commands:__\n${generalLines.join('\n')}${personaText}\n\n__Your Perks:__\n${perks.join('\n')}`)
       .setColor(0x4900ff);
 
     setStandardFooter(commandsEmbed);
@@ -80,7 +101,7 @@ registerInteractionHandler('profile', async (interaction) => {
     const backRow = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId(`profile_back:${ownerId}:${targetUserId}`)
+          .setCustomId(`profile:back:${ownerId}:${targetUserId}`)
           .setLabel('Back to Profile')
           .setStyle(ButtonStyle.Secondary)
       );
@@ -98,8 +119,7 @@ registerInteractionHandler('profile', async (interaction) => {
     }
 
     if (userArchetypes.length > 0) {
-      const archetype = userArchetypes[0];
-      description += `__Archetype Role__\n-# ${archetype.name}\n\n`;
+      description += `__Persona Role__\n-# ${userArchetypes.map(a => a.name).join(' • ')}\n\n`;
     }
 
     if (userColors.length > 0) {
@@ -125,7 +145,7 @@ registerInteractionHandler('profile', async (interaction) => {
     const commandsRow = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId(`profile_commands:${ownerId}:${targetUserId}`)
+          .setCustomId(`profile:commands:${ownerId}:${targetUserId}`)
           .setLabel('Commands')
           .setStyle(ButtonStyle.Primary)
       );
@@ -194,8 +214,7 @@ export const profileCommand: Command = {
 
     // Add archetype role if owned
     if (userArchetypes.length > 0) {
-      const archetype = userArchetypes[0];
-      description += `__Archetype Role__\n-# ${archetype.name}\n\n`;
+      description += `__Persona Role__\n-# ${userArchetypes.map(a => a.name).join(' • ')}\n\n`;
     }
 
     // Add color role if owned
@@ -220,7 +239,7 @@ export const profileCommand: Command = {
     const row = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId(`profile_commands:${message.author.id}:${target.user.id}`)
+          .setCustomId(`profile:commands:${message.author.id}:${target.user.id}`)
           .setLabel('Commands')
           .setStyle(ButtonStyle.Primary)
       );

@@ -2,7 +2,14 @@ import { Command } from './index.js';
 import { isBotOwner } from '../utils/permissions.js';
 import { ROLES } from '../config/index.js';
 import { getShopArchetypes, getShopColors } from '../services/shop.js';
-import { getClient } from '../database/client.js';
+
+// Progression + Spectator roles, identified by ID (never by name)
+const LEVEL_ROLE_IDS: string[] = [
+  ROLES.SAINT, ROLES.EMPEROR, ROLES.TYRANT, ROLES.OVERLORD, ROLES.KINGPIN,
+  ROLES.MASTERMIND, ROLES.VILLAIN, ROLES.OUTLAW, ROLES.RENEGADE, ROLES.ROGUE,
+  ROLES.ANTI_HERO, ROLES.SUPERHERO, ROLES.GUARDIAN, ROLES.CHAMPION,
+  ROLES.HERO, ROLES.SIDEKICK, ROLES.CIVILIAN, ROLES.SPECTATOR,
+];
 
 export const orderRolesCommand: Command = {
   name: 'orderroles',
@@ -45,7 +52,7 @@ export const orderRolesCommand: Command = {
         .filter(id => roleMap.has(id));
 
       // Level progression roles (fetch from database or config)
-      const levelRoleIds = await getLevelRoleIds(guild);
+      const levelRoleIds = LEVEL_ROLE_IDS.filter(id => roleMap.has(id));
 
       // Build the ordered list
       const orderedRoles: string[] = [];
@@ -85,25 +92,22 @@ export const orderRolesCommand: Command = {
         .map(r => r.id);
       orderedRoles.push(...remainingRoles);
 
-      // Set positions
-      // Discord positions are inverted (higher number = lower in list)
-      // We need to set them in descending order
-      let position = orderedRoles.length;
-      const updates: Promise<void>[] = [];
+      // Only roles below the bot's own highest role can be moved, and
+      // @everyone must stay at position 0. Drop everything else from the list.
+      const botTop = guild.members.me?.roles.highest.position ?? 0;
+      const movable = [...new Set(orderedRoles)].filter(id => {
+        const role = roleMap.get(id);
+        return !!role && id !== guild.id && role.position < botTop;
+      });
 
-      for (const roleId of orderedRoles) {
-        const role = roleMap.get(roleId);
-        if (role) {
-          updates.push(
-            role.setPosition(position, 'Role reordering').catch(err => {
-              console.error(`Failed to set position for role ${role.name}:`, err);
-            })
-          );
-          position--;
-        }
-      }
+      // Discord positions: higher number = higher in the list.
+      // The first role in the list gets the highest position.
+      const updates = movable.map((id, i) => ({
+        role: id,
+        position: movable.length - i,
+      }));
 
-      await Promise.all(updates);
+      await guild.roles.setPositions(updates);
 
       await message.reply('✅ Roles have been reordered successfully!');
     } catch (error) {
@@ -112,27 +116,3 @@ export const orderRolesCommand: Command = {
     }
   },
 };
-
-async function getLevelRoleIds(guild: any): Promise<string[]> {
-  // Try to fetch level roles from the database or config
-  // For now, we'll look for roles that match common level role patterns
-  const allRoles = await guild.roles.fetch();
-  const levelRolePatterns = [
-    /^level \d+$/i,
-    /^lvl \d+$/i,
-    /^\d+$/i,
-  ];
-
-  const levelRoleIds: string[] = [];
-  for (const [id, role] of allRoles) {
-    const roleName = (role as any).name;
-    for (const pattern of levelRolePatterns) {
-      if (pattern.test(roleName)) {
-        levelRoleIds.push(id);
-        break;
-      }
-    }
-  }
-
-  return levelRoleIds;
-}

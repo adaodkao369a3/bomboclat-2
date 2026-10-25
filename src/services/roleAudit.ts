@@ -3,6 +3,7 @@ import { getUser, getOrCreateUser, getClient } from '../database/client.js';
 import { synchronizeProgressionRoles, getProgressionRolePlan } from './xp.js';
 import { getRoleId } from './managedRoles.js';
 import { checkExpiredRoles } from './shop.js';
+import { reconcileShopRoles } from './shopRoles.js';
 
 export interface AuditSummary {
   membersChecked: number;
@@ -138,6 +139,15 @@ export async function runRoleAudit(guild: Guild): Promise<AuditSummary> {
             summary.failedMembers.push(member.user.username);
             console.error(`[roleAudit] Failed to sync roles for ${member.user.username}: ${syncResult.failedRoles.join(', ')}`);
           }
+
+          // Shop roles (personas + equipped colors) follow the database too
+          const shopResult = await reconcileShopRoles(member);
+          summary.rolesAdded += shopResult.added.length;
+          summary.rolesRemoved += shopResult.removed.length;
+          if (shopResult.failed.length > 0) {
+            summary.failures++;
+            summary.failedMembers.push(member.user.username);
+          }
         }
 
         // Small delay between role changes to avoid rate limits
@@ -177,6 +187,9 @@ export async function assignRolesOnJoin(member: GuildMember): Promise<void> {
     } else {
       console.log(`[roleAudit] Assigned roles to joining member ${member.user.username} (level ${level})`);
     }
+
+    // Returning members get their persona and equipped color roles back
+    await reconcileShopRoles(member);
   } catch (error) {
     console.error(`[roleAudit] Error assigning roles to joining member ${member.user.username}:`, error);
   }
