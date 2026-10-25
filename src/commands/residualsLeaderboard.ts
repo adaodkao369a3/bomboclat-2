@@ -130,7 +130,7 @@ function createLeaderboardEmbed(
   entries.forEach((entry, index) => {
     const rank = (page - 1) * ENTRIES_PER_PAGE + index + 1;
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-    description += `${medal} __${entry.username}__\n-# ${entry.total_residuals_balance.toLocaleString()} residuals • Lifetime: ${entry.lifetime_residuals_earned.toLocaleString()}\n\n`;
+    description += `${medal} __${entry.username}__\n-# ${entry.total_residuals_balance.toLocaleString()} residuals • Lifetime: ${entry.lifetime_residuals_earned.toLocaleString()}\n`;
   });
 
   embed.setDescription(description);

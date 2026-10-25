@@ -35,12 +35,12 @@ export const transformCommand: Command = {
       return;
     }
 
-    // Check if user has Unknown Entity
+    // Check if user has Unknown Entity or The Comedian
     const userArchetypes = await getUserArchetypes(message.author.id);
-    const hasUnknownEntity = userArchetypes.some(a => a.name === 'Unknown Entity');
+    const hasValidArchetype = userArchetypes.some(a => a.name === 'Unknown Entity' || a.name === 'The Comedian');
 
-    if (!hasUnknownEntity) {
-      await message.reply('❌ Only Unknown Entity holders can use this command.');
+    if (!hasValidArchetype) {
+      await message.reply('❌ Only Unknown Entity or The Comedian holders can use this command.');
       return;
     }
 
@@ -113,7 +113,7 @@ export const transformCommand: Command = {
     const cached = dailyUsesCache.get(cacheKey);
 
     if (cached && cached.date === today && cached.uses >= 3) {
-      await message.reply('❌ You have used all 3 of your Unknown Entity powers for today. They reset at midnight.');
+      await message.reply('❌ You have used all 3 of your transform powers for today. They reset at midnight.');
       return;
     }
 

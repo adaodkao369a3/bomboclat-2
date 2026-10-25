@@ -18,6 +18,11 @@ registerInteractionHandler('profile', async (interaction) => {
   if (!interaction.isButton()) return;
 
   const parts = parseCustomId(interaction.customId);
+  if (parts.length < 4) {
+    console.error('[Profile] Invalid customId format:', interaction.customId);
+    return;
+  }
+
   const action = parts[1];
   const ownerId = parts[2];
   const targetUserId = parts[3];

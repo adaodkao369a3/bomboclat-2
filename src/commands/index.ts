@@ -27,6 +27,8 @@ import { syncRolesCommand } from './syncRoles';
 import { channelsCommand } from './channels';
 import { perishCommand } from './perish';
 import { transformCommand } from './transform';
+import { updateShopCommand } from './updateShop';
+import { orderRolesCommand } from './orderRoles';
 
 export interface Command {
   name: string;
@@ -64,12 +66,14 @@ export async function registerCommands(client: Client): Promise<void> {
     testLevelCommand,
     settingsCommand,
     shopCommand,
+    updateShopCommand,
     manageCommand,
     resetCommand,
     syncRolesCommand,
     channelsCommand,
     perishCommand,
     transformCommand,
+    orderRolesCommand,
   ];
 
   for (const command of commands) {

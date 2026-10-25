@@ -1,6 +1,6 @@
 import { getClient } from '../database/client.js';
 import { COLORS_CONFIG, RETIRED_COLORS } from '../config/colors.js';
-import { ARCHETYPES_CONFIG } from '../config/archetypes.js';
+import { PERSONAS_CONFIG } from '../config/archetypes.js';
 
 export interface ShopArchetype {
   id: number;
@@ -50,15 +50,15 @@ export interface UserColor {
   price: number;
 }
 
-// Seed shop archetypes (idempotent).
+// Seed shop personas (idempotent).
 export async function seedShopArchetypes(): Promise<void> {
   const client = await getClient();
   try {
-    // First, delete all old archetypes (nobody owns any, so safe to remove)
+    // First, delete all old personas (nobody owns any, so safe to remove)
     await client.query('DELETE FROM shop_archetypes');
 
-    // Insert new archetypes from config
-    for (const archetypeConfig of ARCHETYPES_CONFIG) {
+    // Insert new personas from config
+    for (const personaConfig of PERSONAS_CONFIG) {
       await client.query(
         `INSERT INTO shop_archetypes (name, tier, price, min_level, max_holders, monthly, active, role_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -71,12 +71,12 @@ export async function seedShopArchetypes(): Promise<void> {
            active = EXCLUDED.active,
            role_id = COALESCE(EXCLUDED.role_id, shop_archetypes.role_id)`,
         [
-          archetypeConfig.name,
-          archetypeConfig.tier,
-          archetypeConfig.price,
-          archetypeConfig.minLevel,
-          archetypeConfig.maxHolders,
-          archetypeConfig.monthly,
+          personaConfig.name,
+          personaConfig.tier,
+          personaConfig.price,
+          personaConfig.minLevel,
+          personaConfig.maxHolders,
+          personaConfig.monthly,
           true, // active
           null, // role_id will be set by $shop
         ]
@@ -273,7 +273,7 @@ export async function purchaseArchetype(
       return { success: false, reason: 'This archetype is no longer available' };
     }
 
-    // Check level gate
+    // Check level gate (only for Unknown Entity, others can buy at any level with enough cash)
     const userResult = await client.query(
       'SELECT current_level FROM users WHERE user_id = $1 FOR UPDATE',
       [userId]
@@ -284,7 +284,8 @@ export async function purchaseArchetype(
     }
     const userLevel = userResult.rows[0].current_level;
 
-    if (userLevel < archetype.min_level) {
+    // Only Unknown Entity has a hard level requirement
+    if (isUnknownEntity && userLevel < archetype.min_level) {
       await client.query('ROLLBACK');
       return { success: false, reason: `Unlocks at level ${archetype.min_level}` };
     }
@@ -470,7 +471,7 @@ export async function purchaseColor(
       return { success: false, reason: 'This color is no longer available' };
     }
 
-    // Check level gate
+    // Get user data (no level gate for colors - just need cash)
     const userResult = await client.query(
       'SELECT current_level FROM users WHERE user_id = $1 FOR UPDATE',
       [userId]
@@ -479,12 +480,7 @@ export async function purchaseColor(
       await client.query('ROLLBACK');
       return { success: false, reason: 'User not found' };
     }
-    const userLevel = userResult.rows[0].current_level;
-
-    if (userLevel < color.min_level) {
-      await client.query('ROLLBACK');
-      return { success: false, reason: `Unlocks at level ${color.min_level}` };
-    }
+    // Colors can be purchased at any level - minLevel is for display only
 
     // Check if user already owns this specific color (unique index handles this, but check for better error message)
     const ownedResult = await client.query(

@@ -2,14 +2,15 @@ import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import type { ShopArchetype, ShopColor } from './shop.js';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { ARCHETYPE_TIER_SYMBOLS } from '../config/archetypes.js';
+import { PERSONA_TIER_SYMBOLS, PERSONA_TIER_BACKGROUNDS } from '../config/archetypes.js';
+import { COLOR_TIER_BACKGROUNDS } from '../config/colors.js';
 
 export function formatColorName(name: string): string {
   return name.toLowerCase();
 }
 
 export function formatArchetypeName(name: string, tier: string): string {
-  const symbol = ARCHETYPE_TIER_SYMBOLS[tier] || '';
+  const symbol = PERSONA_TIER_SYMBOLS[tier] || '';
   return `${symbol} ${name.toLowerCase()}`;
 }
 
@@ -139,6 +140,7 @@ function renderGridCanvas(
   itemCount: number,
   renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void,
   heightScale: number = 1,
+  backgroundColor: string = BACKGROUND,
 ): Buffer {
   const columns = Math.min(3, Math.max(1, itemCount));
   const rowIndexes = getRows(Array.from({ length: itemCount }, (_, i) => i), columns);
@@ -150,7 +152,7 @@ function renderGridCanvas(
 
   const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = BACKGROUND;
+  ctx.fillStyle = backgroundColor;
   ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
 
   rowIndexes.forEach((rowItems, row) => {
@@ -167,6 +169,10 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
   if (!fontLoaded) {
     throw new Error('[ShopImages] Font not loaded - cannot render image');
   }
+
+  // Get tier-specific background color
+  const tier = colors[0]?.tier;
+  const tierBackground = tier ? COLOR_TIER_BACKGROUNDS[tier] : BACKGROUND;
 
   return renderGridCanvas(colors.length, (ctx, _row, rowItems, tileWidth, tileHeight, y) => {
     rowItems.forEach((itemIndex, index) => {
@@ -208,13 +214,17 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
 
       ctx.restore();
     });
-  }, COLOR_HEIGHT_SCALE);
+  }, COLOR_HEIGHT_SCALE, tierBackground);
 }
 
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
   if (!fontLoaded) {
     throw new Error('[ShopImages] Font not loaded - cannot render image');
   }
+
+  // Get tier-specific background color
+  const tier = archetypes[0]?.tier;
+  const tierBackground = tier ? PERSONA_TIER_BACKGROUNDS[tier] : BACKGROUND;
 
   const columns = Math.min(3, Math.max(1, archetypes.length));
   const rows = getRows(archetypes, columns);
@@ -230,7 +240,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
 
   const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = BACKGROUND;
+  ctx.fillStyle = tierBackground;
   ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
 
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {

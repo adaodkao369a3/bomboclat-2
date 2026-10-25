@@ -31,7 +31,7 @@ import { generateColorGridImage, generateArchetypeGridImage } from '../services/
 import { isBotOwner } from '../utils/permissions.js';
 import { Command } from './index.js';
 import { TIER_SYMBOLS, COLOR_TIERS } from '../config/colors.js';
-import { ARCHETYPE_TIER_SYMBOLS, ARCHETYPE_TIERS } from '../config/archetypes.js';
+import { PERSONA_TIER_SYMBOLS, PERSONA_TIERS, PERSONA_SIGNATURE_COLORS, PERSONA_TIER_BACKGROUNDS } from '../config/archetypes.js';
 
 
 
@@ -104,13 +104,13 @@ export const shopCommand: Command = {
 // ---------------------------------------------------------------------------
 
 function archetypeRoleName(name: string, tier: string): string {
-  const symbol = ARCHETYPE_TIER_SYMBOLS[tier] || '';
-  return `${symbol} ${name.toLowerCase()}`;
+  // No emoji prefix - just lowercase name
+  return name.toLowerCase();
 }
 
 function colorRoleName(name: string, tier: string): string {
-  const symbol = TIER_SYMBOLS[tier] || '';
-  return `${symbol} ${name.toLowerCase()}`;
+  // No emoji prefix - just lowercase name
+  return name.toLowerCase();
 }
 
 async function ensureShopRole(guild: Guild, name: string, color?: string, existingRoleId?: string | null): Promise<Role | null> {
@@ -184,7 +184,8 @@ async function ensureAllShopRoles(
     // Handle archetypes
     for (const archetype of archetypes) {
       const roleName = archetypeRoleName(archetype.name, archetype.tier);
-      const role = await ensureShopRole(guild, roleName, undefined, archetype.role_id);
+      const signatureColor = PERSONA_SIGNATURE_COLORS[archetype.name];
+      const role = await ensureShopRole(guild, roleName, signatureColor, archetype.role_id);
       if (role) {
         // Update the database with the role ID
         await client.query(
@@ -319,7 +320,7 @@ async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
   const introTitle = '<:designpalette:1542338996217184356> Colors Shop';
   const introEmbed = new EmbedBuilder()
     .setTitle(introTitle)
-    .setDescription('Give your profile some personality with collectible colors.\n\nColors are divided into tiers, each unlocking at a specific level.\n\n🎬 **Studio Classics** — Level 20\n🌙 **Midnight Cinema** — Level 40\n⚡ **Neon Lights** — Level 40\n🏆 **Award Season** — Level 60\n\nSelect a category below to browse its colors.')
+    .setDescription('Give your profile some personality with collectible colors.\n\nColors are divided into tiers, each unlocking at a specific level.\n\n**Studio Classics** — Level 20\n**Midnight Cinema** — Level 40\n**Neon Lights** — Level 40\n**Award Season** — Level 60\n\nSelect a category below to browse its colors.')
     .setColor(0x4900ff);
 
   // Try to edit existing message, otherwise send new
@@ -441,11 +442,8 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
     return;
   }
 
-  // Check level gate
-  if (userData.current_level < color.min_level) {
-    await interaction.reply({ content: `❌ This color unlocks at level ${color.min_level}.`, flags: [1 << 6] });
-    return;
-  }
+  // No level gate for colors - just need cash
+  // minLevel is for display only
 
   const userColors = await getUserColors(userId);
   const owned = userColors.some(uc => uc.color_id === color.id);
@@ -590,10 +588,10 @@ async function handleColorSelection(interaction: any, colorId: number): Promise<
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:3dmovie:1542345279070806067> Archetype Roles Shop';
+  const introTitle = '<:3dmovie:1542345279070806067> Persona Roles Shop';
   const introEmbed = new EmbedBuilder()
     .setTitle(introTitle)
-    .setDescription('Collect archetypes to give your profile its own identity.\n\nArchetypes range from rare **Special** roles to the most prestigious **Legendary** archetypes.\n\n⭐ **Special** — Level 30+\n🌟 **High-status** — Level 50+\n💎 **Elite** — Level 70+\n👑 **Legendary** — Level 90+\n\nSelect a category below to browse the collection.')
+    .setDescription('Collect personas to give your profile its own identity.\n\nPersonas range from prestigious **Legendary** roles to rare **Special** personas.\n\n👑 **Legendary** — Level 90+ (5000 residuals)\n⚔️ **Elite** — Level 70+ (3000 residuals)\n� **High-status** — Level 50+ (2000 residuals)\n🎭 **Special** — Level 30+ (5000 residuals)\n\nSelect a category below to browse the collection.')
     .setColor(0x4900ff);
 
   // Try to edit existing message, otherwise send new
@@ -612,11 +610,11 @@ async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
 }
 
 async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Record<string, (ShopArchetype & { currentHolders: number })[]>): Promise<void> {
-  for (const tier of [ARCHETYPE_TIERS.SPECIAL, ARCHETYPE_TIERS.HIGH_STATUS, ARCHETYPE_TIERS.ELITE, ARCHETYPE_TIERS.LEGENDARY] as const) {
+  for (const tier of [PERSONA_TIERS.LEGENDARY, PERSONA_TIERS.ELITE, PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.SPECIAL] as const) {
     const tierArchetypes = archetypeTiers[tier];
     if (!tierArchetypes || tierArchetypes.length === 0) continue;
 
-    const symbol = ARCHETYPE_TIER_SYMBOLS[tier] || '';
+    const symbol = PERSONA_TIER_SYMBOLS[tier] || '';
     const title = `${symbol} ${tier}`;
 
     // Split into chunks of max 6 roles per embed
@@ -724,8 +722,8 @@ async function handleArchetypeSelection(interaction: any, archetypeId: number): 
     return;
   }
 
-  // Check level gate
-  if (userData.current_level < archetype.min_level) {
+  // Check level gate (only for Unknown Entity)
+  if (archetype.name === 'Unknown Entity' && userData.current_level < archetype.min_level) {
     await interaction.reply({ content: `❌ This archetype unlocks at level ${archetype.min_level}.`, flags: [1 << 6] });
     return;
   }

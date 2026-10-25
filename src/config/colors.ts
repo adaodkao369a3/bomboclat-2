@@ -27,7 +27,17 @@ export const TIER_LEVELS: Record<string, number> = {
 };
 
 /**
- * All 20 colors with their configuration
+ * Background colors for image generation by tier
+ */
+export const COLOR_TIER_BACKGROUNDS: Record<string, string> = {
+  [COLOR_TIERS.STUDIO_CLASSICS]: '#8BAA91', // Sage Green
+  [COLOR_TIERS.MIDNIGHT_CINEMA]: '#668DAA', // Steel Blue
+  [COLOR_TIERS.NEON_LIGHTS]: '#38BFD4', // Vibrant Cyan
+  [COLOR_TIERS.AWARD_SEASON]: '#BFA36A', // Muted Gold
+};
+
+/**
+ * All 21 colors with their configuration
  */
 export const COLORS_CONFIG: ColorConfig[] = [
   // Tier 1: Studio Classics (Level 20)
@@ -97,12 +107,12 @@ export const COLORS_CONFIG: ColorConfig[] = [
     sortOrder: 8,
   },
   {
-    name: 'Sunset Orange',
-    hex: '#FF4500',
+    name: 'Glitch Magenta',
+    hex: '#FF1CF7',
     price: 400,
     tier: COLOR_TIERS.MIDNIGHT_CINEMA,
     minLevel: 40,
-    sortOrder: 9,
+    sortOrder: 9, // Swapped with Sunset Orange
   },
   {
     name: 'Black Cherry',
@@ -121,12 +131,12 @@ export const COLORS_CONFIG: ColorConfig[] = [
     sortOrder: 11,
   },
   {
-    name: 'Champagne Gold',
-    hex: '#E8C872',
+    name: 'Sunset Orange',
+    hex: '#FF4500',
     price: 700,
     tier: COLOR_TIERS.MIDNIGHT_CINEMA,
     minLevel: 40,
-    sortOrder: 12,
+    sortOrder: 12, // Swapped with Glitch Magenta
   },
   // Tier 3: Neon Lights (Level 40)
   {
@@ -162,12 +172,12 @@ export const COLORS_CONFIG: ColorConfig[] = [
     sortOrder: 16,
   },
   {
-    name: 'Glitch Magenta',
-    hex: '#FF1CF7',
+    name: 'Bright Yellow',
+    hex: '#FFFF00',
     price: 800,
     tier: COLOR_TIERS.NEON_LIGHTS,
     minLevel: 40,
-    sortOrder: 17,
+    sortOrder: 17, // New color added
   },
   // Tier 4: Award Season (Level 60)
   {
@@ -187,12 +197,20 @@ export const COLORS_CONFIG: ColorConfig[] = [
     sortOrder: 19,
   },
   {
-    name: 'Diamond White',
-    hex: '#F0F8FF',
+    name: 'Champagne Gold',
+    hex: '#E8C872',
     price: 1200,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 20,
+    sortOrder: 20, // Moved from Midnight Cinema to Award Season
+  },
+  {
+    name: 'Diamond White',
+    hex: '#F0F8FF',
+    price: 1500,
+    tier: COLOR_TIERS.AWARD_SEASON,
+    minLevel: 60,
+    sortOrder: 21,
   },
 ];
 
@@ -214,7 +232,7 @@ export const RETIRED_COLORS = [
 ];
 
 /**
- * Tier symbols for role names
+ * Tier symbols for embed display (not for role names)
  */
 export const TIER_SYMBOLS: Record<string, string> = {
   [COLOR_TIERS.STUDIO_CLASSICS]: '🎬',
