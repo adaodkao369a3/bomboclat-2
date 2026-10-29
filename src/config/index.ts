@@ -14,7 +14,7 @@ export const DATABASE_URL = process.env.DATABASE_URL || '';
 
 // Klipy GIF API
 export const KLIPY_KEY = process.env.KLIPY_KEY || '';
-export const KLIPY_URL = process.env.KLIPY_URL || 'https://api.klipy.com/v2/search';
+export const KLIPY_URL = process.env.KLIPY_URL || 'https://api.klipy.com/api/v1'; // Deprecated: Not used in fetchGIF anymore
 
 // AI Configuration
 export const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
