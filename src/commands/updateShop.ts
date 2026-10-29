@@ -134,7 +134,7 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
 }
 
 async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: Record<string, (ShopArchetype & { currentHolders: number })[]>): Promise<void> {
-  for (const tier of [PERSONA_TIERS.SPECIAL, PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.ELITE, PERSONA_TIERS.LEGENDARY] as const) {
+  for (const tier of [PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.ELITE, PERSONA_TIERS.LEGENDARY, PERSONA_TIERS.TRANSCENDENT, PERSONA_TIERS.SPECIAL] as const) {
     const tierArchetypes = archetypesByTier[tier];
     if (!tierArchetypes || tierArchetypes.length === 0) continue;
 

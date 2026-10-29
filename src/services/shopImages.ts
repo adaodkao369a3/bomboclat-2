@@ -38,7 +38,8 @@ const OUTER_PADDING = 24;
 const ROW_GAP = 20;
 const TILE_GAP = 16;
 const TILE_ASPECT_RATIO = 16 / 9;
-const BACKGROUND = '#2b2d31';
+// Default background color (can be solid string or gradient array [lightColor, darkColor])
+const BACKGROUND: string | [string, string] = '#2b2d31';
 const TEXT_COLOR = '#f2f3f5';
 // Colors are drawn as flat swatches, not photos, so they read fine at a
 // shorter height. 0.75 = 25% shorter than the landscape archetype ratio.
@@ -140,7 +141,7 @@ function renderGridCanvas(
   itemCount: number,
   renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void,
   heightScale: number = 1,
-  backgroundColor: string = BACKGROUND,
+  backgroundColor: string | [string, string] = BACKGROUND as string,
 ): Buffer {
   const columns = Math.min(3, Math.max(1, itemCount));
   const rowIndexes = getRows(Array.from({ length: itemCount }, (_, i) => i), columns);
@@ -152,7 +153,16 @@ function renderGridCanvas(
 
   const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = backgroundColor;
+
+  // Draw gradient background if gradient colors provided (lighter shade to darker shade, left to right), otherwise solid color
+  if (Array.isArray(backgroundColor)) {
+    const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, 0);
+    gradient.addColorStop(0, backgroundColor[0]); // Lighter shade on left
+    gradient.addColorStop(1, backgroundColor[1]); // Darker shade on right
+    ctx.fillStyle = gradient;
+  } else {
+    ctx.fillStyle = backgroundColor;
+  }
   ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
 
   rowIndexes.forEach((rowItems, row) => {
@@ -170,9 +180,9 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
     throw new Error('[ShopImages] Font not loaded - cannot render image');
   }
 
-  // Get tier-specific background color
+  // Get tier-specific background gradient
   const tier = colors[0]?.tier;
-  const tierBackground = tier ? COLOR_TIER_BACKGROUNDS[tier] : BACKGROUND;
+  const tierBackground = tier ? COLOR_TIER_BACKGROUNDS[tier] : BACKGROUND as string;
 
   return renderGridCanvas(colors.length, (ctx, _row, rowItems, tileWidth, tileHeight, y) => {
     rowItems.forEach((itemIndex, index) => {
@@ -222,11 +232,14 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
     throw new Error('[ShopImages] Font not loaded - cannot render image');
   }
 
-  // Get tier-specific background color
+  // Get tier-specific background gradient
   const tier = archetypes[0]?.tier;
-  const tierBackground = tier ? PERSONA_TIER_BACKGROUNDS[tier] : BACKGROUND;
+  const tierBackground = tier ? PERSONA_TIER_BACKGROUNDS[tier] : BACKGROUND as string;
 
-  const columns = Math.min(3, Math.max(1, archetypes.length));
+  // Special handling for Transcendent tier - use 2-column layout with larger images
+  const isTranscendent = tier === 'Transcendent';
+
+  const columns = isTranscendent ? 2 : Math.min(3, Math.max(1, archetypes.length));
   const rows = getRows(archetypes, columns);
   const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
   // Artwork tiles are square (not the 16:9 landscape used elsewhere) so every
@@ -240,7 +253,16 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
 
   const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = tierBackground;
+
+  // Draw gradient background if gradient colors provided (lighter shade to darker shade, left to right), otherwise solid color
+  if (Array.isArray(tierBackground)) {
+    const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, 0);
+    gradient.addColorStop(0, tierBackground[0]); // Lighter shade on left
+    gradient.addColorStop(1, tierBackground[1]); // Darker shade on right
+    ctx.fillStyle = gradient;
+  } else {
+    ctx.fillStyle = tierBackground;
+  }
   ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
 
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
@@ -281,7 +303,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       // as the smash/smashmax image generator: a soft dark shadow behind
       // light text keeps it legible over the varied background color.
       const plainName = archetype.name.toUpperCase();
-      
+
       // Auto-scale font to fit within tile width with padding
       const maxTextWidth = rowTileWidth - 16; // 8px padding on each side
       const fontSize = setScaledFont(ctx, plainName, maxTextWidth, 25, 'LEMONMILK');
@@ -299,7 +321,7 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       const textY = y + rowImageSize + labelHeight / 2;
 
       ctx.fillText(label, textX, textY);
-      
+
       ctx.restore();
     }
   }

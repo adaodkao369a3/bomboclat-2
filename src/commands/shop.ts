@@ -435,7 +435,7 @@ async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
   const introTitle = '<:3dmovie:1542345279070806067> Persona Roles Shop';
   const introEmbed = new EmbedBuilder()
     .setTitle(introTitle)
-    .setDescription('Collect personas to give your profile its own identity.\n\nPersonas climb from rare **Special** ones to prestigious **Legendary** roles. You need the level to buy them.\n\n🎭 **Special** — Level 30+ (5000 residuals, Unknown Entity needs level 100)\n🛡️ **High-status** — Level 50+ (2000 residuals)\n⚔️ **Elite** — Level 70+ (3000 residuals)\n👑 **Legendary** — Level 90+ (5000 residuals)\n\nSelect a category below to browse the collection.')
+    .setDescription('Collect personas to give your profile its own identity.\n\nPersonas climb from rare **Special** ones to prestigious **Transcendent** roles. You need the level to buy them.\n\n🛡️ **High-status** — Level 50+ (2000 residuals)\n⚔️ **Elite** — Level 70+ (3000 residuals)\n� **Legendary** — Level 90+ (4000 residuals)\n✨ **Transcendent** — Level 90+ (4500 residuals)\n🎭 **Special** — Level 30+ (5000 residuals, Unknown Entity needs level 100)\n\nSelect a category below to browse the collection.')
     .setColor(0x4900ff);
 
   // Try to edit existing message, otherwise send new
@@ -454,7 +454,7 @@ async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
 }
 
 async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Record<string, (ShopArchetype & { currentHolders: number })[]>): Promise<void> {
-  for (const tier of [PERSONA_TIERS.SPECIAL, PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.ELITE, PERSONA_TIERS.LEGENDARY] as const) {
+  for (const tier of [PERSONA_TIERS.HIGH_STATUS, PERSONA_TIERS.ELITE, PERSONA_TIERS.LEGENDARY, PERSONA_TIERS.TRANSCENDENT, PERSONA_TIERS.SPECIAL] as const) {
     const tierArchetypes = archetypeTiers[tier];
     if (!tierArchetypes || tierArchetypes.length === 0) continue;
 

@@ -27,17 +27,18 @@ export const TIER_LEVELS: Record<string, number> = {
 };
 
 /**
- * Background colors for image generation by tier
+ * Background gradients for image generation by tier
+ * Each tier has [lighterShade, darkerShade] for left-to-right gradient
  */
-export const COLOR_TIER_BACKGROUNDS: Record<string, string> = {
-  [COLOR_TIERS.STUDIO_CLASSICS]: '#8BAA91', // Sage Green
-  [COLOR_TIERS.MIDNIGHT_CINEMA]: '#668DAA', // Steel Blue
-  [COLOR_TIERS.NEON_LIGHTS]: '#38BFD4', // Vibrant Cyan
-  [COLOR_TIERS.AWARD_SEASON]: '#BFA36A', // Muted Gold
+export const COLOR_TIER_BACKGROUNDS: Record<string, [string, string]> = {
+  [COLOR_TIERS.STUDIO_CLASSICS]: ['#A8C4A8', '#5C7A5C'], // Sage Green gradient (lighter to darker)
+  [COLOR_TIERS.MIDNIGHT_CINEMA]: ['#7AA3C2', '#3D5A6B'], // Steel Blue gradient (lighter to darker)
+  [COLOR_TIERS.NEON_LIGHTS]: ['#5ED6E8', '#1A7A8A'], // Vibrant Cyan gradient (lighter to darker)
+  [COLOR_TIERS.AWARD_SEASON]: ['#D4B888', '#8B6E3A'], // Muted Gold gradient (lighter to darker)
 };
 
 /**
- * All 21 colors with their configuration
+ * All 20 colors with their configuration
  */
 export const COLORS_CONFIG: ColorConfig[] = [
   // Tier 1: Studio Classics (Level 20)
@@ -112,7 +113,7 @@ export const COLORS_CONFIG: ColorConfig[] = [
     price: 400,
     tier: COLOR_TIERS.MIDNIGHT_CINEMA,
     minLevel: 40,
-    sortOrder: 9, // Swapped with Sunset Orange
+    sortOrder: 9,
   },
   {
     name: 'Black Cherry',
@@ -131,13 +132,14 @@ export const COLORS_CONFIG: ColorConfig[] = [
     sortOrder: 11,
   },
   {
-    name: 'Sunset Orange',
-    hex: '#FF4500',
-    price: 700,
+    name: 'Bright Yellow',
+    hex: '#FFFF00',
+    price: 600,
     tier: COLOR_TIERS.MIDNIGHT_CINEMA,
     minLevel: 40,
-    sortOrder: 12, // Swapped with Glitch Magenta
+    sortOrder: 12,
   },
+
   // Tier 3: Neon Lights (Level 40)
   {
     name: 'Toxic Lime',
@@ -171,14 +173,6 @@ export const COLORS_CONFIG: ColorConfig[] = [
     minLevel: 40,
     sortOrder: 16,
   },
-  {
-    name: 'Bright Yellow',
-    hex: '#FFFF00',
-    price: 800,
-    tier: COLOR_TIERS.NEON_LIGHTS,
-    minLevel: 40,
-    sortOrder: 17, // New color added
-  },
   // Tier 4: Award Season (Level 60)
   {
     name: 'Turquoise',
@@ -186,15 +180,15 @@ export const COLORS_CONFIG: ColorConfig[] = [
     price: 800,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 18,
+    sortOrder: 17,
   },
   {
-    name: 'Pearl Lilac',
-    hex: '#DCCBF2',
+    name: 'Sunset Orange',
+    hex: '#FF4500',
     price: 900,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 19,
+    sortOrder: 18,
   },
   {
     name: 'Champagne Gold',
@@ -202,7 +196,7 @@ export const COLORS_CONFIG: ColorConfig[] = [
     price: 1200,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 20, // Moved from Midnight Cinema to Award Season
+    sortOrder: 19,
   },
   {
     name: 'Diamond White',
@@ -210,7 +204,7 @@ export const COLORS_CONFIG: ColorConfig[] = [
     price: 1500,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 21,
+    sortOrder: 20,
   },
 ];
 
@@ -229,6 +223,7 @@ export const RETIRED_COLORS = [
   'Aurora Green',
   'Platinum Silver',
   'Galaxy Purple',
+  'Pearl Lilac',
 ];
 
 /**

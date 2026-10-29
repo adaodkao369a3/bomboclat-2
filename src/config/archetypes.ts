@@ -23,9 +23,10 @@ export const PERSONA_KEYS = {
 } as const;
 
 /** Low → high, the order tiers are shown in shop and help */
-export const PERSONA_TIER_ORDER: string[] = ['Special', 'High-status', 'Elite', 'Legendary'];
+export const PERSONA_TIER_ORDER: string[] = ['High-status', 'Elite', 'Legendary', 'Transcendent', 'Special'];
 
 export const PERSONA_TIERS = {
+  TRANSCENDENT: 'Transcendent',
   LEGENDARY: 'Legendary',
   ELITE: 'Elite',
   HIGH_STATUS: 'High-status',
@@ -33,6 +34,7 @@ export const PERSONA_TIERS = {
 } as const;
 
 export const PERSONA_TIER_SYMBOLS: Record<string, string> = {
+  [PERSONA_TIERS.TRANSCENDENT]: '✨',
   [PERSONA_TIERS.LEGENDARY]: '👑',
   [PERSONA_TIERS.ELITE]: '⚔️',
   [PERSONA_TIERS.HIGH_STATUS]: '🛡️',
@@ -40,13 +42,15 @@ export const PERSONA_TIER_SYMBOLS: Record<string, string> = {
 };
 
 /**
- * Background colors for image generation by tier
+ * Background gradients for image generation by tier
+ * Each tier has [lighterShade, darkerShade] for left-to-right gradient
  */
-export const PERSONA_TIER_BACKGROUNDS: Record<string, string> = {
-  [PERSONA_TIERS.SPECIAL]: '#7695B8', // Soft Steel Blue
-  [PERSONA_TIERS.HIGH_STATUS]: '#4F9C91', // Jade Teal
-  [PERSONA_TIERS.ELITE]: '#7866B5', // Royal Amethyst
-  [PERSONA_TIERS.LEGENDARY]: '#C49A50', // Champagne Gold
+export const PERSONA_TIER_BACKGROUNDS: Record<string, [string, string]> = {
+  [PERSONA_TIERS.SPECIAL]: ['#A8C4D0', '#4A6A7A'], // Soft Steel Blue gradient (lighter to darker)
+  [PERSONA_TIERS.HIGH_STATUS]: ['#7AB8AB', '#2D6A5D'], // Jade Teal gradient (lighter to darker)
+  [PERSONA_TIERS.ELITE]: ['#9D8FC7', '#4A3D7A'], // Royal Amethyst gradient (lighter to darker)
+  [PERSONA_TIERS.LEGENDARY]: ['#E8C080', '#8B6A30'], // Champagne Gold gradient (lighter to darker)
+  [PERSONA_TIERS.TRANSCENDENT]: ['#E0A2FF', '#6B2D7A'], // Cosmic Purple gradient (lighter to darker) - for S-Class Heroes & Espada
 };
 
 /**
@@ -77,64 +81,65 @@ export const PERSONA_SIGNATURE_COLORS: Record<string, string> = {
 
 /**
  * All 20 personas with their configuration
- * Ordered by tier in descending order (Legendary → Elite → High-status → Special)
+ * Ordered by tier in descending order (Transcendent → Legendary → Elite → High-status → Special)
  */
 export const PERSONAS_CONFIG: PersonaConfig[] = [
-  // Legendary Tier (Level 90+) - 5000 residuals
+  // Transcendent Tier (Level 90+) - 4500 residuals (Top tier: S-Class Heroes & Espada)
+  {
+    key: 's-class-heroes',
+    name: 'S-Class Heroes',
+    tier: PERSONA_TIERS.TRANSCENDENT,
+    price: 4500,
+    minLevel: 90,
+    maxHolders: 5,
+    monthly: false,
+    sortOrder: 1,
+    signatureColor: PERSONA_SIGNATURE_COLORS['S-Class Heroes'],
+  },
+  {
+    key: 'the-espada',
+    name: 'The Espada',
+    tier: PERSONA_TIERS.TRANSCENDENT,
+    price: 4500,
+    minLevel: 90,
+    maxHolders: 10,
+    monthly: false,
+    sortOrder: 2,
+    signatureColor: PERSONA_SIGNATURE_COLORS['The Espada'],
+  },
+  // Legendary Tier (Level 90+) - 4000 residuals
   {
     key: 'lord-of-the-heian-era',
     name: 'Lord of the Heian Era',
     tier: PERSONA_TIERS.LEGENDARY,
-    price: 5000,
+    price: 4000,
     minLevel: 90,
     maxHolders: 1,
     monthly: false,
-    sortOrder: 1,
+    sortOrder: 3,
     signatureColor: PERSONA_SIGNATURE_COLORS['Lord of the Heian Era'],
   },
   {
     key: 'the-angels',
     name: 'The Angels',
     tier: PERSONA_TIERS.LEGENDARY,
-    price: 5000,
+    price: 4000,
     minLevel: 90,
     maxHolders: 5,
     monthly: false,
-    sortOrder: 2,
+    sortOrder: 4,
     signatureColor: PERSONA_SIGNATURE_COLORS['The Angels'],
   },
   {
     key: 'witches-of-sin',
     name: 'Witches of Sin',
     tier: PERSONA_TIERS.LEGENDARY,
-    price: 5000,
+    price: 4000,
     minLevel: 90,
     maxHolders: 7,
     monthly: false,
-    sortOrder: 3,
-    signatureColor: PERSONA_SIGNATURE_COLORS['Witches of Sin'],
-  },
-  {
-    key: 's-class-heroes',
-    name: 'S-Class Heroes',
-    tier: PERSONA_TIERS.LEGENDARY,
-    price: 5000,
-    minLevel: 90,
-    maxHolders: 5,
-    monthly: false,
-    sortOrder: 4,
-    signatureColor: PERSONA_SIGNATURE_COLORS['S-Class Heroes'],
-  },
-  {
-    key: 'the-espada',
-    name: 'The Espada',
-    tier: PERSONA_TIERS.LEGENDARY,
-    price: 5000,
-    minLevel: 90,
-    maxHolders: 10,
-    monthly: false,
     sortOrder: 5,
-    signatureColor: PERSONA_SIGNATURE_COLORS['The Espada'],
+    signatureColor: PERSONA_SIGNATURE_COLORS['Witches of Sin'],
   },
   // Elite Tier (Level 70+) - 3000 residuals (6 items)
   {
