@@ -201,7 +201,7 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
 
       ctx.save();
 
-      ctx.fillStyle = TEXT_COLOR;
+      ctx.fillStyle = '#4a4a4a'; // Dark gray text for color shop images
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
