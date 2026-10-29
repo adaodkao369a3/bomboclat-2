@@ -4,7 +4,6 @@ import { createEmojiSubmission, getEmojiSubmission, approveEmojiSubmission, reje
 import { validateAndProcessImage } from '../../services/imageProcessing.js';
 import { sanitizeEmojiName } from '../../utils/sanitization.js';
 import { EMOJI_REVIEW_CHANNEL_ID, EMOJI_XP_THRESHOLD } from '../../config/index.js';
-import { calculateLevelFromXP } from '../../services/xp.js';
 
 export const emojiSubmitCommand = {
   data: new SlashCommandBuilder()
