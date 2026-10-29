@@ -1,4 +1,4 @@
-import { KLIPY_KEY, KLIPY_URL } from '../config/index.js';
+import { KLIPY_KEY } from '../config/index.js';
 
 export interface KlipyResponse {
   data: Array<{

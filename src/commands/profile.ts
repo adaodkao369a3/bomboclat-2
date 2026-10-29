@@ -1,4 +1,4 @@
-import { EmbedBuilder, GuildMember, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { EmbedBuilder, GuildMember, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
 import { getUser } from '../database/client.js';
 import { getUserArchetypes, getUserColors } from '../services/shop.js';
 import { getResidualsInfo } from '../services/residuals.js';
@@ -10,6 +10,10 @@ import { EMOJIS } from '../config/index.js';
 import { getAvailableCommands, CommandAccess } from './registry.js';
 import { Command } from './index.js';
 import { registerInteractionHandler, parseCustomId, isInteractionExpired } from '../interactions/index.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+const profileImagePath = join(process.cwd(), 'assets/profile.png');
 
 const PROFILE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
@@ -91,10 +95,14 @@ registerInteractionHandler('profile', async (interaction) => {
       }
     }
 
+    const profileImageBuffer = readFileSync(profileImagePath);
+    const profileAttachment = new AttachmentBuilder(profileImageBuffer, { name: 'profile.png' });
+
     const commandsEmbed = new EmbedBuilder()
       .setTitle('📋 Available Commands')
       .setDescription(`__Your Role:__ ${viewerRoleDisplay}\n\n__Commands:__\n${generalLines.join('\n')}${personaText}\n\n__Your Perks:__\n${perks.join('\n')}`)
-      .setColor(0x4900ff);
+      .setColor(0x4900ff)
+      .setThumbnail('attachment://profile.png');
 
     setStandardFooter(commandsEmbed);
 
@@ -106,7 +114,7 @@ registerInteractionHandler('profile', async (interaction) => {
           .setStyle(ButtonStyle.Secondary)
       );
 
-    await interaction.update({ embeds: [commandsEmbed], components: [backRow] });
+    await interaction.update({ embeds: [commandsEmbed], components: [backRow], files: [profileAttachment] });
   } else if (action === 'back') {
     // Rebuild profile embed
     let description = `__${targetMember?.displayName || 'Unknown'}__\n-# ${roleDisplay}\n\n`;
@@ -130,14 +138,14 @@ registerInteractionHandler('profile', async (interaction) => {
     }
 
     const avatarUrl = targetMember?.user.displayAvatarURL();
+    const profileImageBuffer = readFileSync(profileImagePath);
+    const profileAttachment = new AttachmentBuilder(profileImageBuffer, { name: 'profile.png' });
+
     const profileEmbed = new EmbedBuilder()
       .setTitle(`${EMOJIS.PROFILE} STUDIO PROFILE`)
       .setDescription(description)
-      .setColor(0x4900ff);
-
-    if (avatarUrl) {
-      profileEmbed.setThumbnail(avatarUrl);
-    }
+      .setColor(0x4900ff)
+      .setThumbnail('attachment://profile.png');
 
     setAuthorHeader(profileEmbed, targetMember?.displayName || 'Unknown', avatarUrl || null);
     setStandardFooter(profileEmbed);
@@ -150,7 +158,7 @@ registerInteractionHandler('profile', async (interaction) => {
           .setStyle(ButtonStyle.Primary)
       );
 
-    await interaction.update({ embeds: [profileEmbed], components: [commandsRow] });
+    await interaction.update({ embeds: [profileEmbed], components: [commandsRow], files: [profileAttachment] });
   }
 });
 
@@ -226,11 +234,14 @@ export const profileCommand: Command = {
     }
 
     // Create embed
+    const profileImageBuffer = readFileSync(profileImagePath);
+    const profileAttachment = new AttachmentBuilder(profileImageBuffer, { name: 'profile.png' });
+
     const embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.PROFILE} STUDIO PROFILE`)
       .setDescription(description)
       .setColor(0x4900ff)
-      .setThumbnail(target.user.displayAvatarURL());
+      .setThumbnail('attachment://profile.png');
 
     setAuthorHeader(embed, target.displayName, target.user.displayAvatarURL());
     setStandardFooter(embed);
@@ -244,6 +255,6 @@ export const profileCommand: Command = {
           .setStyle(ButtonStyle.Primary)
       );
 
-    await message.reply({ embeds: [embed], components: [row] });
+    await message.reply({ embeds: [embed], components: [row], files: [profileAttachment] });
   },
 };

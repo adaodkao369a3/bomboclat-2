@@ -1,4 +1,4 @@
-import { EmbedBuilder, GuildMember } from 'discord.js';
+import { EmbedBuilder, GuildMember, AttachmentBuilder } from 'discord.js';
 import { getUser } from '../database/client.js';
 import { getResidualsInfo } from '../services/residuals.js';
 import { getResidualsLeaderboard } from '../database/client.js';
@@ -6,6 +6,10 @@ import { EMOJIS } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { cooldownMessage, setAuthorHeader, setStandardFooter } from '../ui/index.js';
 import { Command } from './index.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+const moneyImagePath = join(process.cwd(), 'assets/money.png');
 
 export const resCommand: Command = {
   name: 'res',
@@ -51,15 +55,18 @@ export const resCommand: Command = {
     const rankText = rank > 0 ? `#${rank} richest` : 'Not ranked';
 
     // Create embed
+    const moneyImageBuffer = readFileSync(moneyImagePath);
+    const moneyAttachment = new AttachmentBuilder(moneyImageBuffer, { name: 'money.png' });
+
     const embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.CASH} Residuals`)
       .setDescription(`__${target.displayName}__\n-# ${EMOJIS.CASH} ${residualData.balance.toLocaleString()} residuals\n\nLifetime earned: ${residualData.lifetime_earned.toLocaleString()}\nLifetime spent: ${residualData.lifetime_spent.toLocaleString()}\n${rankText}`)
       .setColor(0x4900ff)
-      .setThumbnail(target.user.displayAvatarURL());
+      .setThumbnail('attachment://money.png');
 
     setAuthorHeader(embed, target.displayName, target.user.displayAvatarURL());
     setStandardFooter(embed);
 
-    await message.reply({ embeds: [embed] });
+    await message.reply({ embeds: [embed], files: [moneyAttachment] });
   },
 };
