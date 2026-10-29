@@ -246,8 +246,8 @@ export const RETIRED_COLORS = [
  * Tier symbols for embed display (not for role names)
  */
 export const TIER_SYMBOLS: Record<string, string> = {
-  [COLOR_TIERS.STUDIO_CLASSICS]: '🎬',
-  [COLOR_TIERS.MIDNIGHT_CINEMA]: '🌙',
-  [COLOR_TIERS.NEON_LIGHTS]: '⚡',
-  [COLOR_TIERS.AWARD_SEASON]: '🏆',
+  [COLOR_TIERS.STUDIO_CLASSICS]: '<:glossystaremoji:1545004043699626004>',
+  [COLOR_TIERS.MIDNIGHT_CINEMA]: '<:moon:1565486441054609428>',
+  [COLOR_TIERS.NEON_LIGHTS]: '<:guardian:1545860959728304140>',
+  [COLOR_TIERS.AWARD_SEASON]: '<:star:1545002693368750193>',
 };
