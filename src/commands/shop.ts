@@ -329,7 +329,7 @@ async function deleteRetiredColorsWithNoOwners(guild: Guild): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:designpalette:1542338996217184356> Colors Shop';
+  const introTitle = '<:palette:1545852130517319812> Colors Shop';
   const introEmbed = new EmbedBuilder()
     .setTitle(introTitle)
     .setDescription('Give your profile some personality with collectible colors.\n\nColors are divided into tiers, each unlocking at a specific level.\n\n**Studio Classics** — Level 20\n**Midnight Cinema** — Level 40\n**Neon Lights** — Level 40\n**Award Season** — Level 60\n\nSelect a category below to browse its colors.')
@@ -432,7 +432,7 @@ async function postColorShop(shopChannel: TextChannel, colorsByTier: Record<stri
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:3dmovie:1542345279070806067> Persona Roles Shop';
+  const introTitle = '<:theatre:1558592490662138017> Persona Roles Shop';
   const introEmbed = new EmbedBuilder()
     .setTitle(introTitle)
     .setDescription('Collect personas to give your profile its own identity.\n\nPersonas climb from rare **Special** ones to prestigious **Transcendent** roles. You need the level to buy them.\n\n🛡️ **High-status** — Level 50+ (2000 residuals)\n⚔️ **Elite** — Level 70+ (3000 residuals)\n� **Legendary** — Level 90+ (4000 residuals)\n✨ **Transcendent** — Level 90+ (4500 residuals)\n🎭 **Special** — Level 30+ (5000 residuals, Unknown Entity needs level 100)\n\nSelect a category below to browse the collection.')

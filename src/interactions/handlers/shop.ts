@@ -41,8 +41,8 @@ import { levelTooLow } from '../../services/shopText.js';
  */
 
 const EPHEMERAL = MessageFlags.Ephemeral;
-const PERSONA_EMOJI = '<:3dmovie:1542345279070806067>';
-const COLOR_EMOJI = '<:designpalette:1542338996217184356>';
+const PERSONA_EMOJI = '<:theatre:1558592490662138017>';
+const COLOR_EMOJI = '<:palette:1545852130517319812>';
 
 /** Discord role names are the plain lowercase item name. */
 const roleName = (name: string): string => name.toLowerCase();

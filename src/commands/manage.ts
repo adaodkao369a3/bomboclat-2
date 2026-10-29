@@ -52,8 +52,8 @@ export const manageCommand: Command = {
       .setTitle('<a:settings:1542343011600568320> Manage Your Items')
       .setColor(0x4900ff)
       .addFields([
-        { name: '<:3dmovie:1542345279070806067> Persona', value: personaLine, inline: false },
-        { name: '<:designpalette:1542338996217184356> Colors', value: colorLines, inline: false },
+        { name: '<:theatre:1558592490662138017> Persona', value: personaLine, inline: false },
+        { name: '<:palette:1545852130517319812> Colors', value: colorLines, inline: false },
       ])
       .setFooter({ text: 'Use the buttons below to manage your items.' });
 

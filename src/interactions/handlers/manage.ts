@@ -39,8 +39,8 @@ import { reconcileShopRoles } from '../../services/shopRoles.js';
  */
 
 const EPHEMERAL = MessageFlags.Ephemeral;
-const COLOR_EMOJI = '<:designpalette:1542338996217184356>';
-const PERSONA_EMOJI = '<:3dmovie:1542345279070806067>';
+const COLOR_EMOJI = '<:palette:1545852130517319812>';
+const PERSONA_EMOJI = '<:theatre:1558592490662138017>';
 
 async function getMember(interaction: Interaction): Promise<GuildMember | null> {
   if (!interaction.guild) return null;
