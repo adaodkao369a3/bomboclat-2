@@ -31,66 +31,66 @@ export const TIER_LEVELS: Record<string, number> = {
  * Each tier has [lighterShade, darkerShade] for left-to-right gradient
  */
 export const COLOR_TIER_BACKGROUNDS: Record<string, [string, string]> = {
-  [COLOR_TIERS.STUDIO_CLASSICS]: ['#A8C4A8', '#5C7A5C'], // Sage Green gradient (lighter to darker)
-  [COLOR_TIERS.MIDNIGHT_CINEMA]: ['#7AA3C2', '#3D5A6B'], // Steel Blue gradient (lighter to darker)
-  [COLOR_TIERS.NEON_LIGHTS]: ['#5ED6E8', '#1A7A8A'], // Vibrant Cyan gradient (lighter to darker)
-  [COLOR_TIERS.AWARD_SEASON]: ['#D4B888', '#8B6E3A'], // Muted Gold gradient (lighter to darker)
+  [COLOR_TIERS.STUDIO_CLASSICS]: ['#E8F8F3', '#C1E2ED'], // Ocean Pearl gradient (lighter to darker)
+  [COLOR_TIERS.MIDNIGHT_CINEMA]: ['#54263C', '#292832'], // Burgundy + Charcoal gradient (lighter to darker)
+  [COLOR_TIERS.NEON_LIGHTS]: ['#FFB5D2', '#FFB078'], // Hot Pink + Orange gradient (lighter to darker)
+  [COLOR_TIERS.AWARD_SEASON]: ['#FFFFFF', '#C7D0DA'], // Pearl White + Silver gradient (lighter to darker)
 };
 
 /**
- * All 20 colors with their configuration
+ * All 21 colors with their configuration
  */
 export const COLORS_CONFIG: ColorConfig[] = [
-  // Tier 1: Studio Classics (Level 20)
+  // Tier 1: Studio Classics (Level 20) - Soft Pastel Dreams palette
   {
-    name: 'Forest Green',
-    hex: '#228B22',
+    name: 'Pastel Green',
+    hex: '#B7E4C7',
     price: 100,
     tier: COLOR_TIERS.STUDIO_CLASSICS,
     minLevel: 20,
     sortOrder: 1,
   },
   {
-    name: 'Dusty Blue',
-    hex: '#6B8BA4',
+    name: 'Powder Blue',
+    hex: '#BDE0FE',
     price: 100,
     tier: COLOR_TIERS.STUDIO_CLASSICS,
     minLevel: 20,
     sortOrder: 2,
   },
   {
-    name: 'Slate Grey',
-    hex: '#708090',
+    name: 'Peach Sorbet',
+    hex: '#FFD6C0',
     price: 100,
     tier: COLOR_TIERS.STUDIO_CLASSICS,
     minLevel: 20,
     sortOrder: 3,
   },
   {
-    name: 'Golden Yellow',
-    hex: '#FFD700',
+    name: 'Butter Yellow',
+    hex: '#FFF1A8',
     price: 150,
     tier: COLOR_TIERS.STUDIO_CLASSICS,
     minLevel: 20,
     sortOrder: 4,
   },
   {
-    name: 'Cherry Red',
-    hex: '#D2042D',
+    name: 'Pastel Rose',
+    hex: '#F4ACB7',
     price: 200,
     tier: COLOR_TIERS.STUDIO_CLASSICS,
     minLevel: 20,
     sortOrder: 5,
   },
   {
-    name: 'Lavender Haze',
-    hex: '#B7A6D9',
+    name: 'Lavender Mist',
+    hex: '#D7C6F5',
     price: 250,
     tier: COLOR_TIERS.STUDIO_CLASSICS,
     minLevel: 20,
     sortOrder: 6,
   },
-  // Tier 2: Midnight Cinema (Level 40)
+  // Tier 2: Midnight Cinema (Level 40) - Dark, dramatic, cinematic theme
   {
     name: 'Midnight Black',
     hex: '#0A0A0F',
@@ -140,7 +140,7 @@ export const COLORS_CONFIG: ColorConfig[] = [
     sortOrder: 12,
   },
 
-  // Tier 3: Neon Lights (Level 40)
+  // Tier 3: Neon Lights (Level 40) - Vibrant, energetic neon theme
   {
     name: 'Toxic Lime',
     hex: '#B6FF00',
@@ -173,22 +173,30 @@ export const COLORS_CONFIG: ColorConfig[] = [
     minLevel: 40,
     sortOrder: 16,
   },
-  // Tier 4: Award Season (Level 60)
   {
-    name: 'Turquoise',
-    hex: '#40E0D0',
-    price: 800,
-    tier: COLOR_TIERS.AWARD_SEASON,
-    minLevel: 60,
+    name: 'Laser Blue',
+    hex: '#245BFF',
+    price: 700,
+    tier: COLOR_TIERS.NEON_LIGHTS,
+    minLevel: 40,
     sortOrder: 17,
   },
   {
-    name: 'Sunset Orange',
-    hex: '#FF4500',
+    name: 'Acid Yellow',
+    hex: '#EAFF00',
+    price: 850,
+    tier: COLOR_TIERS.NEON_LIGHTS,
+    minLevel: 40,
+    sortOrder: 18,
+  },
+  // Tier 4: Award Season (Level 60) - Premium tier with 3 colors only
+  {
+    name: 'Ruby Red',
+    hex: '#9B111E',
     price: 900,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 18,
+    sortOrder: 19,
   },
   {
     name: 'Champagne Gold',
@@ -196,7 +204,7 @@ export const COLORS_CONFIG: ColorConfig[] = [
     price: 1200,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 19,
+    sortOrder: 20,
   },
   {
     name: 'Diamond White',
@@ -204,7 +212,7 @@ export const COLORS_CONFIG: ColorConfig[] = [
     price: 1500,
     tier: COLOR_TIERS.AWARD_SEASON,
     minLevel: 60,
-    sortOrder: 20,
+    sortOrder: 21,
   },
 ];
 
@@ -213,6 +221,14 @@ export const COLORS_CONFIG: ColorConfig[] = [
  * These should be set to active = false
  */
 export const RETIRED_COLORS = [
+  'Forest Green',
+  'Dusty Blue',
+  'Slate Grey',
+  'Golden Yellow',
+  'Cherry Red',
+  'Lavender Haze',
+  'Turquoise',
+  'Sunset Orange',
   'Crimson Red',
   'Ocean Blue',
   'Royal Purple',

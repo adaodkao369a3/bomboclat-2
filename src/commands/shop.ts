@@ -435,7 +435,7 @@ async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
   const introTitle = '<:theatre:1558592490662138017> Persona Roles Shop';
   const introEmbed = new EmbedBuilder()
     .setTitle(introTitle)
-    .setDescription('Collect personas to give your profile its own identity.\n\nPersonas climb from rare **Special** ones to prestigious **Transcendent** roles. You need the level to buy them.\n\n🛡️ **High-status** — Level 50+ (2000 residuals)\n⚔️ **Elite** — Level 70+ (3000 residuals)\n� **Legendary** — Level 90+ (4000 residuals)\n✨ **Transcendent** — Level 90+ (4500 residuals)\n🎭 **Special** — Level 30+ (5000 residuals, Unknown Entity needs level 100)\n\nSelect a category below to browse the collection.')
+    .setDescription('Collect personas to give your profile its own identity.\n\nPersonas climb from rare **Special** ones to prestigious **Transcendent** roles. You need the level to buy them.\n\n🛡️ **High-status** — Level 30+ (2000 residuals)\n⚔️ **Elite** — Level 50+ (3000 residuals)\n👑 **Legendary** — Level 70+ (4000 residuals)\n✨ **Transcendent** — Level 90+ (4500 residuals)\n🎭 **Special** — Level 100+ (5000 residuals)\n\nSelect a category below to browse the collection.')
     .setColor(0x4900ff);
 
   // Try to edit existing message, otherwise send new

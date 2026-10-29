@@ -133,24 +133,28 @@ export const emojiSubmitCommand = {
         return;
       }
 
-      const userLevel = calculateLevelFromXP(userXP);
-
       const embed = new EmbedBuilder()
         .setTitle('🎨 Emoji Submission')
-        .setDescription(`**Name:** \`${sanitizedName}\`\n**Submitter:** <@${interaction.user.id}>\n**Level:** ${userLevel}\n**Status:** Pending Review`)
+        .setDescription(`**Name:** \`${sanitizedName}\`\n**Status:** ⏳ Pending Review`)
         .setColor(0xFFA500)
         .setThumbnail(finalImageUrl)
+        .setAuthor({
+          name: `Submitted by @${interaction.user.username}`,
+          iconURL: interaction.user.displayAvatarURL(),
+        })
         .setTimestamp()
-        .setFooter({ text: `Submission ID: ${submission.id}` });
+        .setFooter({ text: `Submission ID: ${submission.id} | 💡 Want to submit your own emoji? Use /emojisubmit to submit one for review!` });
 
       const approveButton = new ButtonBuilder()
         .setCustomId(`emoji_approve_${submission.id}`)
-        .setLabel('✅ Approve')
+        .setLabel('Approve')
+        .setEmoji('1545126564247633970')
         .setStyle(ButtonStyle.Success);
 
       const rejectButton = new ButtonBuilder()
         .setCustomId(`emoji_reject_${submission.id}`)
-        .setLabel('❌ Reject')
+        .setLabel('Reject')
+        .setEmoji('1545126551673241731')
         .setStyle(ButtonStyle.Danger);
 
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(approveButton, rejectButton);
@@ -233,14 +237,12 @@ export async function handleEmojiApprove(interaction: ButtonInteraction): Promis
     // Record created emoji ID in database
     await updateEmojiSubmissionWithCreatedId(submissionId, emoji.id);
 
-    // Calculate level from XP
-    const userLevel = calculateLevelFromXP(submission.user_xp || 0);
-
     // Update embed
     if (interaction.message && interaction.message.editable) {
       const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
-        .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Submitter:** <@${submission.user_id}>\n**Level:** ${userLevel}\n**Status:** ✅ Approved\n**Created Emoji:** <:${emoji.name}:${emoji.id}>\n**Reviewed by:** <@${interaction.user.id}>`)
-        .setColor(0x00FF00);
+        .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Status:** <:tick:1545126564247633970> Approved\n**Created Emoji:** <:${emoji.name}:${emoji.id}>\n**Reviewed by:** <@${interaction.user.id}>`)
+        .setColor(0x2EAD65)
+        .setFooter({ text: `Submission ID: ${submissionId} | 💡 Want to submit your own emoji? Use /emojisubmit to submit one for review!` });
 
       await interaction.message.edit({
         content: interaction.message.content,
@@ -335,9 +337,6 @@ export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction
       return;
     }
 
-    // Calculate level from XP
-    const userLevel = calculateLevelFromXP(submission.user_xp || 0);
-
     // Find and update the original message
     const reviewChannel = interaction.guild.channels.cache.get(EMOJI_REVIEW_CHANNEL_ID);
     if (reviewChannel && reviewChannel.isTextBased()) {
@@ -349,8 +348,9 @@ export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction
 
       if (reviewMessage && reviewMessage.editable) {
         const updatedEmbed = EmbedBuilder.from(reviewMessage.embeds[0])
-          .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Submitter:** <@${submission.user_id}>\n**Level:** ${userLevel}\n**Status:** ❌ Rejected\n**Reviewed by:** <@${interaction.user.id}>\n${reason ? `**Reason:** ${reason}` : ''}`)
-          .setColor(0xFF0000);
+          .setDescription(`**Name:** \`${submission.emoji_name}\`\n**Status:** <:cross:1545126551673241731> Rejected\n**Reviewed by:** <@${interaction.user.id}>\n${reason ? `**Reason:** ${reason}` : ''}`)
+          .setColor(0xE05252)
+          .setFooter({ text: `Submission ID: ${submissionId} | 💡 Want to submit your own emoji? Use /emojisubmit to submit one for review!` });
 
         await reviewMessage.edit({
           content: reviewMessage.content,
