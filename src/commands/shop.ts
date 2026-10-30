@@ -389,7 +389,7 @@ async function postColorShop(shopChannel: TextChannel, colorsByTier: Record<stri
         const formattedName = colorRoleName(color.name, color.tier);
         selectMenu.addOptions(
           new StringSelectMenuOptionBuilder()
-            .setLabel(`${formattedName} - ${color.price} residuals`)
+            .setLabel(`${formattedName} - ${color.price} 💵`)
             .setValue(color.id.toString())
             .setDescription(`Level ${color.min_level} · ${color.hex}`)
         );
@@ -501,7 +501,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
         const monthlyText = archetype.monthly ? ' (monthly)' : '';
         selectMenu.addOptions(
           new StringSelectMenuOptionBuilder()
-            .setLabel(`${formattedName} - ${archetype.price} residuals`)
+            .setLabel(`${formattedName} - ${archetype.price} 💵`)
             .setValue(archetype.id.toString())
             .setDescription(`Level ${archetype.min_level} · ${holderText}${monthlyText}`)
         );
