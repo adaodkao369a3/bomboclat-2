@@ -349,14 +349,14 @@ export const EMOJI_REVIEW_CHANNEL_ID = '1545394590851276891';
 
 // Randomized welcome message lines - one line each. {user} = mention, {count} = member number.
 export const WELCOME_MESSAGES: string[] = [
-  '{user} just walked onto the set, welcome to MI BOMBO <:theatre:1558592490662138017>',
+  '{user} just walked onto the set, welcome to Mi Bombo <:theatre:1558592490662138017>',
   'Say hello to {user}, our newest face <a:blobsunglasses:1558593448506822768>',
   '{user} has entered the building <a:sparklyheart:1558593730943131748>',
-  'The casting call is complete, {user} is officially MI BOMBO <:mikucool:1558595810889957377>',
+  'The casting call is complete, {user} is officially Mi Bombo <:mikucool:1558595810889957377>',
   'New face on set: {user}, make yourself at home <:theatre:1558592490662138017>',
-  '{user} is member #{count} of MI BOMBO <a:typing:1558592831914909830>',
-  'The spotlight finds {user}, welcome to MI BOMBO <a:sparklyheart:1558593730943131748>',
-  '{user} has arrived, MI BOMBO just got a new star <a:sparkles:1558594196921909278>',
+  '{user} is member #{count} of Mi Bombo <a:typing:1558592831914909830>',
+  'The spotlight finds {user}, welcome to Mi Bombo <a:sparklyheart:1558593730943131748>',
+  '{user} has arrived, Mi Bombo just got a new star <a:sparkles:1558594196921909278>',
   'One more face, one more story, welcome {user} <:mikucool:1558595810889957377>',
   '{user} joined the cast, let the story begin <a:typing:1558592831914909830>',
 ];
@@ -364,15 +364,15 @@ export const WELCOME_MESSAGES: string[] = [
 // Randomized booster ("Guest Star") opening lines, sent to the red carpet channel.
 // The perks list is added underneath by services/welcome.ts. {user} = mention.
 export const BOOST_MESSAGES: string[] = [
-  '{user} just boosted MI BOMBO {crown} the red carpet is rolled out {money}',
+  '{user} just boosted Mi Bombo {crown} the red carpet is rolled out {money}',
   'Red carpet\'s rolled out for {user} {crown2} thanks for the boost',
   '{user} boosted the server {crown} welcome to the Guest Stars {money}',
   'Big thanks to {user} for boosting {pink}',
   '{user} just stepped onto the red carpet {sunglasses}',
-  'MI BOMBO just got a boost from {user} {crown}',
+  'Mi Bombo just got a boost from {user} {crown}',
   'Thank you {user} for the boost {crown2} you\'re a Guest Star now',
-  '{user} just gave MI BOMBO a boost {orange} thank you',
-  'Red carpet moment: {user} boosted MI BOMBO {crown}',
+  '{user} just gave Mi Bombo a boost {orange} thank you',
+  'Red carpet moment: {user} boosted Mi Bombo {crown}',
   '{user} boosted the server {money} Guest Star unlocked',
 ];
 

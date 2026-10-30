@@ -70,7 +70,7 @@ export async function sendWelcomeMessage(member: GuildMember, testChannel?: any)
       .setDescription(line)
       .setColor(0x9b5de5)
       .setThumbnail(member.user.displayAvatarURL())
-      .setFooter({ text: `Member #${member.guild.memberCount} - MI BOMBO` })
+      .setFooter({ text: `Member #${member.guild.memberCount} - Mi Bombo` })
       .setTimestamp();
 
     // Use welcome.png as the image
@@ -114,7 +114,7 @@ export async function sendBoosterThankYou(member: GuildMember, testChannel?: any
       .setDescription(line)
       .addFields({ name: `${EMOJIS.CROWN} Your Guest Star perks`, value: buildBoosterPerks(gifted), inline: false })
       .setColor(0xF47FFF)
-      .setFooter({ text: `Guest Star #${guestStarCountValue} - MI BOMBO` })
+      .setFooter({ text: `Guest Star #${guestStarCountValue} - Mi Bombo` })
       .setTimestamp();
 
     // Use booster.png as the thumbnail (right side of embed)

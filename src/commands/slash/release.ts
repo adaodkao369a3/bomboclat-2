@@ -85,7 +85,7 @@ export const releaseCommand = {
         .setImage(RELEASE_GIF_URL)
         .setColor(0x4900ff)
         .setTimestamp()
-        .setFooter({ text: 'MI BOMBO Studios' });
+        .setFooter({ text: 'Mi Bombo Studios' });
 
       // Fetch the attachment buffer to re-upload
       const response = await fetch(audioAttachment.url);

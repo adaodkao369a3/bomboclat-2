@@ -14,7 +14,7 @@ export const rulesCommand: Command = {
 
     // 1. Discord server rules
     const rulesEmbed = new EmbedBuilder()
-      .setTitle(`${EMOJIS.STAR} WELCOME TO MI BOMBO`)
+      .setTitle(`${EMOJIS.STAR} WELCOME TO Mi Bombo`)
       .setDescription('════════════════\n'+
         'Before you step onto the set, here are a few things that keep the production fun for everyone\n\n' +
         '**1.** __**Respect the cast.**__ Treat everyone with basic respect; no harassment, bullying, or targeted abuse\n\n' +

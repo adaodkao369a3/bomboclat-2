@@ -33,7 +33,7 @@ export function formatStatLineItalic(label: string, value: string): string {
  * Standard footer for personal embeds
  */
 export function setStandardFooter(embed: EmbedBuilder): EmbedBuilder {
-  return embed.setFooter({ text: 'MI BOMBO Studios' });
+  return embed.setFooter({ text: 'Mi Bombo Studios' });
 }
 
 /**

@@ -82,7 +82,7 @@ client.once('ready', async () => {
   // Schedule short interval check for expired roles (every 5 minutes)
   scheduleExpiredRoleCheck();
 
-  console.log('🎬 MI BOMBO Studios is online.');
+  console.log('🎬 Mi Bombo Studios is online.');
 });
 
 client.on('guildMemberAdd', async (member) => {
