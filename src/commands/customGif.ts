@@ -1,8 +1,9 @@
 import { EmbedBuilder } from 'discord.js';
-import { GIF_CONFIG, EMOJIS } from '../config/index.js';
+import { GIF_CONFIG, EMOJIS, ROLES } from '../config/index.js';
 import { fetchGIF } from '../services/klipy.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
-import { isAdmin, hasHeroRole } from '../utils/permissions.js';
+import { isAdmin } from '../utils/permissions.js';
+import { getUser } from '../database/client.js';
 import { Command } from './index.js';
 
 export const customGifCommand: Command = {
@@ -10,10 +11,20 @@ export const customGifCommand: Command = {
   allowedPrefix: '.',
   async execute(message, args, _prefix) {
 
-    // Check permissions (Hero+ or admins)
-    if (!message.member || (!(await hasHeroRole(message.member)) && !isAdmin(message.member))) {
-      await message.reply('❌ This command requires Hero role (or Guest Star) or higher.');
-      return;
+    // Check permissions (level requirement; admins and boosters (Guest Star) bypass)
+    if (!message.member) return;
+    const isUserAdmin = isAdmin(message.member);
+    const isBooster = message.member.roles.cache.has(ROLES.BOOSTER);
+    if (!isUserAdmin && !isBooster) {
+      const user = await getUser(message.author.id);
+      const userLevel = user?.current_level ?? 0;
+      if (userLevel < GIF_CONFIG.CUSTOM_MIN_LEVEL) {
+        await message.reply({
+          content: `${message.author} \`.c\` unlocks at **level ${GIF_CONFIG.CUSTOM_MIN_LEVEL}** (you're level ${userLevel}).`,
+          allowedMentions: { users: [message.author.id], repliedUser: true },
+        });
+        return;
+      }
     }
 
     // Check target limit
@@ -48,7 +59,6 @@ export const customGifCommand: Command = {
     }
 
     // Admin bypass - admins are exempt from cooldowns
-    const isUserAdmin = message.member ? isAdmin(message.member) : false;
     if (!isUserAdmin) {
       const remaining = getRemaining(message.author.id, 'c');
       if (remaining > 0) {

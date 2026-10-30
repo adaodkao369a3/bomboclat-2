@@ -1,5 +1,5 @@
 import { ROLE_GIF_COMMANDS } from '../src/config/roleGifCommands.js';
-import { GIF_COMMANDS } from '../src/config/index.js';
+import { GIF_COMMANDS, GIF_CAPTIONS, GIF_PHRASES, GIF_TIERS, GIF_TIER_LEVELS, GIF_COMMAND_LEVELS } from '../src/config/index.js';
 
 console.log('Running role GIF command tests...');
 
@@ -108,3 +108,29 @@ if (wrongCount.length > 0) {
   process.exit(1);
 }
 console.log('✓ Every role GIF command maps to a real persona (5 each)');
+
+
+// Test: free GIF commands are 5 tiers x 5 commands, unlocking at levels 1/20/40/60/80
+{
+  const tierCommands = GIF_TIERS.flat();
+  const problems: string[] = [];
+  if (GIF_TIERS.length !== 5) problems.push(`expected 5 tiers, got ${GIF_TIERS.length}`);
+  if (GIF_TIER_LEVELS.join(',') !== '1,20,40,60,80') problems.push(`tier levels are ${GIF_TIER_LEVELS.join(',')}`);
+  GIF_TIERS.forEach((t, i) => { if (t.length !== 5) problems.push(`tier ${i + 1} has ${t.length} commands`); });
+  if (new Set(tierCommands).size !== tierCommands.length) problems.push('duplicate command across tiers');
+  if (tierCommands.slice().sort().join() !== Object.keys(GIF_COMMANDS).sort().join()) problems.push('GIF_COMMANDS does not match GIF_TIERS');
+  for (const c of tierCommands) {
+    if (!GIF_COMMANDS[c]) problems.push(`${c}: missing search query`);
+    if (!GIF_CAPTIONS[c]) problems.push(`${c}: missing caption`);
+    if (!GIF_PHRASES[c]) problems.push(`${c}: missing footer phrase`);
+    if (GIF_COMMAND_LEVELS[c] === undefined) problems.push(`${c}: missing level`);
+  }
+  for (const gone of ['larp', 'fumble', 'nom', 'evil', 'dead', 'flex']) {
+    if (tierCommands.includes(gone)) problems.push(`${gone} should have been removed`);
+  }
+  if (problems.length > 0) {
+    console.error(`❌ GIF tier test failed:\n  ${problems.join('\n  ')}`);
+    process.exit(1);
+  }
+  console.log('✓ GIF tiers: 5 tiers x 5 commands, levels 1/20/40/60/80');
+}

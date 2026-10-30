@@ -47,7 +47,7 @@ export const rulesStudioCommand: Command = {
         `${EMOJIS.SETTINGS} __**COMMANDS**__\n` +
         'The main studio bot handles **profiles, progression, Residuals, GIF features, and more.**\n\n' +
         `${EMOJIS.STARICON} **Profile & Progression** — __**.profile**__, __**.level**__, __**.res**__, __**.leaderboard**__\n` +
-        '**Fun** — __**.rizz**__, __**.larp**__, __**.blush**__, __**.cope**__, __**.aura**__, __**.cry**__\n' + 'and more...\n' +
+        '**Fun** — __**.wave**__, __**.pat**__, __**.blush**__, __**.cope**__, __**.slap**__, __**.rizz**__\n' + 'and more...\n' +
         '**custom commands** — .c __**domain expansion**__\n' +
         '**Manage shopped items** — __**.manage**__\n\n' +
         '*The production keeps growing — and so does the cast.*'

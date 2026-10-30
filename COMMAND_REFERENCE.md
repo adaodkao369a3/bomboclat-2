@@ -7,18 +7,32 @@
 | `.level` / `.level @user` | Check current level with XP progress bar and full role progression ladder showing all 17 milestone roles (10s cooldown) |
 | `.res` / `.res @user` | View residuals (earnings) balance and breakdown |
 | `.leaderboard` | Shows top 5 most active members by level and XP |
-| `.rizz` / `.rizz @user1 @user2` | GIF reaction with "rizz anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.larp` / `.larp @user1 @user2` | GIF reaction with "larp anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.blush` / `.blush @user1 @user2` | GIF reaction with "anime blush" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.cooked` / `.cooked @user1 @user2` | GIF reaction with "cooked anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.fumble` / `.fumble @user1 @user2` | GIF reaction with "fumble anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.cope` / `.cope @user1 @user2` | GIF reaction with "cope anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.grass` / `.grass @user1 @user2` | GIF reaction with "touch grass anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.aura` / `.aura @user1 @user2` | GIF reaction with "aura anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.huh` / `.huh @user1 @user2` | GIF reaction with "huh anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.cry` / `.cry @user1 @user2` | GIF reaction with "crying anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.leash` / `.leash @user1 @user2` | GIF reaction with "leash anime" - can target up to 3 users (10s cooldown, scales to 120s/180s for 2/3 targets) |
-| `.c <query>` | Search for custom GIFs (Featured Extra+ or Guest Star role required) |
+| `.huh` / `.huh @user1 @user2` | GIF reaction with "huh anime" - unlocks at level 1; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.cry` / `.cry @user1 @user2` | GIF reaction with "crying anime" - unlocks at level 1; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.blush` / `.blush @user1 @user2` | GIF reaction with "anime blush" - unlocks at level 1; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.wave` / `.wave @user1 @user2` | GIF reaction with "anime wave hello" - unlocks at level 1; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.pat` / `.pat @user1 @user2` | GIF reaction with "anime head pat" - unlocks at level 1; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.highfive` / `.highfive @user1 @user2` | GIF reaction with "anime high five" - unlocks at level 20; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.laugh` / `.laugh @user1 @user2` | GIF reaction with "anime laughing" - unlocks at level 20; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.shrug` / `.shrug @user1 @user2` | GIF reaction with "anime shrug" - unlocks at level 20; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.facepalm` / `.facepalm @user1 @user2` | GIF reaction with "anime facepalm" - unlocks at level 20; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.wink` / `.wink @user1 @user2` | GIF reaction with "anime wink" - unlocks at level 20; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.cope` / `.cope @user1 @user2` | GIF reaction with "cope anime" - unlocks at level 40; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.grass` / `.grass @user1 @user2` | GIF reaction with "touch grass anime" - unlocks at level 40; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.cooked` / `.cooked @user1 @user2` | GIF reaction with "cooked anime" - unlocks at level 40; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.bonk` / `.bonk @user1 @user2` | GIF reaction with "anime bonk" - unlocks at level 40; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.sus` / `.sus @user1 @user2` | GIF reaction with "anime sus" - unlocks at level 40; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.slap` / `.slap @user1 @user2` | GIF reaction with "anime slap" - unlocks at level 60; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.smug` / `.smug @user1 @user2` | GIF reaction with "anime smug" - unlocks at level 60; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.roast` / `.roast @user1 @user2` | GIF reaction with "anime roast" - unlocks at level 60; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.stare` / `.stare @user1 @user2` | GIF reaction with "anime stare" - unlocks at level 60; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.yeet` / `.yeet @user1 @user2` | GIF reaction with "anime yeet" - unlocks at level 60; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.rizz` / `.rizz @user1 @user2` | GIF reaction with "rizz anime" - unlocks at level 80; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.aura` / `.aura @user1 @user2` | GIF reaction with "aura anime" - unlocks at level 80; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.leash` / `.leash @user1 @user2` | GIF reaction with "leash anime" - unlocks at level 80; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.salute` / `.salute @user1 @user2` | GIF reaction with "anime salute" - unlocks at level 80; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.goat` / `.goat @user1 @user2` | GIF reaction with "goated anime" - unlocks at level 80; up to 3 targets (10s cooldown, 120s/180s for 2/3 targets). Footer counts how many times the target has received it |
+| `.c <query>` | Search for custom GIFs (level 50+; Guest Star boosters and admins bypass) |
 | `$clip <prompt>` | Generate AI artwork - art styles: anime, jojos, ghibli, jjk (Director gets full artwork, other admins get summary only with 30min cooldown) |
 | `.xp` / `.xp @user` | Check XP points and progression stats |
 | `.residuals` / `.residuals @user` | View detailed residuals breakdown including earnings, spending, and transaction history |

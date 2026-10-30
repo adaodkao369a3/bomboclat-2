@@ -1,5 +1,6 @@
 import { PERSONAS_CONFIG, PERSONA_KEYS, PERSONA_TIER_ORDER } from '../config/archetypes.js';
 import { ROLE_GIF_COMMANDS } from '../config/roleGifCommands.js';
+import { GIF_COMMANDS, GIF_COMMAND_LEVELS, GIF_CONFIG } from '../config/index.js';
 
 export enum CommandAccess {
   EVERYONE = 'everyone',
@@ -15,6 +16,14 @@ export interface CommandInfo {
   accessValue?: number | string; // level number, or persona key for ROLE access
   aliases?: string[];
 }
+
+/** Plain GIF commands, one entry each, unlocked at their tier's level */
+const GIF_COMMAND_INFOS: CommandInfo[] = Object.keys(GIF_COMMANDS).map(name => ({
+  name,
+  description: `Send a ${name} GIF (Level ${GIF_COMMAND_LEVELS[name]}+)`,
+  access: CommandAccess.LEVEL,
+  accessValue: GIF_COMMAND_LEVELS[name],
+}));
 
 /**
  * Single source of truth for all public member commands
@@ -52,68 +61,14 @@ export const PUBLIC_COMMANDS: CommandInfo[] = [
     description: 'Get help with commands',
     access: CommandAccess.EVERYONE,
   },
-  // GIF commands
-  {
-    name: 'rizz',
-    description: 'Send a rizz GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'larp',
-    description: 'Send a larp GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'blush',
-    description: 'Send a blush GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'cooked',
-    description: 'Send a cooked GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'fumble',
-    description: 'Send a fumble GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'cope',
-    description: 'Send a cope GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'grass',
-    description: 'Send a touch grass GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'aura',
-    description: 'Send an aura GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'huh',
-    description: 'Send a huh GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'cry',
-    description: 'Send a crying GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  {
-    name: 'leash',
-    description: 'Send a leash GIF',
-    access: CommandAccess.EVERYONE,
-  },
-  // Custom GIF (Hero+)
+  // GIF commands (unlocked by level tier)
+  ...GIF_COMMAND_INFOS,
+  // Custom GIF (level-gated)
   {
     name: 'c',
-    description: 'Custom GIF search (Hero+)',
+    description: `Custom GIF search (Level ${GIF_CONFIG.CUSTOM_MIN_LEVEL}+)`,
     access: CommandAccess.LEVEL,
-    accessValue: 10,
+    accessValue: GIF_CONFIG.CUSTOM_MIN_LEVEL,
   },
   // Manage (Superhero+)
   {

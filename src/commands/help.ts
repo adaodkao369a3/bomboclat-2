@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { EMOJIS } from '../config/index.js';
+import { EMOJIS, GIF_COMMANDS, GIF_TIER_LEVELS, GIF_TIERS } from '../config/index.js';
 import { PERSONA_TIER_SYMBOLS } from '../config/archetypes.js';
 import { Command } from './index.js';
 import { getAvailableCommands, getPersonaCommandGroups, type PersonaCommandGroup } from './registry.js';
@@ -179,9 +179,12 @@ registerInteractionHandler('help', async (interaction) => {
         }))
       );
   } else if (category === 'fun') {
-    const funCommands = availableCommands.filter(cmd =>
-      ['rizz', 'larp', 'blush', 'cooked', 'fumble', 'cope', 'grass', 'aura', 'huh', 'cry', 'leash'].includes(cmd.name)
-    );
+    const funCommands = availableCommands.filter(cmd => cmd.name in GIF_COMMANDS);
+    // Tiers the user hasn't unlocked yet, shown as a teaser
+    const lockedTiers = GIF_TIERS
+      .map((cmds, i) => ({ level: GIF_TIER_LEVELS[i], cmds }))
+      .filter(t => t.level > userLevel)
+      .map(t => `**Level ${t.level}:** ${t.cmds.map(c => `\`.${c}\``).join(' ')}`);
     embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.GLOSSY_STAR} Fun Commands`)
       .setDescription('Express yourself with reactions')
@@ -190,9 +193,12 @@ registerInteractionHandler('help', async (interaction) => {
         funCommands.map(cmd => ({
           name: `.${cmd.name}`,
           value: cmd.description,
-          inline: false,
+          inline: true,
         }))
       );
+    if (lockedTiers.length > 0) {
+      embed.addFields({ name: '🔒 Locked', value: lockedTiers.join('\n'), inline: false });
+    }
   } else if (category === 'leaderboard') {
     const lbCommands = availableCommands.filter(cmd =>
       ['leaderboard', 'reslb'].includes(cmd.name)

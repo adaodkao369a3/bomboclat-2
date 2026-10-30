@@ -255,36 +255,114 @@ export const GIF_CONFIG = {
   TWO_TARGET_COOLDOWN_SECONDS: 120,
   THREE_TARGET_COOLDOWN_SECONDS: 180,
   MAX_TARGETS: 3,
+  CUSTOM_MIN_LEVEL: 50, // level needed for .c (boosters and admins bypass)
 };
 
-// GIF Commands
-export const GIF_COMMANDS = {
-  rizz: 'rizz anime',
-  larp: 'larp anime',
-  blush: 'anime blush',
-  cooked: 'cooked anime',
-  fumble: 'fumble anime',
-  cope: 'cope anime',
-  grass: 'touch grass anime',
-  aura: 'aura anime',
+// GIF command tiers: unlock level -> 5 commands each (25 total)
+export const GIF_TIER_LEVELS = [1, 20, 40, 60, 80];
+export const GIF_TIERS: string[][] = [
+  ['huh', 'cry', 'blush', 'wave', 'pat'],
+  ['highfive', 'laugh', 'shrug', 'facepalm', 'wink'],
+  ['cope', 'grass', 'cooked', 'bonk', 'sus'],
+  ['slap', 'smug', 'roast', 'stare', 'yeet'],
+  ['rizz', 'aura', 'leash', 'salute', 'goat'],
+];
+
+// Level needed to use each GIF command (derived from the tiers above)
+export const GIF_COMMAND_LEVELS: Record<string, number> = Object.fromEntries(
+  GIF_TIERS.flatMap((cmds, i) => cmds.map(cmd => [cmd, GIF_TIER_LEVELS[i]]))
+);
+
+// GIF Commands (search query per command, in tier order)
+export const GIF_COMMANDS: Record<string, string> = {
+  // Tier 1
   huh: 'huh anime',
   cry: 'crying anime',
+  blush: 'anime blush',
+  wave: 'anime wave hello',
+  pat: 'anime head pat',
+  // Tier 2
+  highfive: 'anime high five',
+  laugh: 'anime laughing',
+  shrug: 'anime shrug',
+  facepalm: 'anime facepalm',
+  wink: 'anime wink',
+  // Tier 3
+  cope: 'cope anime',
+  grass: 'touch grass anime',
+  cooked: 'cooked anime',
+  bonk: 'anime bonk',
+  sus: 'anime sus',
+  // Tier 4
+  slap: 'anime slap',
+  smug: 'anime smug',
+  roast: 'anime roast',
+  stare: 'anime stare',
+  yeet: 'anime yeet',
+  // Tier 5
+  rizz: 'rizz anime',
+  aura: 'aura anime',
   leash: 'leash anime',
+  salute: 'anime salute',
+  goat: 'goated anime',
 };
 
 // GIF Captions
 export const GIF_CAPTIONS: Record<string, string> = {
-  rizz: 'hi lol <:smirk:1529450331371733003>',
-  larp: 'erp mode on <:zamn:1541974903438446702>',
-  blush: 'shy uwu <a:scuffledflustered:1541974799742673067>',
-  cooked: 'ts cooked <:worriedbuttersstotch:1536398315086675978>',
-  fumble: 'mad fumble <:yukogivesthel:1541974899952848936>',
-  cope: 'keep coping buddy <:ttongue:1529450341643583588>',
-  grass: 'touching grass <:duobbl:1541974831178711102>',
-  aura: 'ts so aura <a:aura:1529443067529003108>',
   huh: 'i am confusion <:confusedbread:1536398345755435018>',
   cry: 'crine <:cryingsparkles:1529495144745930852>',
+  blush: 'shy uwu <a:scuffledflustered:1541974799742673067>',
+  wave: 'waves hello <a:scuffledflustered:1541974799742673067>',
+  pat: 'pat pat, good job <:cryingsparkles:1529495144745930852>',
+  highfive: 'ayyy high five <:yukogivesthel:1541974899952848936>',
+  laugh: 'ts so funny <:ttongue:1529450341643583588>',
+  shrug: 'idk man <:confusedbread:1536398345755435018>',
+  facepalm: 'embarrassing fr <:worriedbuttersstotch:1536398315086675978>',
+  wink: 'wink wink <:smirk:1529450331371733003>',
+  cope: 'keep coping buddy <:ttongue:1529450341643583588>',
+  grass: 'touching grass <:duobbl:1541974831178711102>',
+  cooked: 'ts cooked <:worriedbuttersstotch:1536398315086675978>',
+  bonk: 'bonk, behave <:duobbl:1541974831178711102>',
+  sus: 'kinda sus ngl <:confusedbread:1536398345755435018>',
+  slap: 'slapped lol <:zamn:1541974903438446702>',
+  smug: 'smug mode on <:smirk:1529450331371733003>',
+  roast: 'ts got roasted <:ttongue:1529450341643583588>',
+  stare: 'staring at u <:worriedbuttersstotch:1536398315086675978>',
+  yeet: 'yeeted into orbit <:zamn:1541974903438446702>',
+  rizz: 'hi lol <:smirk:1529450331371733003>',
+  aura: 'ts so aura <a:aura:1529443067529003108>',
   leash: "who's mommy's good boy <:leash:1558758872079143062>",
+  salute: 'o7 respect <:yukogivesthel:1541974899952848936>',
+  goat: 'ts the goat <a:aura:1529443067529003108>',
+};
+
+// Footer wording: "<nickname> <phrase> for the 10th time"
+export const GIF_PHRASES: Record<string, string> = {
+  huh: 'has been confused',
+  cry: 'has cried',
+  blush: 'has blushed',
+  wave: 'has been waved at',
+  pat: 'has been patted',
+  highfive: 'has been high-fived',
+  laugh: 'has been laughed at',
+  shrug: 'has been shrugged at',
+  facepalm: 'has been facepalmed',
+  wink: 'has been winked at',
+  cope: 'has been told to cope',
+  grass: 'has been told to touch grass',
+  cooked: 'has been cooked',
+  bonk: 'has been bonked',
+  sus: 'has been called sus',
+  slap: 'has been slapped',
+  smug: 'has been smirked at',
+  roast: 'has been roasted',
+  stare: 'has been stared at',
+  yeet: 'has been yeeted',
+  rizz: 'has been rizzed',
+  aura: 'has gained aura',
+  leash: 'has been leashed',
+  salute: 'has been saluted',
+  goat: 'has been called the goat',
 };
 
 // Art Styles for $clip
@@ -446,6 +524,15 @@ CREATE TABLE IF NOT EXISTS admin_residual_changes (
   new_value INTEGER,
   reason TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- GIF usage counts (how many times each user has been the target of each GIF command)
+CREATE TABLE IF NOT EXISTS gif_usage (
+  user_id TEXT NOT NULL,
+  command TEXT NOT NULL,
+  use_count INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, command)
 );
 
 -- Settings table (key-value store for bot configuration)
