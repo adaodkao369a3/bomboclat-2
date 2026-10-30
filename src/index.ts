@@ -114,6 +114,9 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.isChatInputCommand()) {
       const { handleSlashCommand } = await import('./commands/slash/index');
       await handleSlashCommand(interaction);
+    } else if (interaction.isButton() && interaction.customId.startsWith('emoji_')) {
+      const { handleButtonInteraction } = await import('./commands/slash/index');
+      await handleButtonInteraction(interaction);
     } else if (interaction.isModalSubmit()) {
       const { handleModalSubmit } = await import('./commands/slash/index');
       await handleModalSubmit(interaction);
