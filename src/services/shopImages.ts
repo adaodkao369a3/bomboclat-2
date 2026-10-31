@@ -47,6 +47,29 @@ const COLOR_HEIGHT_SCALE = 0.75;
 // Space reserved below each square archetype image for its name label.
 const ARCHETYPE_LABEL_HEIGHT = 40;
 
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  const n = parseInt(full, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex).map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** White or near-black text, whichever is easier to read on this swatch (WCAG contrast) */
+export function readableTextColor(hex: string): { text: string; dark: boolean } {
+  const lum = relativeLuminance(hex);
+  const contrastWhite = 1.05 / (lum + 0.05);
+  const contrastDark = (lum + 0.05) / (relativeLuminance('#17171a') + 0.05);
+  return contrastDark >= contrastWhite ? { text: '#17171a', dark: true } : { text: '#ffffff', dark: false };
+}
+
 function getRows<T>(items: T[], columns: number): T[][] {
   const rows: T[][] = [];
   for (let i = 0; i < items.length; i += columns) {
@@ -142,12 +165,12 @@ function renderGridCanvas(
   renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void,
   heightScale: number = 1,
   backgroundColor: string | [string, string] = BACKGROUND as string,
+  labelHeight: number = 54,
 ): Buffer {
   const columns = Math.min(3, Math.max(1, itemCount));
   const rowIndexes = getRows(Array.from({ length: itemCount }, (_, i) => i), columns);
   const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
   const tileHeight = Math.round(calculateTileHeight(tileWidth) * heightScale);
-  const labelHeight = 54;
   const rowHeight = tileHeight + labelHeight;
   const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rowIndexes.length) * rowHeight + Math.max(0, rowIndexes.length - 1) * ROW_GAP;
 
@@ -199,32 +222,36 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.save();
+      // Name and hex sit inside the swatch, in whichever of white / dark
+      // reads best on that particular color.
+      const { text: textColor, dark } = readableTextColor(color.hex);
 
-      ctx.fillStyle = '#bbbbbb'; // Dark gray text for color shop images
+      ctx.save();
+      ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      if (!dark) {
+        // a soft shadow keeps white text crisp on lighter mid-tones
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 6;
+      }
 
       const plainName = color.name.toUpperCase();
-      const hexCode = color.hex;
-
-      // Color name: 20px, scaled down only if needed to fit.
-      const maxTextWidth = tileWidth - 20;
-      const nameFontSize = setScaledFont(ctx, plainName, maxTextWidth, 20, 'LEMONMILK');
-
-      // Center both lines independently.
-      const nameY = y + tileHeight + 20;
-      const hexY = y + tileHeight + 44;
+      const maxTextWidth = tileWidth - 32;
+      const nameFontSize = setScaledFont(ctx, plainName, maxTextWidth, 26, 'LEMONMILK');
+      const centerX = x + tileWidth / 2;
+      const centerY = y + tileHeight / 2;
 
       ctx.font = `${nameFontSize}px LEMONMILK`;
-      ctx.fillText(plainName, x + tileWidth / 2, nameY);
+      ctx.fillText(truncateLabel(ctx, plainName, maxTextWidth), centerX, centerY - 13);
 
-      ctx.font = `italic 20px LEMONMILK-Italic`;
-      ctx.fillText(hexCode, x + tileWidth / 2, hexY);
+      ctx.font = `italic 19px LEMONMILK-Italic`;
+      ctx.globalAlpha = 0.85;
+      ctx.fillText(color.hex.toUpperCase(), centerX, centerY + 17);
 
       ctx.restore();
     });
-  }, COLOR_HEIGHT_SCALE, tierBackground);
+  }, COLOR_HEIGHT_SCALE, tierBackground, 0);
 }
 
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
