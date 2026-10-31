@@ -6,7 +6,7 @@ import {
   AttachmentBuilder,
   TextChannel,
 } from 'discord.js';
-import { CHANNELS, ROLES } from '../config/index.js';
+import { CHANNELS, ROLES, EMOJIS } from '../config/index.js';
 import type { Guild, GuildMember, Role } from 'discord.js';
 import {
   getShopArchetypes,
@@ -36,25 +36,25 @@ export const shopCommand: Command = {
   async execute(message, args, _prefix) {
     // Check if bot owner (Director only)
     if (!message.member || !isBotOwner(message.member)) {
-      await message.reply('❌ This command is restricted to the Director.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to the Director.`);
       return;
     }
 
     if (!CHANNELS.SHOP) {
-      await message.reply('❌ SHOP_CHANNEL_ID is not configured. Please set it in your environment variables.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} SHOP_CHANNEL_ID is not configured. Please set it in your environment variables.`);
       return;
     }
 
     const guild = message.guild;
     const shopChannel = guild?.channels.cache.get(CHANNELS.SHOP);
     if (!shopChannel || !shopChannel.isTextBased()) {
-      await message.reply('❌ Failed to find the shop channel.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Failed to find the shop channel.`);
       return;
     }
 
     const section = args[0]?.toLowerCase() || 'all';
     if (!['all', 'color', 'archetype'].includes(section)) {
-      await message.reply('❌ Usage: `$shop color`, `$shop archetype`, or `$shop` for both.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Usage: \`$shop color\`, \`$shop archetype\`, or \`$shop\` for both.`);
       return;
     }
 
@@ -90,7 +90,7 @@ export const shopCommand: Command = {
       await postArchetypeShop(shopChannel as TextChannel, archetypesByTier);
     }
 
-    await message.reply(`✅ ${section === 'all' ? 'Shop' : section === 'color' ? 'Color shop' : 'Archetype shop'} posted!`);
+    await message.reply(`${EMOJIS.GREEN_GLOSSY_TICK} ${section === 'all' ? 'Shop' : section === 'color' ? 'Color shop' : 'Archetype shop'} posted!`);
   },
 };
 
@@ -389,7 +389,8 @@ async function postColorShop(shopChannel: TextChannel, colorsByTier: Record<stri
         const formattedName = colorRoleName(color.name, color.tier);
         selectMenu.addOptions(
           new StringSelectMenuOptionBuilder()
-            .setLabel(`${formattedName} - ${color.price} 💵`)
+            .setLabel(`${formattedName} - ${color.price}`)
+            .setEmoji(EMOJIS.MONEY)
             .setValue(color.id.toString())
             .setDescription(`Level ${color.min_level} · ${color.hex}`)
         );
@@ -501,7 +502,8 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
         const monthlyText = archetype.monthly ? ' (monthly)' : '';
         selectMenu.addOptions(
           new StringSelectMenuOptionBuilder()
-            .setLabel(`${formattedName} - ${archetype.price} 💵`)
+            .setLabel(`${formattedName} - ${archetype.price}`)
+            .setEmoji(EMOJIS.MONEY)
             .setValue(archetype.id.toString())
             .setDescription(`Level ${archetype.min_level} · ${holderText}${monthlyText}`)
         );

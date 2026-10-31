@@ -1,7 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { getUser, getLeaderboard, getXPBySource } from '../database/client.js';
 import { calculateXPForLevel, calculateXPRemaining, PROGRESSION_ROLE_KEYS } from '../services/xp.js';
-import { XP_CONFIG } from '../config/index.js';
+import { XP_CONFIG, EMOJIS } from '../config/index.js';
 import { getRemaining, setCooldown } from '../utils/cooldowns.js';
 import { cooldownMessage, setAuthorHeader, setStandardFooter } from '../ui/index.js';
 import { Command } from './index.js';
@@ -31,14 +31,14 @@ export const levelCommand: Command = {
     } else if (message.member) {
       target = message.member as GuildMember;
     } else {
-      await message.reply('❌ Unable to determine target user.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Unable to determine target user.`);
       return;
     }
 
     // Get user data
     const userData = await getUser(target.user.id);
     if (!userData) {
-      await message.reply('❌ User not found in database.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`);
       return;
     }
 
@@ -55,7 +55,7 @@ export const levelCommand: Command = {
 
     // Consistent progress bar (filled emoji for progress, empty for remaining)
     const filledBars = Math.floor(progressPercentage / 10);
-    const progressBar = '⬛'.repeat(filledBars) + '⬜'.repeat(10 - filledBars);
+    const progressBar = `${EMOJIS.FULL_STAR}`.repeat(filledBars) + `${EMOJIS.EMPTY_STAR}`.repeat(10 - filledBars);
 
     // Get XP by source (chat and voice)
     const xpBySource = await getXPBySource(target.user.id);
@@ -72,9 +72,9 @@ export const levelCommand: Command = {
     const roleLadder = PROGRESSION_ROLE_KEYS.slice(currentRoleIndex, maxRoleIndex + 1).map((roleKey) => {
       const requiredLevel = XP_CONFIG.ROLE_LEVEL_REQUIREMENTS[roleKey];
       const achieved = currentLevel >= requiredLevel;
-      const icon = achieved ? '✅' : '🔒';
+      const icon = achieved ? `${EMOJIS.GREEN_GLOSSY_TICK}` : `${EMOJIS.LOCK}`;
       const isCurrent = roleKey === currentRole;
-      const marker = isCurrent ? ' ← Current' : '';
+      const marker = isCurrent ? ` ${EMOJIS.LEFT_ARROW} Current` : '';
       return `${icon} __${formatRoleName(roleKey)}__ (Level ${requiredLevel})${marker}`;
     }).join('\n');
 

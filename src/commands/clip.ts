@@ -1,5 +1,5 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
-import { CHANNELS, ROLES, CLIP_CONFIG } from '../config/index.js';
+import { CHANNELS, ROLES, CLIP_CONFIG, EMOJIS } from '../config/index.js';
 import { generateClipSummary } from '../services/groq.js';
 import { generateImage } from '../services/huggingface.js';
 import { parseClipArguments } from '../services/clip.js';
@@ -15,7 +15,7 @@ export const clipCommand: Command = {
 
     // Check staff permissions - Casting Director, Producer, Executive Producer, Director
     if (!message.member || !isStaff(message.member)) {
-      await message.reply('❌ This command is restricted to staff.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to staff.`);
       return;
     }
 
@@ -228,7 +228,7 @@ export const clipCommand: Command = {
       } else if (isDirector) {
         // Director requested artwork, but generation failed
         await bomboTimesChannel.send({ embeds: [embed] });
-        await message.reply('⚠️ Bombo Times clip published (without artwork due to image generation failure).');
+        await message.reply(`${EMOJIS.WARNING} Bombo Times clip published (without artwork due to image generation failure).`);
       } else {
         // Non-Director admins only ever get the summary, no artwork
         await bomboTimesChannel.send({ embeds: [embed] });

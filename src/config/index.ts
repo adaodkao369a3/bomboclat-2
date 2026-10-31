@@ -64,14 +64,14 @@ export const BOOSTER_ROLE_LABEL = 'Guest Star';
 // Custom Emojis (server emojis only - keep these out of embed footers, Discord
 // doesn't render custom emojis there)
 export const EMOJIS = {
-  MONEY: '<a:money:1545836986366042193>',
+  MONEY: '<:money:1545836986366042193>', // static - use inline next to numbers and on buttons
   STARICON: '<:staricon:1545831752604586118>',
   HEARTICON: '<:hearticon:1545831749034967182>',
   BOMBOCOIN: '<:bombocoin:1545829122868121719>',
   LADDER: '<:ladder:1545126567145906246>',
   GREEN_GLOSSY_TICK: '<:greenglossytickcheckmark:1545126564247633970>',
   GLOSSY_RED_CANCEL: '<:glossyredcancelx:1545126551673241731>',
-  CASH: '<a:cash:1545126549035024524>',
+  CASH: '<a:cash:1545126549035024524>', // animated - use in titles and headers
   SHOPPING_CART: '<:shoppingcart:1545005246579875860>',
   JOLLY: '<:jolly:1545004994418446403>',
   GLOSSY_STAR: '<:glossystaremoji:1545004043699626004>',
@@ -108,6 +108,14 @@ export const EMOJIS = {
   ORANGE_HEART: '<a:orangeheartexclaim:1529443126328950785>',
   PINK_HEART: '<a:pinkheartexclaim:1529443130104090734>',
   PROFILE: '<:profile:1561015893150924850>',
+  MOON: '<:moon:1565486441054609428>',
+  HOURGLASS: '<:hourglass:1565845606071795832>',
+  LOCK: '<:lock:1565845610119041114>',
+  FIRST_PAGE: '<:firstpage:1565845604079239298>',
+  LAST_PAGE: '<:lastpage:1565845608101711975>',
+  MEDAL_GOLD: '<a:medalgold:1565845614548488373>',
+  MEDAL_SILVER: '<a:medalsilver:1565845616532131920>',
+  MEDAL_BRONZE: '<a:medalbronze:1565845612136763424>',
 };
 
 // XP Configuration

@@ -1,7 +1,7 @@
 import { getUserArchetypes } from '../services/shop.js';
 import { PERSONA_KEYS } from '../config/archetypes.js';
 import { getSetting, setSetting, logStaffAction } from '../services/settings.js';
-import { ROLES } from '../config/index.js';
+import { ROLES, EMOJIS } from '../config/index.js';
 import { isStaff } from '../utils/permissions.js';
 import {
   registerTransform,
@@ -25,14 +25,14 @@ export const transformCommand: Command = {
   allowedPrefix: '.',
   async execute(message, args, _prefix) {
     if (!message.guild) {
-      await message.reply('❌ This command can only be used in servers.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in servers.`);
       return;
     }
 
     // Check if Unknown Entity powers are enabled
     const powersEnabled = await getSetting('unknown_entity_powers');
     if (powersEnabled === 'false') {
-      await message.reply('❌ Unknown Entity powers are currently disabled by staff.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Unknown Entity powers are currently disabled by staff.`);
       return;
     }
 
@@ -41,60 +41,60 @@ export const transformCommand: Command = {
     const hasValidArchetype = userArchetypes.some(a => a.persona_key === PERSONA_KEYS.UNKNOWN_ENTITY || a.persona_key === PERSONA_KEYS.THE_COMEDIAN);
 
     if (!hasValidArchetype) {
-      await message.reply('❌ Only Unknown Entity or The Comedian holders can use this command.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Only Unknown Entity or The Comedian holders can use this command.`);
       return;
     }
 
     // Get target user
     const target = message.mentions.users.first();
     if (!target) {
-      await message.reply('❌ Please mention a user to target. Usage: .transform @user [uwu|tsundere]');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Please mention a user to target. Usage: .transform @user [uwu|tsundere]`);
       return;
     }
 
     // Get target member
     const targetMember = await message.guild.members.fetch(target.id).catch(() => null);
     if (!targetMember) {
-      await message.reply('❌ Could not find that user in this server.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Could not find that user in this server.`);
       return;
     }
 
     // Check target restrictions (same as .perish)
     if (target.id === message.author.id) {
-      await message.reply('❌ You cannot target yourself.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You cannot target yourself.`);
       return;
     }
 
     if (targetMember.user.bot) {
-      await message.reply('❌ You cannot target bots.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You cannot target bots.`);
       return;
     }
 
     if (targetMember.id === message.guild.ownerId) {
-      await message.reply('❌ You cannot target the server owner.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You cannot target the server owner.`);
       return;
     }
 
     if (isStaff(targetMember)) {
-      await message.reply('❌ You cannot target staff members.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You cannot target staff members.`);
       return;
     }
 
     if (targetMember.roles.cache.has(ROLES.BOOSTER)) {
-      await message.reply('❌ You cannot target boosters.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You cannot target boosters.`);
       return;
     }
 
     const targetArchetypes = await getUserArchetypes(target.id);
     const targetHasUnknownEntity = targetArchetypes.some(a => a.persona_key === PERSONA_KEYS.UNKNOWN_ENTITY);
     if (targetHasUnknownEntity) {
-      await message.reply('❌ You cannot target other Unknown Entity holders.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You cannot target other Unknown Entity holders.`);
       return;
     }
 
     // Check if there's already an active transform in this channel
     if (hasActiveTransformInChannel(message.channel.id)) {
-      await message.reply('❌ There is already an active transform in this channel. Wait for it to expire.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} There is already an active transform in this channel. Wait for it to expire.`);
       return;
     }
 
@@ -114,7 +114,7 @@ export const transformCommand: Command = {
     const cached = dailyUsesCache.get(cacheKey);
 
     if (cached && cached.date === today && cached.uses >= 3) {
-      await message.reply('❌ You have used all 3 of your transform powers for today. They reset at midnight.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You have used all 3 of your transform powers for today. They reset at midnight.`);
       return;
     }
 
@@ -125,7 +125,7 @@ export const transformCommand: Command = {
       const cooldownEnd = new Date(cooldownData);
       if (cooldownEnd > new Date()) {
         const remaining = Math.ceil((cooldownEnd.getTime() - Date.now()) / 1000 / 60);
-        await message.reply(`❌ You are on cooldown. Please wait ${remaining} minutes.`);
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You are on cooldown. Please wait ${remaining} minutes.`);
         return;
       }
     }
@@ -134,7 +134,7 @@ export const transformCommand: Command = {
     let webhook;
     try {
       if (!message.channel.isTextBased()) {
-        await message.reply('❌ This command can only be used in text channels.');
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in text channels.`);
         return;
       }
       webhook = await (message.channel as any).createWebhook({
@@ -143,7 +143,7 @@ export const transformCommand: Command = {
       });
     } catch (error) {
       console.error('Failed to create webhook:', error);
-      await message.reply('❌ Failed to create webhook for transform. The bot may lack permissions.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Failed to create webhook for transform. The bot may lack permissions.`);
       return;
     }
 
@@ -172,14 +172,14 @@ export const transformCommand: Command = {
     // Announce in channel
     if (message.channel.isTextBased()) {
       await (message.channel as any).send(
-        `✨ **${message.author.username}** used **.transform (${style})** on **${target.username}**! Their messages will be rewritten for 2 minutes.`
+        `${EMOJIS.SPARKLES} **${message.author.username}** used **.transform (${style})** on **${target.username}**! Their messages will be rewritten for 2 minutes.`
       );
     }
 
     // Log staff action
     await logStaffAction(
       message.guild,
-      `🔹 **.transform used**\nUser: ${message.author} (${message.author.id})\nTarget: ${target} (${target.id})\nStyle: ${style}`
+      `${EMOJIS.RIGHT_ARROW} **.transform used**\nUser: ${message.author} (${message.author.id})\nTarget: ${target} (${target.id})\nStyle: ${style}`
     );
 
     // Schedule cleanup after 2 minutes

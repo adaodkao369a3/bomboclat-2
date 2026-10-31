@@ -3,17 +3,18 @@ import { sendLevelUpNotification } from '../services/levelUpNotification.js';
 import { getRoleFromLevel, type XPAwardResult } from '../services/xp.js';
 import { Command } from './index.js';
 
+import { EMOJIS } from '../config/index.js';
 export const testLevelCommand: Command = {
   name: 'testlevel',
   allowedPrefix: '$',
   async execute(message, args, _prefix) {
     if (!message.member || !isAdmin(message.member)) {
-      await message.reply('❌ This command is restricted to admins.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to admins.`);
       return;
     }
 
     if (!message.guild) {
-      await message.reply('❌ This command can only be used in a server.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in a server.`);
       return;
     }
 
@@ -43,10 +44,10 @@ export const testLevelCommand: Command = {
         message.author.displayAvatarURL({ size: 256 }),
         mockResult
       );
-      await message.reply(`✅ Sent test level-up notification for level ${testLevel} (${mockResult.newRole}) to the casting channel.`);
+      await message.reply(`${EMOJIS.GREEN_GLOSSY_TICK} Sent test level-up notification for level ${testLevel} (${mockResult.newRole}) to the casting channel.`);
     } catch (error) {
       console.error('Failed to send test level-up notification:', error);
-      await message.reply('❌ Failed to send test level-up notification. Check the console for details.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Failed to send test level-up notification. Check the console for details.`);
     }
   },
 };

@@ -1,6 +1,6 @@
 import { getClient } from '../database/client.js';
 import { getShopArchetypes, getShopColors } from '../services/shop.js';
-import { ROLES } from '../config/index.js';
+import { ROLES, EMOJIS } from '../config/index.js';
 import { Command } from './index.js';
 
 export const resetCommand: Command = {
@@ -9,29 +9,29 @@ export const resetCommand: Command = {
   async execute(message, args, _prefix) {
     // Check if user has Director role
     if (!message.member || !message.member.roles.cache.has(ROLES.DIRECTOR)) {
-      await message.reply('❌ This command is restricted to the Director.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to the Director.`);
       return;
     }
 
     const guild = message.guild;
     if (!guild) {
-      await message.reply('❌ This command can only be used in a server.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in a server.`);
       return;
     }
 
     const confirmation = args[0]?.toLowerCase();
 
     if (confirmation === 'cancel') {
-      await message.reply('❌ Reset cancelled.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Reset cancelled.`);
       return;
     }
 
     if (confirmation !== 'confirm') {
-      await message.reply('⚠️ **CONFIRMATION REQUIRED**: This will remove ALL color and archetype roles from ALL users and clear ALL database entries. This action cannot be undone. Type `$reset confirm` to proceed or `$reset cancel` to abort.');
+      await message.reply(`${EMOJIS.WARNING} **CONFIRMATION REQUIRED**: This will remove ALL color and archetype roles from ALL users and clear ALL database entries. This action cannot be undone. Type \`$reset confirm\` to proceed or \`$reset cancel\` to abort.`);
       return;
     }
 
-    await message.reply('⚠️ Starting reset process... This will remove all color and archetype roles from all users and clear database entries. This may take a while.');
+    await message.reply(`${EMOJIS.WARNING} Starting reset process... This will remove all color and archetype roles from all users and clear database entries. This may take a while.`);
 
     try {
       const client = await getClient();
@@ -52,7 +52,7 @@ export const resetCommand: Command = {
         const allShopRoleIds = [...archetypeRoleIds, ...colorRoleIds];
 
         // Remove shop roles from all guild members
-        await message.reply(`🔄 Removing shop roles from all guild members... (${allShopRoleIds.length} roles)`);
+        await message.reply(`${EMOJIS.TYPING} Removing shop roles from all guild members... (${allShopRoleIds.length} roles)`);
         
         let membersProcessed = 0;
         let rolesRemoved = 0;
@@ -85,10 +85,10 @@ export const resetCommand: Command = {
           }
         }
 
-        await message.reply(`✅ Removed ${rolesRemoved} shop roles from ${membersProcessed} members.`);
+        await message.reply(`${EMOJIS.GREEN_GLOSSY_TICK} Removed ${rolesRemoved} shop roles from ${membersProcessed} members.`);
 
         // Clear database entries
-        await message.reply('🔄 Clearing database entries...');
+        await message.reply(`${EMOJIS.TYPING} Clearing database entries...`);
         
         // Delete all user_colors entries
         const colorsResult = await client.query('DELETE FROM user_colors RETURNING COUNT(*)');
@@ -98,16 +98,16 @@ export const resetCommand: Command = {
         const archetypesResult = await client.query('DELETE FROM user_archetypes RETURNING COUNT(*)');
         const archetypesDeleted = parseInt(archetypesResult.rows[0].count);
 
-        await message.reply(`✅ Database cleared: ${colorsDeleted} color entries and ${archetypesDeleted} archetype entries deleted.`);
+        await message.reply(`${EMOJIS.GREEN_GLOSSY_TICK} Database cleared: ${colorsDeleted} color entries and ${archetypesDeleted} archetype entries deleted.`);
 
-        await message.reply('🎉 Reset complete! All shop roles have been removed from users and database entries cleared.');
+        await message.reply(`${EMOJIS.SPARKLES} Reset complete! All shop roles have been removed from users and database entries cleared.`);
 
       } finally {
         client.release();
       }
     } catch (error) {
       console.error('Error during reset:', error);
-      await message.reply('❌ An error occurred during the reset process. Check the console for details.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} An error occurred during the reset process. Check the console for details.`);
     }
   },
 };

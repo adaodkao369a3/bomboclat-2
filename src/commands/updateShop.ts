@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, AttachmentBuilder, TextChannel } from 'discord.js';
-import { CHANNELS } from '../config/index.js';
+import { CHANNELS, EMOJIS } from '../config/index.js';
 import {
   getShopArchetypesByTier,
   getShopColorsByTier,
@@ -21,25 +21,25 @@ export const updateShopCommand: Command = {
   async execute(message, args, _prefix) {
     // Check if bot owner (Director only)
     if (!message.member || !isBotOwner(message.member)) {
-      await message.reply('❌ This command is restricted to the Director.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to the Director.`);
       return;
     }
 
     if (!CHANNELS.SHOP) {
-      await message.reply('❌ SHOP_CHANNEL_ID is not configured. Please set it in your environment variables.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} SHOP_CHANNEL_ID is not configured. Please set it in your environment variables.`);
       return;
     }
 
     const guild = message.guild;
     const shopChannel = guild?.channels.cache.get(CHANNELS.SHOP);
     if (!shopChannel || !shopChannel.isTextBased()) {
-      await message.reply('❌ Failed to find the shop channel.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Failed to find the shop channel.`);
       return;
     }
 
     const section = args[0]?.toLowerCase() || 'all';
     if (!['all', 'color', 'archetype'].includes(section)) {
-      await message.reply('❌ Usage: `$updateshop color`, `$updateshop archetype`, or `$updateshop` for both.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Usage: \`$updateshop color\`, \`$updateshop archetype\`, or \`$updateshop\` for both.`);
       return;
     }
 
@@ -57,7 +57,7 @@ export const updateShopCommand: Command = {
       await updateArchetypeShop(shopChannel as TextChannel, archetypesByTier);
     }
 
-    await message.reply(`✅ ${section === 'all' ? 'Shop' : section === 'color' ? 'Color shop' : 'Archetype shop'} updated!`);
+    await message.reply(`${EMOJIS.GREEN_GLOSSY_TICK} ${section === 'all' ? 'Shop' : section === 'color' ? 'Color shop' : 'Archetype shop'} updated!`);
   },
 };
 
@@ -100,7 +100,8 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
         const formattedName = color.name.toLowerCase();
         selectMenu.addOptions(
           new StringSelectMenuOptionBuilder()
-            .setLabel(`${formattedName} - ${color.price} residuals`)
+            .setLabel(`${formattedName} - ${color.price}`)
+            .setEmoji(EMOJIS.MONEY)
             .setValue(color.id.toString())
             .setDescription(`Level ${color.min_level} · ${color.hex}`)
         );
@@ -173,7 +174,8 @@ async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: R
         const holdersText = archetype.max_holders ? `${archetype.currentHolders}/${archetype.max_holders}` : 'Unlimited';
         selectMenu.addOptions(
           new StringSelectMenuOptionBuilder()
-            .setLabel(`${formattedName} - ${archetype.price} residuals`)
+            .setLabel(`${formattedName} - ${archetype.price}`)
+            .setEmoji(EMOJIS.MONEY)
             .setValue(archetype.id.toString())
             .setDescription(`Level ${archetype.min_level} · Holders: ${holdersText}${archetype.monthly ? ' (monthly)' : ''}`)
         );

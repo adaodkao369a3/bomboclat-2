@@ -4,6 +4,7 @@ import { ResidualsService } from '../services/residuals.js';
 import { canManageResiduals } from '../utils/permissions.js';
 import { Command } from './index.js';
 
+import { EMOJIS } from '../config/index.js';
 export const residualsCommand: Command = {
   name: 'residuals',
   allowedPrefix: '$',
@@ -11,28 +12,28 @@ export const residualsCommand: Command = {
 
     // Check staff permissions
     if (!message.member || !canManageResiduals(message.member)) {
-      await message.reply('❌ This command is restricted to staff.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to staff.`);
       return;
     }
 
     // Get target user
     const target = message.mentions.members?.first();
     if (!target || !target.user) {
-      await message.reply('❌ Please mention a user. Usage: $residuals @user');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Please mention a user. Usage: $residuals @user`);
       return;
     }
 
     // Get user data
     const userData = await getUser(target.user.id);
     if (!userData) {
-      await message.reply('❌ User not found in database.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`);
       return;
     }
 
     // Get residuals data
     const residualData = await ResidualsService.getResiduals(target.user.id);
     if (!residualData) {
-      await message.reply('❌ Residuals data not found.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Residuals data not found.`);
       return;
     }
 
@@ -86,7 +87,7 @@ export const residualsCommand: Command = {
           await interaction.reply({ content: 'No transaction history found.', flags: [1 << 6] });
         } else {
           const historyEmbed = new EmbedBuilder()
-            .setTitle('📜 Residuals History')
+            .setTitle(`${EMOJIS.CASH} Residuals History`)
             .setDescription(`Recent transactions for **${target.displayName}**`)
             .setColor(0x4900ff);
 
@@ -166,19 +167,19 @@ export const residualsCommand: Command = {
       const reason = modalInteraction.fields.getTextInputValue('reason') || `Manual ${action} by ${message.author.displayName}`;
 
       if (isNaN(amount) || amount < 0) {
-        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Please enter a valid positive number.`, flags: [1 << 6] });
         return;
       }
 
       // Add reasonable bounds to prevent abuse
       const MAX_RESIDUALS_CHANGE = 1000000; // 1 million residuals max per change
       if (amount > MAX_RESIDUALS_CHANGE) {
-        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_RESIDUALS_CHANGE.toLocaleString()} residuals.`, flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Amount too large. Maximum allowed is ${EMOJIS.MONEY} ${MAX_RESIDUALS_CHANGE.toLocaleString()}.`, flags: [1 << 6] });
         return;
       }
 
       if ((action === 'add_residuals' || action === 'remove_residuals') && amount === 0) {
-        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Add and remove amounts must be greater than zero.`, flags: [1 << 6] });
         return;
       }
 
@@ -193,7 +194,7 @@ export const residualsCommand: Command = {
             reason
           );
           if (persistedBalance === null) {
-            await modalInteraction.reply({ content: '❌ Failed to set Residuals.', flags: [1 << 6] });
+            await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to set the balance.`, flags: [1 << 6] });
             return;
           }
           newBalance = persistedBalance;
@@ -206,7 +207,7 @@ export const residualsCommand: Command = {
             message.author.id
           );
           if (persistedBalance === null) {
-            await modalInteraction.reply({ content: '❌ Failed to add Residuals.', flags: [1 << 6] });
+            await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to add to the balance.`, flags: [1 << 6] });
             return;
           }
           newBalance = persistedBalance;
@@ -219,13 +220,13 @@ export const residualsCommand: Command = {
             message.author.id
           );
           if (persistedBalance === null) {
-            await modalInteraction.reply({ content: '❌ Insufficient Residuals or update failed.', flags: [1 << 6] });
+            await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Not enough balance, or the update failed.`, flags: [1 << 6] });
             return;
           }
           newBalance = persistedBalance;
         }
 
-        await modalInteraction.reply({ content: `✅ Residuals updated successfully. New balance: ${newBalance?.toLocaleString() || 'Unknown'}`, flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GREEN_GLOSSY_TICK} Balance updated. New balance: ${EMOJIS.MONEY} ${newBalance?.toLocaleString() || 'Unknown'}`, flags: [1 << 6] });
 
         // Disable buttons
         const disabledRow = new ActionRowBuilder<ButtonBuilder>()
@@ -256,7 +257,7 @@ export const residualsCommand: Command = {
 
       } catch (error) {
         console.error('Error updating Residuals:', error);
-        await modalInteraction.reply({ content: '❌ Failed to update Residuals. Please try again.', flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to update the balance. Please try again.`, flags: [1 << 6] });
       }
 
     } catch (error) {

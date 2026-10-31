@@ -3,7 +3,7 @@ import { getUser } from '../../database/client.js';
 import { createEmojiSubmission, getEmojiSubmission, approveEmojiSubmission, rejectEmojiSubmission, updateEmojiSubmissionWithCreatedId } from '../../services/emojiSubmission.js';
 import { validateAndProcessImage } from '../../services/imageProcessing.js';
 import { sanitizeEmojiName } from '../../utils/sanitization.js';
-import { EMOJI_REVIEW_CHANNEL_ID, EMOJI_XP_THRESHOLD } from '../../config/index.js';
+import { EMOJI_REVIEW_CHANNEL_ID, EMOJI_XP_THRESHOLD, EMOJIS } from '../../config/index.js';
 
 export const emojiSubmitCommand = {
   data: new SlashCommandBuilder()
@@ -32,7 +32,7 @@ export const emojiSubmitCommand = {
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) {
-      await interaction.reply({ content: '❌ This command can only be used in a server.', ephemeral: true });
+      await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in a server.`, ephemeral: true });
       return;
     }
 
@@ -42,7 +42,7 @@ export const emojiSubmitCommand = {
       const user = await getUser(interaction.user.id);
       if (!user) {
         await interaction.reply({ 
-          content: '❌ User record not found. Please send a message to create your account.', 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} User record not found. Please send a message to create your account.`, 
           ephemeral: true 
         });
         return;
@@ -51,7 +51,7 @@ export const emojiSubmitCommand = {
     } catch (error) {
       console.error('Error fetching user XP:', error);
       await interaction.reply({ 
-        content: '❌ Failed to verify XP eligibility. Please try again later.', 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to verify XP eligibility. Please try again later.`, 
         ephemeral: true 
       });
       return;
@@ -59,7 +59,7 @@ export const emojiSubmitCommand = {
 
     if (userXP < EMOJI_XP_THRESHOLD) {
       await interaction.reply({ 
-        content: `❌ You need at least ${EMOJI_XP_THRESHOLD.toLocaleString()} XP to submit emojis. Current XP: ${userXP.toLocaleString()}`, 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} You need at least ${EMOJI_XP_THRESHOLD.toLocaleString()} XP to submit emojis. Current XP: ${userXP.toLocaleString()}`, 
         ephemeral: true 
       });
       return;
@@ -73,7 +73,7 @@ export const emojiSubmitCommand = {
     // Validate that either attachment or URL is provided
     if (!imageAttachment && !imageUrl) {
       await interaction.reply({ 
-        content: '❌ Please either attach an image file or provide an image URL.', 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Please either attach an image file or provide an image URL.`, 
         ephemeral: true 
       });
       return;
@@ -83,7 +83,7 @@ export const emojiSubmitCommand = {
     const sanitizedName = sanitizeEmojiName(emojiName);
     if (!sanitizedName) {
       await interaction.reply({ 
-        content: '❌ Invalid emoji name. Use only letters, numbers, and underscores (2-32 characters).', 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Invalid emoji name. Use only letters, numbers, and underscores (2-32 characters).`, 
         ephemeral: true 
       });
       return;
@@ -100,7 +100,7 @@ export const emojiSubmitCommand = {
         finalImageUrl = imageUrl;
       } else {
         await interaction.editReply({ 
-          content: '❌ No image source provided.' 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} No image source provided.` 
         });
         return;
       }
@@ -109,7 +109,7 @@ export const emojiSubmitCommand = {
       const processedImage = await validateAndProcessImage(finalImageUrl, userXP);
       if (!processedImage) {
         await interaction.editReply({ 
-          content: '❌ Invalid or unprocessable image. Please provide a valid PNG, JPEG, or GIF image.' 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} Invalid or unprocessable image. Please provide a valid PNG, JPEG, or GIF image.` 
         });
         return;
       }
@@ -127,14 +127,14 @@ export const emojiSubmitCommand = {
       const reviewChannel = interaction.guild.channels.cache.get(EMOJI_REVIEW_CHANNEL_ID);
       if (!reviewChannel || !reviewChannel.isTextBased()) {
         await interaction.editReply({ 
-          content: '❌ Review channel not found. Please contact an admin.' 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} Review channel not found. Please contact an admin.` 
         });
         return;
       }
 
       const embed = new EmbedBuilder()
-        .setTitle('🎨 Emoji Submission')
-        .setDescription(`**Name:** \`${sanitizedName}\`\n**Status:** ⏳ Pending Review`)
+        .setTitle(`${EMOJIS.PALETTE} Emoji Submission`)
+        .setDescription(`**Name:** \`${sanitizedName}\`\n**Status:** ${EMOJIS.HOURGLASS} Pending Review`)
         .setColor(0xFFA500)
         .setThumbnail(finalImageUrl)
         .setAuthor({
@@ -165,12 +165,12 @@ export const emojiSubmitCommand = {
       });
 
       await interaction.editReply({ 
-        content: '✅ Emoji submitted successfully! It will be reviewed by an admin.' 
+        content: `${EMOJIS.GREEN_GLOSSY_TICK} Emoji submitted successfully! It will be reviewed by an admin.` 
       });
     } catch (error) {
       console.error('Error processing emoji submission:', error);
       await interaction.editReply({ 
-        content: '❌ Failed to process submission. Please try again later.' 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to process submission. Please try again later.` 
       });
     }
   },
@@ -178,14 +178,14 @@ export const emojiSubmitCommand = {
 
 export async function handleEmojiApprove(interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) {
-    await interaction.reply({ content: '❌ This action can only be used in a server.', ephemeral: true });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This action can only be used in a server.`, ephemeral: true });
     return;
   }
 
   // Check Administrator permission
   if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({ 
-      content: '❌ You need Administrator permission to review emoji submissions.', 
+      content: `${EMOJIS.GLOSSY_RED_CANCEL} You need Administrator permission to review emoji submissions.`, 
       ephemeral: true 
     });
     return;
@@ -193,7 +193,7 @@ export async function handleEmojiApprove(interaction: ButtonInteraction): Promis
 
   const submissionId = parseInt(interaction.customId.split('_')[2], 10);
   if (isNaN(submissionId)) {
-    await interaction.reply({ content: '❌ Invalid submission ID.', ephemeral: true });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Invalid submission ID.`, ephemeral: true });
     return;
   }
 
@@ -202,13 +202,13 @@ export async function handleEmojiApprove(interaction: ButtonInteraction): Promis
   try {
     const submission = await getEmojiSubmission(submissionId);
     if (!submission) {
-      await interaction.editReply({ content: '❌ Submission not found.' });
+      await interaction.editReply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Submission not found.` });
       return;
     }
 
     if (submission.status !== 'pending') {
       await interaction.editReply({ 
-        content: `❌ This submission has already been ${submission.status}.` 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} This submission has already been ${submission.status}.` 
       });
       return;
     }
@@ -217,14 +217,14 @@ export async function handleEmojiApprove(interaction: ButtonInteraction): Promis
     const result = await approveEmojiSubmission(submissionId, interaction.user.id);
     if (!result.success) {
       await interaction.editReply({ 
-        content: '❌ Failed to approve submission. It may have already been reviewed.' 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to approve submission. It may have already been reviewed.` 
       });
       return;
     }
 
     // Create emoji in Discord
     if (!submission.image_buffer) {
-      await interaction.editReply({ content: '❌ Image data missing from submission.' });
+      await interaction.editReply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Image data missing from submission.` });
       return;
     }
 
@@ -252,26 +252,26 @@ export async function handleEmojiApprove(interaction: ButtonInteraction): Promis
     }
 
     await interaction.editReply({ 
-      content: `✅ Emoji approved and created: <:${emoji.name}:${emoji.id}>` 
+      content: `${EMOJIS.GREEN_GLOSSY_TICK} Emoji approved and created: <:${emoji.name}:${emoji.id}>` 
     });
   } catch (error) {
     console.error('Error approving emoji submission:', error);
     await interaction.editReply({ 
-      content: '❌ Failed to approve emoji. Check bot permissions (Manage Expressions required).' 
+      content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to approve emoji. Check bot permissions (Manage Expressions required).` 
     });
   }
 }
 
 export async function handleEmojiReject(interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) {
-    await interaction.reply({ content: '❌ This action can only be used in a server.', ephemeral: true });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This action can only be used in a server.`, ephemeral: true });
     return;
   }
 
   // Check Administrator permission
   if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({ 
-      content: '❌ You need Administrator permission to review emoji submissions.', 
+      content: `${EMOJIS.GLOSSY_RED_CANCEL} You need Administrator permission to review emoji submissions.`, 
       ephemeral: true 
     });
     return;
@@ -279,7 +279,7 @@ export async function handleEmojiReject(interaction: ButtonInteraction): Promise
 
   const submissionId = parseInt(interaction.customId.split('_')[2], 10);
   if (isNaN(submissionId)) {
-    await interaction.reply({ content: '❌ Invalid submission ID.', ephemeral: true });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Invalid submission ID.`, ephemeral: true });
     return;
   }
 
@@ -305,7 +305,7 @@ export async function handleEmojiReject(interaction: ButtonInteraction): Promise
 // Handle rejection modal submit (exported separately for the modal handler)
 export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction, submissionId: number): Promise<void> {
   if (!interaction.guild) {
-    await interaction.reply({ content: '❌ This action can only be used in a server.', ephemeral: true });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This action can only be used in a server.`, ephemeral: true });
     return;
   }
 
@@ -316,13 +316,13 @@ export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction
   try {
     const submission = await getEmojiSubmission(submissionId);
     if (!submission) {
-      await interaction.editReply({ content: '❌ Submission not found.' });
+      await interaction.editReply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Submission not found.` });
       return;
     }
 
     if (submission.status !== 'pending') {
       await interaction.editReply({ 
-        content: `❌ This submission has already been ${submission.status}.` 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} This submission has already been ${submission.status}.` 
       });
       return;
     }
@@ -331,7 +331,7 @@ export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction
     const result = await rejectEmojiSubmission(submissionId, interaction.user.id, reason);
     if (!result.success) {
       await interaction.editReply({
-        content: '❌ Failed to reject submission. It may have already been reviewed.'
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to reject submission. It may have already been reviewed.`
       });
       return;
     }
@@ -361,12 +361,12 @@ export async function handleEmojiRejectModal(interaction: ModalSubmitInteraction
     }
 
     await interaction.editReply({ 
-      content: '✅ Emoji submission rejected.' 
+      content: `${EMOJIS.GREEN_GLOSSY_TICK} Emoji submission rejected.` 
     });
   } catch (error) {
     console.error('Error rejecting emoji submission:', error);
     await interaction.editReply({ 
-      content: '❌ Failed to reject submission. Please try again later.' 
+      content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to reject submission. Please try again later.` 
     });
   }
 }

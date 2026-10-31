@@ -6,6 +6,7 @@ import { getUserArchetypes } from '../services/shop.js';
 import { PERSONAS_CONFIG } from '../config/archetypes.js';
 import { Command } from './index.js';
 
+import { EMOJIS } from '../config/index.js';
 function createRoleGifCommand(roleGif: RoleGifCommand): Command {
   return {
     name: roleGif.name,
@@ -19,14 +20,14 @@ function createRoleGifCommand(roleGif: RoleGifCommand): Command {
 
       if (!ownsRole) {
         const personaName = PERSONAS_CONFIG.find(p => p.key === roleGif.persona)?.name ?? 'the required';
-        await message.reply(`❌ This command requires the **${personaName}** persona.`);
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command requires the **${personaName}** persona.`);
         return;
       }
 
       // Check target limit
       const mentions = message.mentions.members;
       if (mentions && mentions.size > 3) {
-        await message.reply('❌ Maximum 3 users can be targeted.');
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Maximum 3 users can be targeted.`);
         return;
       }
 
@@ -39,7 +40,7 @@ function createRoleGifCommand(roleGif: RoleGifCommand): Command {
       // Check cooldown
       const remaining = getRemaining(userId, roleGif.name);
       if (remaining > 0) {
-        await message.reply(`⏳ You can't use this command for another ${remaining} seconds.`);
+        await message.reply(`${EMOJIS.HOURGLASS} You can't use this command for another ${remaining} seconds.`);
         return;
       }
       setCooldown(userId, roleGif.name, cooldownTime);
@@ -55,7 +56,7 @@ function createRoleGifCommand(roleGif: RoleGifCommand): Command {
       // Fetch GIF
       const gifUrl = await fetchGIF(roleGif.query);
       if (!gifUrl) {
-        await message.reply('❌ No GIF found.');
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} No GIF found.`);
         return;
       }
 

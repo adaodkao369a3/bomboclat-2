@@ -1,4 +1,5 @@
 import { getClient } from '../database/client.js';
+import { EMOJIS } from '../config/index.js';
 import { COLORS_CONFIG, RETIRED_COLORS } from '../config/colors.js';
 import { PERSONAS_CONFIG, PERSONA_KEYS } from '../config/archetypes.js';
 import { levelTooLow } from './shopText.js';
@@ -420,7 +421,7 @@ export async function purchaseArchetype(
 
       if (balanceBefore < netCost) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Insufficient residuals (need ${netCost}, have ${balanceBefore})` };
+        return { success: false, reason: `Not enough ${EMOJIS.MONEY} (need ${netCost}, have ${balanceBefore})` };
       }
 
       // Deduct residuals (net cost after refund)
@@ -562,7 +563,7 @@ export async function purchaseColor(
 
       if (balanceBefore < color.price) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Insufficient residuals (need ${color.price}, have ${balanceBefore})` };
+        return { success: false, reason: `Not enough ${EMOJIS.MONEY} (need ${color.price}, have ${balanceBefore})` };
       }
 
       // Deduct residuals

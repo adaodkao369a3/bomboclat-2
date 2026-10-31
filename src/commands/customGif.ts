@@ -30,7 +30,7 @@ export const customGifCommand: Command = {
     // Check target limit
     const mentions = message.mentions.members;
     if (mentions && mentions.size > GIF_CONFIG.MAX_TARGETS) {
-      await message.reply(`❌ Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Maximum ${GIF_CONFIG.MAX_TARGETS} users can be targeted.`);
       return;
     }
 
@@ -62,7 +62,7 @@ export const customGifCommand: Command = {
     if (!isUserAdmin) {
       const remaining = getRemaining(message.author.id, 'c');
       if (remaining > 0) {
-        await message.reply(`⏳ You can't use this command for another ${remaining} seconds.`);
+        await message.reply(`${EMOJIS.HOURGLASS} You can't use this command for another ${remaining} seconds.`);
         return;
       }
       setCooldown(message.author.id, 'c', cooldownTime);

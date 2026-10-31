@@ -141,8 +141,8 @@ export async function sendBoosterThankYou(member: GuildMember, testChannel?: any
  */
 export function buildBoosterPerks(gifted: boolean = true): string {
   const gift = gifted
-    ? `${EMOJIS.MONEY} **${BOOST_RESIDUAL_GIFT.toLocaleString('en-US')} residuals**, a one-time thank-you gift`
-    : `${EMOJIS.MONEY} Your one-time residual gift was already claimed on your first boost`;
+    ? `${EMOJIS.MONEY} **${BOOST_RESIDUAL_GIFT.toLocaleString('en-US')}**, a one-time thank-you gift`
+    : `${EMOJIS.MONEY} Your one-time gift was already claimed on your first boost`;
   return [
     `${EMOJIS.CROWN} The **${BOOSTER_ROLE_LABEL}** role`,
     gift,

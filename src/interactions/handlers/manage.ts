@@ -21,6 +21,7 @@ import {
 } from '../../services/shop.js';
 import { reconcileShopRoles } from '../../services/shopRoles.js';
 
+import { EMOJIS } from '../../config/index.js';
 /**
  * Persistent `.manage` interactions. State is never kept in memory: every
  * custom ID carries what is needed and the database is re-read on each click,
@@ -56,7 +57,7 @@ async function handleSelectColor(interaction: StringSelectMenuInteraction): Prom
   const colorId = parseInt(interaction.values[0], 10);
   const owned = (await getUserColors(userId)).find(uc => uc.color_id === colorId);
   if (!owned) {
-    await interaction.reply({ content: '❌ You no longer own that color.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} You no longer own that color.`, flags: EPHEMERAL });
     return;
   }
 
@@ -74,7 +75,7 @@ async function handleSelectColor(interaction: StringSelectMenuInteraction): Prom
   );
 
   await interaction.reply({
-    content: `**${owned.name}** \`${owned.hex}\` — currently ${owned.active ? 'equipped 🔹' : 'unequipped ⬜'}.`,
+    content: `**${owned.name}** \`${owned.hex}\` — currently ${owned.active ? `equipped ${EMOJIS.RIGHT_ARROW}` : `unequipped ${EMOJIS.EMPTY_STAR}`}.`,
     components: [row],
     flags: EPHEMERAL,
   });
@@ -83,7 +84,7 @@ async function handleSelectColor(interaction: StringSelectMenuInteraction): Prom
 async function handleEquip(interaction: ButtonInteraction, colorId: number, equip: boolean): Promise<void> {
   const result = await setColorActive(interaction.user.id, colorId, equip);
   if (!result.success) {
-    await interaction.update({ content: `❌ ${result.reason}`, components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${result.reason}`, components: [] });
     return;
   }
 
@@ -97,7 +98,7 @@ async function handleEquip(interaction: ButtonInteraction, colorId: number, equi
     : '';
 
   await interaction.update({
-    content: `${equip ? '✅ Color equipped!' : '✅ Color unequipped.'}${roleLine}`,
+    content: `${equip ? `${EMOJIS.GREEN_GLOSSY_TICK} Color equipped!` : `${EMOJIS.GREEN_GLOSSY_TICK} Color unequipped.`}${roleLine}`,
     components: [],
   });
 }
@@ -124,7 +125,7 @@ async function handleSellColorsOpen(interaction: ButtonInteraction): Promise<voi
   const userId = interaction.user.id;
   const userColors = await getUserColors(userId);
   if (userColors.length === 0) {
-    await interaction.reply({ content: '❌ You do not own any colors to sell.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} You do not own any colors to sell.`, flags: EPHEMERAL });
     return;
   }
 
@@ -140,7 +141,7 @@ async function handleSellColorsOpen(interaction: ButtonInteraction): Promise<voi
       new StringSelectMenuOptionBuilder()
         .setLabel(uc.name)
         .setValue(uc.color_id.toString())
-        .setDescription(`${uc.hex} — Sell for ${uc.free_grant ? 'Free (no refund)' : `${refund} residuals`}`),
+        .setDescription(`${uc.hex} — Sell for ${uc.free_grant ? 'Free (no refund)' : `💵 ${refund}`}`),
     );
   }
 
@@ -157,27 +158,28 @@ async function handleSellColorsPick(interaction: StringSelectMenuInteraction): P
   const userColors = await getUserColors(userId);
   const selected = userColors.filter(uc => ids.includes(uc.color_id));
   if (selected.length === 0) {
-    await interaction.update({ content: '❌ You no longer own those colors.', components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} You no longer own those colors.`, components: [] });
     return;
   }
 
   const refunds = selected.map(uc => ({ name: uc.name, refund: refundFor(uc.price, uc.free_grant) }));
   const total = refunds.reduce((sum, r) => sum + r.refund, 0);
   const list = refunds
-    .map(r => `• **${r.name}** — ${r.refund > 0 ? `${r.refund} residuals` : 'Free (no refund)'}`)
+    .map(r => `• **${r.name}** — ${r.refund > 0 ? `${EMOJIS.MONEY} ${r.refund}` : 'Free (no refund)'}`)
     .join('\n');
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       // the selected IDs ride in the custom ID, so no memory is needed
       .setCustomId(`manage:sellconfirm:${userId}:${selected.map(s => s.color_id).join(',')}`)
-      .setLabel(`Confirm Sale (+${total} residuals)`)
+      .setLabel(`Confirm Sale (+${total})`)
+      .setEmoji(EMOJIS.MONEY)
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId(`manage:sellcancel:${userId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
   );
 
   await interaction.update({
-    content: `You are about to sell:\n${list}\n\n**Total refund: ${total} residuals**\n\nAre you sure?`,
+    content: `You are about to sell:\n${list}\n\n**Total refund: ${EMOJIS.MONEY} ${total}**\n\nAre you sure?`,
     components: [row],
   });
 }
@@ -186,7 +188,7 @@ async function handleSellColorsConfirm(interaction: ButtonInteraction, idList: s
   const ids = idList.split(',').map(v => parseInt(v, 10)).filter(n => Number.isFinite(n));
   const result = await sellColors(interaction.user.id, ids);
   if (!result.success) {
-    await interaction.update({ content: `❌ ${result.reason}`, components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${result.reason}`, components: [] });
     return;
   }
 
@@ -195,7 +197,7 @@ async function handleSellColorsConfirm(interaction: ButtonInteraction, idList: s
 
   await interaction.update({
     content:
-      `✅ Successfully sold ${result.sold?.length ?? 0} color(s) for **${result.refundTotal} residuals**!` +
+      `${EMOJIS.GREEN_GLOSSY_TICK} Successfully sold ${result.sold?.length ?? 0} color(s) for ${EMOJIS.MONEY} **${result.refundTotal}**!` +
       `\n${COLOR_EMOJI} The matching roles were removed from your profile.`,
     components: [],
   });
@@ -209,7 +211,7 @@ async function handleSellPersonaOpen(interaction: ButtonInteraction): Promise<vo
   const userId = interaction.user.id;
   const persona = (await getUserArchetypes(userId)).find(p => !p.monthly);
   if (!persona) {
-    await interaction.reply({ content: '❌ You do not own a persona to sell.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} You do not own a persona to sell.`, flags: EPHEMERAL });
     return;
   }
 
@@ -217,7 +219,8 @@ async function handleSellPersonaOpen(interaction: ButtonInteraction): Promise<vo
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`manage:personaconfirm:${userId}`)
-      .setLabel(`Confirm Sale (+${refund} residuals)`)
+      .setLabel(`Confirm Sale (+${refund})`)
+      .setEmoji(EMOJIS.MONEY)
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId(`manage:sellcancel:${userId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
   );
@@ -225,7 +228,7 @@ async function handleSellPersonaOpen(interaction: ButtonInteraction): Promise<vo
   await interaction.reply({
     content:
       `You are about to sell your persona: **${persona.name.toLowerCase()}**\n\n` +
-      `**Refund: ${persona.free_grant ? 'Free (no refund)' : `${refund} residuals`}**\n\nAre you sure?`,
+      `**Refund: ${persona.free_grant ? 'Free (no refund)' : `${EMOJIS.MONEY} ${refund}`}**\n\nAre you sure?`,
     components: [row],
     flags: EPHEMERAL,
   });
@@ -234,7 +237,7 @@ async function handleSellPersonaOpen(interaction: ButtonInteraction): Promise<vo
 async function handleSellPersonaConfirm(interaction: ButtonInteraction): Promise<void> {
   const result = await sellArchetype(interaction.user.id);
   if (!result.success) {
-    await interaction.update({ content: `❌ ${result.reason}`, components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${result.reason}`, components: [] });
     return;
   }
 
@@ -243,7 +246,7 @@ async function handleSellPersonaConfirm(interaction: ButtonInteraction): Promise
 
   await interaction.update({
     content:
-      `✅ Successfully sold **${result.name?.toLowerCase()}** for **${result.refund} residuals**!` +
+      `${EMOJIS.GREEN_GLOSSY_TICK} Successfully sold **${result.name?.toLowerCase()}** for ${EMOJIS.MONEY} **${result.refund}**!` +
       `\n${PERSONA_EMOJI} Role removed from your profile.`,
     components: [],
   });
@@ -261,7 +264,7 @@ export async function handleManageInteraction(interaction: Interaction): Promise
 
   // The `.manage` message belongs to whoever ran it
   if (parts[2] !== interaction.user.id) {
-    await interaction.reply({ content: '❌ This menu belongs to someone else. Run `.manage` yourself.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This menu belongs to someone else. Run \`.manage\` yourself.`, flags: EPHEMERAL });
     return;
   }
 
@@ -285,7 +288,7 @@ export async function handleManageInteraction(interaction: Interaction): Promise
     case 'personaconfirm':
       return handleSellPersonaConfirm(interaction);
     case 'sellcancel':
-      await interaction.update({ content: '❌ Sale cancelled.', components: [] });
+      await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Sale cancelled.`, components: [] });
       return;
   }
 }

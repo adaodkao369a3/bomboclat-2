@@ -45,7 +45,7 @@ function createGIFCommand(name: string): Command {
       if (!isUserAdmin) {
         const remaining = getRemaining(message.author.id, name);
         if (remaining > 0) {
-          await message.reply(`⏳ You can't use this command for another ${remaining} seconds.`);
+          await message.reply(`${EMOJIS.HOURGLASS} You can't use this command for another ${remaining} seconds.`);
           return;
         }
         setCooldown(message.author.id, name, cooldownTime);

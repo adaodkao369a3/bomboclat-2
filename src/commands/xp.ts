@@ -11,6 +11,7 @@ import { setUserProgressionRole, updatePromotionEligibility } from '../database/
 import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
+import { EMOJIS } from '../config/index.js';
 export const xpCommand: Command = {
   name: 'xp',
   allowedPrefix: '$',
@@ -18,27 +19,27 @@ export const xpCommand: Command = {
 
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {
-      await message.reply('❌ This command is restricted to admins.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to admins.`);
       return;
     }
 
     // Get target user
     const target = message.mentions.members?.first();
     if (!target || !target.user) {
-      await message.reply('❌ Please mention a user. Usage: $xp @user');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Please mention a user. Usage: $xp @user`);
       return;
     }
 
     // Get user data
     const userData = await getUser(target.user.id);
     if (!userData) {
-      await message.reply('❌ User not found in database.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`);
       return;
     }
 
     // Create XP management UI
     const embed = new EmbedBuilder()
-      .setTitle('📊 XP Management')
+      .setTitle(`${EMOJIS.LADDER} XP Management`)
       .setDescription(`Managing XP for **${target.displayName}**`)
       .setColor(0x7B61FF)
       .addFields([
@@ -114,28 +115,28 @@ export const xpCommand: Command = {
       const reason = modalInteraction.fields.getTextInputValue('reason') || `Manual ${action} by ${message.author.displayName}`;
 
       if (isNaN(amount) || amount < 0) {
-        await modalInteraction.reply({ content: '❌ Please enter a valid positive number.', flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Please enter a valid positive number.`, flags: [1 << 6] });
         return;
       }
 
       // Add reasonable bounds to prevent abuse
       const MAX_XP_CHANGE = 1000000; // 1 million XP max per change
       if (amount > MAX_XP_CHANGE) {
-        await modalInteraction.reply({ content: `❌ Amount too large. Maximum allowed is ${MAX_XP_CHANGE.toLocaleString()} XP.`, flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Amount too large. Maximum allowed is ${MAX_XP_CHANGE.toLocaleString()} XP.`, flags: [1 << 6] });
         return;
       }
 
       // Additional validation for specific actions
       if (action === 'set_level') {
         if (amount < 0 || amount > 150) {
-          await modalInteraction.reply({ content: '❌ Level must be between 0 and 150.', flags: [1 << 6] });
+          await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Level must be between 0 and 150.`, flags: [1 << 6] });
           return;
         }
       }
 
       // Add/remove should not be zero
       if ((action === 'add_xp' || action === 'remove_xp') && amount === 0) {
-        await modalInteraction.reply({ content: '❌ Add and remove amounts must be greater than zero.', flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Add and remove amounts must be greater than zero.`, flags: [1 << 6] });
         return;
       }
 
@@ -177,7 +178,7 @@ export const xpCommand: Command = {
         const newRole = getRoleFromLevel(newLevel);
         const syncResult = await synchronizeProgressionRoles(target, newLevel);
         if (!syncResult.success) {
-          await modalInteraction.reply({ content: `❌ Failed to update progression roles. XP was saved; please retry synchronization. Failed roles: ${syncResult.failedRoles.join(', ')}`, flags: [1 << 6] });
+          await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to update progression roles. XP was saved; please retry synchronization. Failed roles: ${syncResult.failedRoles.join(', ')}`, flags: [1 << 6] });
           return;
         }
 
@@ -189,7 +190,7 @@ export const xpCommand: Command = {
           calculatePromotionEligibility(newXP, newLevel, newRole)
         );
 
-        await modalInteraction.reply({ content: `✅ XP updated successfully. New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`, flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GREEN_GLOSSY_TICK} XP updated successfully. New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`, flags: [1 << 6] });
 
         // Disable buttons
         const disabledRow = new ActionRowBuilder<ButtonBuilder>()
@@ -220,7 +221,7 @@ export const xpCommand: Command = {
 
       } catch (error) {
         console.error('Error updating XP:', error);
-        await modalInteraction.reply({ content: '❌ Failed to update XP. Please try again.', flags: [1 << 6] });
+        await modalInteraction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to update XP. Please try again.`, flags: [1 << 6] });
       }
 
     } catch (error) {

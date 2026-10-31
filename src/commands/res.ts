@@ -31,21 +31,21 @@ export const resCommand: Command = {
     } else if (message.member) {
       target = message.member as GuildMember;
     } else {
-      await message.reply('❌ Unable to determine target user.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Unable to determine target user.`);
       return;
     }
 
     // Get user data
     const userData = await getUser(target.user.id);
     if (!userData) {
-      await message.reply('❌ User not found in database.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`);
       return;
     }
 
     // Get residuals
     const residualData = await getResidualsInfo(target.user.id);
     if (!residualData) {
-      await message.reply('❌ Residuals data not found.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Residuals data not found.`);
       return;
     }
 
@@ -60,7 +60,7 @@ export const resCommand: Command = {
 
     const embed = new EmbedBuilder()
       .setTitle(`${EMOJIS.CASH} Residuals`)
-      .setDescription(`__${target.displayName}__\n-# ${EMOJIS.CASH} ${residualData.balance.toLocaleString()} residuals\n\nLifetime earned: ${residualData.lifetime_earned.toLocaleString()}\nLifetime spent: ${residualData.lifetime_spent.toLocaleString()}\n${rankText}`)
+      .setDescription(`__${target.displayName}__\n-# ${EMOJIS.MONEY} ${residualData.balance.toLocaleString()}\n\nLifetime earned: ${residualData.lifetime_earned.toLocaleString()}\nLifetime spent: ${residualData.lifetime_spent.toLocaleString()}\n${rankText}`)
       .setColor(0x4900ff)
       .setThumbnail('attachment://money.png');
 

@@ -1,6 +1,6 @@
 import { PERSONAS_CONFIG, PERSONA_KEYS, PERSONA_TIER_ORDER } from '../config/archetypes.js';
 import { ROLE_GIF_COMMANDS } from '../config/roleGifCommands.js';
-import { GIF_COMMANDS, GIF_COMMAND_LEVELS, GIF_CONFIG } from '../config/index.js';
+import { EMOJIS, GIF_COMMANDS, GIF_COMMAND_LEVELS, GIF_CONFIG } from '../config/index.js';
 
 export enum CommandAccess {
   EVERYONE = 'everyone',
@@ -43,7 +43,7 @@ export const PUBLIC_COMMANDS: CommandInfo[] = [
   },
   {
     name: 'res',
-    description: 'Get information about your residuals',
+    description: `Check your ${EMOJIS.MONEY} balance`,
     access: CommandAccess.EVERYONE,
   },
   {
@@ -53,7 +53,7 @@ export const PUBLIC_COMMANDS: CommandInfo[] = [
   },
   {
     name: 'reslb',
-    description: 'View the residuals leaderboard',
+    description: `View the ${EMOJIS.MONEY} leaderboard`,
     access: CommandAccess.EVERYONE,
   },
   {

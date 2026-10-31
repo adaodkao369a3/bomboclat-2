@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { ADMIN_PREFIX, PREFIX, ART_STYLES, ART_STYLE_INFO, ROLES } from '../config/index.js';
+import { ADMIN_PREFIX, PREFIX, ART_STYLES, ART_STYLE_INFO, ROLES, EMOJIS } from '../config/index.js';
 import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
@@ -9,12 +9,12 @@ export const adminHelpCommand: Command = {
   async execute(message, _args, _prefix) {
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {
-      await message.reply('❌ This command is restricted to admins.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to admins.`);
       return;
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('🔧 Admin Commands')
+      .setTitle(`${EMOJIS.SETTINGS} Admin Commands`)
       .setDescription('Commands available to admins (Executive Producer & Director)')
       .setColor(0x4900ff)
       .setFooter({ text: `Admin Prefix: ${ADMIN_PREFIX} | User Prefix: ${PREFIX}` });

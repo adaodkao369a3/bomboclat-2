@@ -2,18 +2,19 @@ import { EmbedBuilder } from 'discord.js';
 import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
+import { EMOJIS } from '../config/index.js';
 export const channelsCommand: Command = {
   name: 'channels',
   allowedPrefix: '$',
   async execute(message, _args, _prefix) {
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {
-      await message.reply('❌ This command is restricted to admins.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to admins.`);
       return;
     }
 
     if (!message.guild) {
-      await message.reply('❌ This command can only be used in a server.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in a server.`);
       return;
     }
 
@@ -47,7 +48,7 @@ export const channelsCommand: Command = {
 
     // Build the embed
     const embed = new EmbedBuilder()
-      .setTitle('📂 Server Channels by Category')
+      .setTitle(`${EMOJIS.BOX} Server Channels by Category`)
       .setDescription(`Total categories: ${sortedCategories.length}`)
       .setColor(0x4900ff)
       .setFooter({ text: `Requested by ${message.author.tag}` });

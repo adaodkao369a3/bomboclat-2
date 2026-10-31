@@ -1,5 +1,6 @@
 import { ButtonInteraction, StringSelectMenuInteraction, Interaction } from 'discord.js';
 
+import { EMOJIS } from '../config/index.js';
 export type InteractionHandler = (interaction: Interaction) => Promise<void>;
 
 export interface InteractionRoute {
@@ -76,7 +77,7 @@ export async function routeInteraction(interaction: Interaction): Promise<void> 
     console.error(`Error in interaction handler for namespace ${namespace}:`, error);
     if (interaction.isRepliable()) {
       try {
-        await interaction.reply({ content: '❌ An error occurred processing this interaction.', ephemeral: true });
+        await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} An error occurred processing this interaction.`, ephemeral: true });
       } catch (replyError) {
         console.error('Failed to send error reply:', replyError);
       }

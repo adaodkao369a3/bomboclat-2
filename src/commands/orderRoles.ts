@@ -1,6 +1,6 @@
 import { Command } from './index.js';
 import { isBotOwner } from '../utils/permissions.js';
-import { ROLES } from '../config/index.js';
+import { ROLES, EMOJIS } from '../config/index.js';
 import { getShopArchetypes, getShopColors } from '../services/shop.js';
 
 // Progression + Spectator roles, identified by ID (never by name)
@@ -17,16 +17,16 @@ export const orderRolesCommand: Command = {
   async execute(message, _args, _prefix) {
     // Check if bot owner (Director only)
     if (!message.member || !isBotOwner(message.member)) {
-      await message.reply('❌ This command is restricted to the Director.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to the Director.`);
       return;
     }
 
     if (!message.guild) {
-      await message.reply('❌ This command can only be used in servers.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in servers.`);
       return;
     }
 
-    await message.reply('⏳ Ordering roles... This may take a moment.');
+    await message.reply(`${EMOJIS.HOURGLASS} Ordering roles... This may take a moment.`);
 
     try {
       const guild = message.guild;
@@ -109,10 +109,10 @@ export const orderRolesCommand: Command = {
 
       await guild.roles.setPositions(updates);
 
-      await message.reply('✅ Roles have been reordered successfully!');
+      await message.reply(`${EMOJIS.GREEN_GLOSSY_TICK} Roles have been reordered successfully!`);
     } catch (error) {
       console.error('Error ordering roles:', error);
-      await message.reply('❌ Failed to order roles. Check the console for details.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Failed to order roles. Check the console for details.`);
     }
   },
 };

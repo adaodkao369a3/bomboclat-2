@@ -4,6 +4,7 @@ import { synchronizeProgressionRoles, PROGRESSION_ROLE_KEYS } from '../services/
 import { isAdmin } from '../utils/permissions.js';
 import { Command } from './index.js';
 
+import { EMOJIS } from '../config/index.js';
 // Global flag to prevent concurrent syncs
 let syncInProgress = false;
 
@@ -13,13 +14,13 @@ export const syncRolesCommand: Command = {
   async execute(message, args, _prefix) {
     // Check admin permissions
     if (!message.member || !isAdmin(message.member)) {
-      await message.reply('❌ This command is restricted to admins.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command is restricted to admins.`);
       return;
     }
 
     // Check if a sync is already in progress
     if (syncInProgress) {
-      await message.reply('❌ A role sync is already in progress. Please wait for it to complete.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} A role sync is already in progress. Please wait for it to complete.`);
       return;
     }
 
@@ -41,7 +42,7 @@ export const syncRolesCommand: Command = {
       } else if (targetUsers && targetUsers.size > 0) {
         await syncSpecificMembers(message, Array.from(targetUsers.values()), isDryRun);
       } else {
-        await message.reply('❌ Please mention at least one user or use "all". Usage: `$syncroles @user | $syncroles all`');
+        await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Please mention at least one user or use "all". Usage: \`$syncroles @user | $syncroles all\``);
       }
     } finally {
       syncInProgress = false;
@@ -103,11 +104,11 @@ async function syncSpecificMembers(
       .join(', ');
 
     await message.reply(
-      `🔍 Dry run complete:\n` +
+      `${EMOJIS.PUSH_PIN} Dry run complete:\n` +
       `Members checked: ${members.filter(m => !m.user.bot).length} | would change: ${wouldChange} | already correct: ${alreadyCorrect}\n` +
       (addedBreakdown ? `Would ADD: ${addedBreakdown}\n` : '') +
       (removedBreakdown ? `Would REMOVE: ${removedBreakdown}` : '') +
-      (failures > 0 ? `\n⚠️ Failed for ${failures} users: ${failedUsers.join(', ')}` : '')
+      (failures > 0 ? `\n${EMOJIS.WARNING} Failed for ${failures} users: ${failedUsers.join(', ')}` : '')
     );
   } else {
     const addedBreakdown = Object.entries(addedByRole)
@@ -118,18 +119,18 @@ async function syncSpecificMembers(
       .join(', ');
 
     await message.reply(
-      `✅ Sync complete:\n` +
+      `${EMOJIS.GREEN_GLOSSY_TICK} Sync complete:\n` +
       `Members checked: ${members.filter(m => !m.user.bot).length} | changed: ${wouldChange} | already correct: ${alreadyCorrect}\n` +
       (addedBreakdown ? `Added: ${addedBreakdown}\n` : '') +
       (removedBreakdown ? `Removed: ${removedBreakdown}` : '') +
-      (failures > 0 ? `\n⚠️ Failed for ${failures} users: ${failedUsers.join(', ')}` : '')
+      (failures > 0 ? `\n${EMOJIS.WARNING} Failed for ${failures} users: ${failedUsers.join(', ')}` : '')
     );
   }
 }
 
 async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void> {
   if (!message.guild) {
-    await message.reply('❌ This command can only be used in a server.');
+    await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in a server.`);
     return;
   }
 
@@ -154,7 +155,7 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
   }
 
   if (!members) {
-    await message.reply('❌ Failed to fetch guild members after multiple retries due to rate limits. Please try again later.');
+    await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Failed to fetch guild members after multiple retries due to rate limits. Please try again later.`);
     return;
   }
 
@@ -169,7 +170,7 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
   const removedByRole: Record<string, number> = {};
 
   const startMessage = await message.reply(
-    `🔄 Starting ${isDryRun ? 'dry run ' : ''}sync for ${nonBotMembers.size} members...`
+    `${EMOJIS.TYPING} Starting ${isDryRun ? 'dry run ' : ''}sync for ${nonBotMembers.size} members...`
   );
 
   for (const member of nonBotMembers.values()) {
@@ -196,7 +197,7 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
       // Progress message every 25 members
       if (processed % 25 === 0) {
         await startMessage.edit(
-          `📊 Progress: ${processed}/${nonBotMembers.size} members processed (${totalAdded} added, ${totalRemoved} removed)`
+          `${EMOJIS.LADDER} Progress: ${processed}/${nonBotMembers.size} members processed (${totalAdded} added, ${totalRemoved} removed)`
         );
       }
 
@@ -220,11 +221,11 @@ async function syncAllMembers(message: Message, isDryRun: boolean): Promise<void
     .join(', ');
 
   const summary =
-    `✅ ${isDryRun ? 'Dry run ' : ''}Sync complete:\n` +
+    `${EMOJIS.GREEN_GLOSSY_TICK} ${isDryRun ? 'Dry run ' : ''}Sync complete:\n` +
     `Members checked: ${processed} | ${isDryRun ? 'would change' : 'changed'}: ${wouldChange} | already correct: ${alreadyCorrect}\n` +
     (addedBreakdown ? `${isDryRun ? 'Would ADD' : 'Added'}: ${addedBreakdown}\n` : '') +
     (removedBreakdown ? `${isDryRun ? 'Would REMOVE' : 'Removed'}: ${removedBreakdown}` : '') +
-    (failures > 0 ? `\n⚠️ Failures: ${failures} (${failedUsers.join(', ')})` : '');
+    (failures > 0 ? `\n${EMOJIS.WARNING} Failures: ${failures} (${failedUsers.join(', ')})` : '');
 
   await startMessage.edit(summary);
 }

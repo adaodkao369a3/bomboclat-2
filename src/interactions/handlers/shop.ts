@@ -49,7 +49,7 @@ const roleName = (name: string): string => name.toLowerCase();
 
 function noProfile(): { content: string; flags: typeof EPHEMERAL } {
   return {
-    content: '❌ You need to send at least one message first so the bot can create your profile.',
+    content: `${EMOJIS.GLOSSY_RED_CANCEL} You need to send at least one message first so the bot can create your profile.`,
     flags: EPHEMERAL,
   };
 }
@@ -82,7 +82,7 @@ async function handlePickPersona(interaction: StringSelectMenuInteraction): Prom
   const personas = await getShopArchetypes();
   const persona = personas.find(p => p.id === personaId);
   if (!persona || !persona.active) {
-    await interaction.reply({ content: '❌ That persona is no longer available.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} That persona is no longer available.`, flags: EPHEMERAL });
     return;
   }
 
@@ -90,7 +90,7 @@ async function handlePickPersona(interaction: StringSelectMenuInteraction): Prom
 
   // Every persona is level-gated
   if (userData.current_level < persona.min_level) {
-    await interaction.reply({ content: `❌ ${levelTooLow(persona.min_level)} You are level ${userData.current_level}.`, flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${levelTooLow(persona.min_level)} You are level ${userData.current_level}.`, flags: EPHEMERAL });
     return;
   }
 
@@ -118,7 +118,7 @@ async function handlePickPersona(interaction: StringSelectMenuInteraction): Prom
 
   const embed = new EmbedBuilder()
     .setTitle(`${roleName(persona.name)} (${persona.tier})`)
-    .setDescription(owned && !isUnknownEntity ? '✅ You already own this persona!' : `Price: ${persona.price} residuals`)
+    .setDescription(owned && !isUnknownEntity ? `${EMOJIS.GREEN_GLOSSY_TICK} You already own this persona!` : `Price: ${EMOJIS.MONEY} ${persona.price}`)
     .setColor(0x4900ff)
     .addFields([
       { name: 'Tier', value: persona.tier, inline: true },
@@ -134,7 +134,7 @@ async function handleBuyPersona(interaction: ButtonInteraction, personaId: numbe
   const userId = interaction.user.id;
   const result = await purchaseArchetype(userId, personaId, false);
   if (!result.success) {
-    await interaction.update({ content: `❌ ${result.reason}`, embeds: [], components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${result.reason}`, embeds: [], components: [] });
     return;
   }
 
@@ -146,13 +146,13 @@ async function handleBuyPersona(interaction: ButtonInteraction, personaId: numbe
   const name = await discordRoleName(member, persona?.role_id ?? null, persona?.name ?? 'persona');
   const hasRole = !!(member && persona?.role_id && member.roles.cache.has(persona.role_id));
 
-  let message = '✅ Persona purchased successfully!';
+  let message = `${EMOJIS.GREEN_GLOSSY_TICK} Persona purchased successfully!`;
   if (result.refund && result.refund > 0) {
-    message += `\n${EMOJIS.CASH} Refunded ${result.refund} residuals (50% of your previous persona)`;
+    message += `\n${EMOJIS.MONEY} Refunded ${result.refund} (50% of your previous persona)`;
   }
   message += hasRole
     ? `\n${PERSONA_EMOJI} Role assigned: **${name}**`
-    : '\n⚠️ Purchase saved, but the Discord role could not be assigned.';
+    : `\n${EMOJIS.WARNING} Purchase saved, but the Discord role could not be assigned.`;
 
   await interaction.update({ content: message, embeds: [], components: [] });
 }
@@ -172,12 +172,12 @@ async function handlePickColor(interaction: StringSelectMenuInteraction): Promis
   const colorId = parseInt(interaction.values[0], 10);
   const color = (await getShopColors()).find(c => c.id === colorId);
   if (!color) {
-    await interaction.reply({ content: '❌ Color not found.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} Color not found.`, flags: EPHEMERAL });
     return;
   }
 
   if (userData.current_level < color.min_level) {
-    await interaction.reply({ content: `❌ ${levelTooLow(color.min_level)} You are level ${userData.current_level}.`, flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${levelTooLow(color.min_level)} You are level ${userData.current_level}.`, flags: EPHEMERAL });
     return;
   }
 
@@ -210,7 +210,7 @@ async function handlePickColor(interaction: StringSelectMenuInteraction): Promis
 
   const embed = new EmbedBuilder()
     .setTitle(color.name)
-    .setDescription(owned ? (active ? '🔹 Currently equipped' : '✅ Owned (click Equip to use)') : `Price: ${color.price} residuals`)
+    .setDescription(owned ? (active ? `${EMOJIS.RIGHT_ARROW} Currently equipped` : `${EMOJIS.GREEN_GLOSSY_TICK} Owned (click Equip to use)`) : `Price: ${EMOJIS.MONEY} ${color.price}`)
     .setColor(parseInt(color.hex.replace('#', ''), 16))
     .addFields([
       { name: 'Tier', value: color.tier, inline: true },
@@ -230,7 +230,7 @@ async function handleBuyColor(interaction: ButtonInteraction, colorId: number): 
   const userId = interaction.user.id;
   const result = await purchaseColor(userId, colorId, false);
   if (!result.success) {
-    await interaction.update({ content: `❌ ${result.reason}`, embeds: [], components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${result.reason}`, embeds: [], components: [] });
     return;
   }
 
@@ -243,8 +243,8 @@ async function handleBuyColor(interaction: ButtonInteraction, colorId: number): 
 
   await interaction.update({
     content:
-      '✅ Color purchased and equipped!' +
-      (hasRole ? `\n${COLOR_EMOJI} Role assigned: **${name}**` : '\n⚠️ Purchase saved, but the Discord role could not be assigned.'),
+      `${EMOJIS.GREEN_GLOSSY_TICK} Color purchased and equipped!` +
+      (hasRole ? `\n${COLOR_EMOJI} Role assigned: **${name}**` : `\n${EMOJIS.WARNING} Purchase saved, but the Discord role could not be assigned.`),
     embeds: [],
     components: [],
   });
@@ -253,7 +253,7 @@ async function handleBuyColor(interaction: ButtonInteraction, colorId: number): 
 async function handleEquipColor(interaction: ButtonInteraction, colorId: number, equip: boolean): Promise<void> {
   const result = await setColorActive(interaction.user.id, colorId, equip);
   if (!result.success) {
-    await interaction.update({ content: `❌ ${result.reason}`, embeds: [], components: [] });
+    await interaction.update({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${result.reason}`, embeds: [], components: [] });
     return;
   }
 
@@ -264,8 +264,8 @@ async function handleEquipColor(interaction: ButtonInteraction, colorId: number,
   const name = await discordRoleName(member, color?.role_id ?? null, color?.name ?? 'color');
   await interaction.update({
     content: equip
-      ? `✅ Color equipped!\n${COLOR_EMOJI} Role confirmed: **${name}**`
-      : `✅ Color unequipped.\n${COLOR_EMOJI} Role removed — the color stays in your collection to re-equip anytime.`,
+      ? `${EMOJIS.GREEN_GLOSSY_TICK} Color equipped!\n${COLOR_EMOJI} Role confirmed: **${name}**`
+      : `${EMOJIS.GREEN_GLOSSY_TICK} Color unequipped.\n${COLOR_EMOJI} Role removed — the color stays in your collection to re-equip anytime.`,
     embeds: [],
     components: [],
   });
@@ -291,7 +291,7 @@ export async function handleShopInteraction(interaction: Interaction): Promise<v
   // Everything else is a private button that belongs to the person who opened it
   const ownerId = parts[2];
   if (ownerId !== interaction.user.id) {
-    await interaction.reply({ content: '❌ This button belongs to someone else.', flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This button belongs to someone else.`, flags: EPHEMERAL });
     return;
   }
 

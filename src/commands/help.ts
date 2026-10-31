@@ -24,11 +24,11 @@ export function clampPersonaPage(page: number, pageCount: number): number {
 
 function buildMainRow(ownerId: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId('help:profile').setLabel('🪜 Profile').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('help:fun').setLabel('😊 Fun').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('help:leaderboard').setLabel('🏆 Leaderboard').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('help:shop').setLabel('🛒 Shop').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`help:personas:${ownerId}:0`).setLabel('🎭 Personas').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('help:profile').setLabel('Profile').setEmoji(EMOJIS.LADDER).setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('help:fun').setLabel('Fun').setEmoji(EMOJIS.GLOSSY_STAR).setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('help:leaderboard').setLabel('Leaderboard').setEmoji(EMOJIS.STARICON).setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('help:shop').setLabel('Shop').setEmoji(EMOJIS.SHOPPING_CART).setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`help:personas:${ownerId}:0`).setLabel('Personas').setEmoji(EMOJIS.THEATRE).setStyle(ButtonStyle.Primary),
   );
 }
 
@@ -57,7 +57,7 @@ export function buildPersonaPage(
 
   const blocks = slice.map(group => {
     const symbol = PERSONA_TIER_SYMBOLS[group.tier] || '';
-    const owned = ownedKeys.includes(group.key) ? ' ✅ owned' : '';
+    const owned = ownedKeys.includes(group.key) ? ` ${EMOJIS.GREEN_GLOSSY_TICK} owned` : '';
     const spots = group.maxHolders === null ? 'unlimited holders' : `${group.maxHolders} ${group.maxHolders === 1 ? 'spot' : 'spots'}`;
     const monthly = group.monthly ? ' • monthly' : '';
     const header = `__${group.name}__${owned}\n-# ${symbol} ${group.tier} • level ${group.minLevel} • ${spots}${monthly}`;
@@ -68,7 +68,7 @@ export function buildPersonaPage(
   });
 
   const embed = new EmbedBuilder()
-    .setTitle(`🎭 Persona Commands (${current + 1}/${pageCount})`)
+    .setTitle(`${EMOJIS.THEATRE} Persona Commands (${current + 1}/${pageCount})`)
     .setDescription(
       `Each persona unlocks its own commands. Only owners can use them.\n\n${blocks.join('\n\n')}`
     )
@@ -78,12 +78,12 @@ export function buildPersonaPage(
   const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`help:personas:${ownerId}:0`)
-      .setLabel('⏮')
+      .setEmoji(EMOJIS.FIRST_PAGE)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(current === 0),
     new ButtonBuilder()
       .setCustomId(`help:personas:${ownerId}:${current - 1}`)
-      .setLabel('◀')
+      .setEmoji(EMOJIS.LEFT_ARROW)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(current === 0),
     new ButtonBuilder()
@@ -93,12 +93,12 @@ export function buildPersonaPage(
       .setDisabled(true),
     new ButtonBuilder()
       .setCustomId(`help:personas:${ownerId}:${current + 1}`)
-      .setLabel('▶')
+      .setEmoji(EMOJIS.RIGHT_ARROW)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(current >= pageCount - 1),
     new ButtonBuilder()
       .setCustomId(`help:personas:${ownerId}:${pageCount - 1}`)
-      .setLabel('⏭')
+      .setEmoji(EMOJIS.LAST_PAGE)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(current >= pageCount - 1),
   );
@@ -107,6 +107,7 @@ export function buildPersonaPage(
     new ButtonBuilder()
       .setCustomId(`help:menu:${ownerId}`)
       .setLabel('Back to Help')
+      .setEmoji(EMOJIS.LEFT_ARROW)
       .setStyle(ButtonStyle.Primary),
   );
 
@@ -123,7 +124,7 @@ registerInteractionHandler('help', async (interaction) => {
   // Check if message expired
   if (isInteractionExpired(interaction, HELP_TIMEOUT)) {
     await interaction.reply({
-      content: '⏱️ This menu expired. Run `.help` again.',
+      content: `${EMOJIS.HOURGLASS} This menu expired. Run \`.help\` again.`,
       ephemeral: true,
     });
     await interaction.message.edit({ components: [] }).catch(console.error);
@@ -134,7 +135,7 @@ registerInteractionHandler('help', async (interaction) => {
   if (category === 'personas' || category === 'menu') {
     const ownerId = parts[2];
     if (ownerId !== interaction.user.id) {
-      await interaction.reply({ content: '❌ This menu belongs to someone else. Run `.help` yourself.', ephemeral: true });
+      await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This menu belongs to someone else. Run \`.help\` yourself.`, ephemeral: true });
       return;
     }
 
@@ -197,7 +198,7 @@ registerInteractionHandler('help', async (interaction) => {
         }))
       );
     if (lockedTiers.length > 0) {
-      embed.addFields({ name: '🔒 Locked', value: lockedTiers.join('\n'), inline: false });
+      embed.addFields({ name: `${EMOJIS.LOCK} Locked`, value: lockedTiers.join('\n'), inline: false });
     }
   } else if (category === 'leaderboard') {
     const lbCommands = availableCommands.filter(cmd =>

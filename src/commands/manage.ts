@@ -9,6 +9,7 @@ import {
 import { getUser } from '../database/client.js';
 import { getUserArchetypes, getUserColors } from '../services/shop.js';
 import { Command } from './index.js';
+import { EMOJIS } from '../config/index.js';
 import '../interactions/handlers/manage.js'; // registers the persistent .manage handlers
 
 // Colors stack — a user can own several at once — so `.manage` is where they
@@ -24,7 +25,7 @@ export const manageCommand: Command = {
     const userId = message.author.id;
     const userData = await getUser(userId);
     if (!userData) {
-      await message.reply('❌ You need to send at least one message first so the bot can create your profile.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} You need to send at least one message first so the bot can create your profile.`);
       return;
     }
 
@@ -45,7 +46,7 @@ export const manageCommand: Command = {
       : '_None owned_';
 
     const colorLines = userColors.length > 0
-      ? userColors.map(uc => `${uc.active ? '🔹' : '⬜'} **${uc.name}** \`${uc.hex}\` — ${uc.active ? 'Equipped' : 'Unequipped'}`).join('\n')
+      ? userColors.map(uc => `${uc.active ? `${EMOJIS.RIGHT_ARROW}` : `${EMOJIS.EMPTY_STAR}`} **${uc.name}** \`${uc.hex}\` — ${uc.active ? 'Equipped' : 'Unequipped'}`).join('\n')
       : '_None owned_';
 
     const embed = new EmbedBuilder()

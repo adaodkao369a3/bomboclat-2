@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, AttachmentBuilder } from 'discord.js';
 
+import { EMOJIS } from '../../config/index.js';
 const RELEASE_CHANNEL_ID = '1560737311258448003';
 const RELEASE_GIF_URL = 'https://i.pinimg.com/originals/3e/fe/1c/3efe1cb845954233246f60d5d8395dd0.gif';
 
@@ -24,7 +25,7 @@ export const releaseCommand = {
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) {
-      await interaction.reply({ content: '❌ This command can only be used in a server.', ephemeral: true });
+      await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} This command can only be used in a server.`, ephemeral: true });
       return;
     }
 
@@ -41,7 +42,7 @@ export const releaseCommand = {
 
     if (!isAudioFile) {
       await interaction.reply({ 
-        content: '❌ Please attach a valid audio file (MP3, WAV, OGG, M4A, FLAC, or AAC).', 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Please attach a valid audio file (MP3, WAV, OGG, M4A, FLAC, or AAC).`, 
         ephemeral: true 
       });
       return;
@@ -51,7 +52,7 @@ export const releaseCommand = {
     const maxSizeBytes = 25 * 1024 * 1024; // 25MB
     if (audioAttachment.size > maxSizeBytes) {
       await interaction.reply({ 
-        content: `❌ Audio file is too large. Maximum size is 25MB. Your file is ${(audioAttachment.size / 1024 / 1024).toFixed(2)}MB.`, 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Audio file is too large. Maximum size is 25MB. Your file is ${(audioAttachment.size / 1024 / 1024).toFixed(2)}MB.`, 
         ephemeral: true 
       });
       return;
@@ -64,7 +65,7 @@ export const releaseCommand = {
       const releaseChannel = interaction.guild.channels.cache.get(RELEASE_CHANNEL_ID);
       if (!releaseChannel || !releaseChannel.isTextBased()) {
         await interaction.editReply({ 
-          content: '❌ Release channel not found. Please contact an admin.' 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} Release channel not found. Please contact an admin.` 
         });
         return;
       }
@@ -73,14 +74,14 @@ export const releaseCommand = {
       const botPermissions = releaseChannel.permissionsFor(interaction.client.user);
       if (!botPermissions?.has('SendMessages') || !botPermissions?.has('AttachFiles')) {
         await interaction.editReply({ 
-          content: '❌ Bot lacks permission to post messages or attach files in the release channel.' 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} Bot lacks permission to post messages or attach files in the release channel.` 
         });
         return;
       }
 
       // Create the embed
       const embed = new EmbedBuilder()
-        .setTitle(`🎵 ${title}`)
+        .setTitle(`${EMOJIS.SPARKLES} ${title}`)
         .setDescription(`**Released by:** <@${interaction.user.id}>`)
         .setImage(RELEASE_GIF_URL)
         .setColor(0x4900ff)
@@ -91,7 +92,7 @@ export const releaseCommand = {
       const response = await fetch(audioAttachment.url);
       if (!response.ok) {
         await interaction.editReply({ 
-          content: '❌ Failed to download the audio file. Please try again.' 
+          content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to download the audio file. Please try again.` 
         });
         return;
       }
@@ -106,12 +107,12 @@ export const releaseCommand = {
       });
 
       await interaction.editReply({ 
-        content: `✅ Release published successfully! [View in channel](https://discord.com/channels/${interaction.guild.id}/${RELEASE_CHANNEL_ID}/${releaseMessage.id})` 
+        content: `${EMOJIS.GREEN_GLOSSY_TICK} Release published successfully! [View in channel](https://discord.com/channels/${interaction.guild.id}/${RELEASE_CHANNEL_ID}/${releaseMessage.id})` 
       });
     } catch (error) {
       console.error('Error processing release:', error);
       await interaction.editReply({ 
-        content: '❌ Failed to publish release. Please try again later.' 
+        content: `${EMOJIS.GLOSSY_RED_CANCEL} Failed to publish release. Please try again later.` 
       });
     }
   },

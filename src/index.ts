@@ -13,6 +13,7 @@ import { routeInteraction } from './interactions/index';
 import { getActiveTransform, applyTransform } from './services/transform.js';
 import { checkExpiredRoles } from './services/shop.js';
 
+import { EMOJIS } from './config/index.js';
 // Extend Client to include commands
 class ExtendedClient extends Client {
   commands: Collection<string, Command> = new Collection();
@@ -125,7 +126,7 @@ client.on('interactionCreate', async (interaction) => {
     console.error('Unhandled error in interactionCreate handler:', error);
     if (interaction.isRepliable()) {
       try {
-        await interaction.reply({ content: '❌ An error occurred processing this interaction.', ephemeral: true });
+        await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} An error occurred processing this interaction.`, ephemeral: true });
       } catch (replyError) {
         console.error('Failed to send error reply:', replyError);
       }
@@ -219,7 +220,7 @@ client.on('messageCreate', async (message) => {
           await finalCommand.execute(message, remainingArgs, usedPrefix);
         } catch (error) {
           console.error(`Error executing command ${commandName}:`, error);
-          await message.reply('❌ An error occurred while executing this command.');
+          await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} An error occurred while executing this command.`);
         }
       }
     }

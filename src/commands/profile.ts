@@ -142,14 +142,14 @@ registerInteractionHandler('profile', async (interaction) => {
 
   // Verify ownership
   if (ownerId !== interaction.user.id) {
-    await interaction.reply({ content: '❌ You cannot use this button.', flags: [1 << 6] });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} You cannot use this button.`, flags: [1 << 6] });
     return;
   }
 
   // Check if message expired
   if (isInteractionExpired(interaction, PROFILE_TIMEOUT)) {
     await interaction.reply({
-      content: '⏱️ This menu expired. Run `.profile` again.',
+      content: `${EMOJIS.HOURGLASS} This menu expired. Run \`.profile\` again.`,
       ephemeral: true,
     });
     await interaction.message.edit({ components: [] }).catch(console.error);
@@ -160,7 +160,7 @@ registerInteractionHandler('profile', async (interaction) => {
   if (action === 'back') {
     const userData = await getUser(targetUserId);
     if (!userData) {
-      await interaction.reply({ content: '❌ User not found in database.', ephemeral: true });
+      await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`, ephemeral: true });
       return;
     }
     const targetMember = interaction.guild?.members.cache.get(targetUserId);
@@ -175,7 +175,7 @@ registerInteractionHandler('profile', async (interaction) => {
   // (by persona key), never from Discord role names.
   const viewerData = await getUser(ownerId);
   if (!viewerData) {
-    await interaction.reply({ content: '❌ User not found in database.', ephemeral: true });
+    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`, ephemeral: true });
     return;
   }
   const viewerLevel = viewerData.current_level ?? 0;
@@ -238,7 +238,7 @@ registerInteractionHandler('profile', async (interaction) => {
 
   if (action === 'persona') {
     if (personaText.length === 0) {
-      await interaction.reply({ content: '❌ You have no persona commands.', ephemeral: true });
+      await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} You have no persona commands.`, ephemeral: true });
       return;
     }
     embed.setTitle(`${EMOJIS.CROWN2} Persona Commands`).setDescription(personaText);
@@ -251,7 +251,7 @@ registerInteractionHandler('profile', async (interaction) => {
     const tierIndex = GIF_TIER_LEVELS.indexOf(tierLevel);
     if (tierIndex === -1) return;
     if (viewerLevel < tierLevel) {
-      await interaction.reply({ content: `🔒 Level ${tierLevel} GIFs unlock at level ${tierLevel}.`, ephemeral: true });
+      await interaction.reply({ content: `${EMOJIS.LOCK} Level ${tierLevel} GIFs unlock at level ${tierLevel}.`, ephemeral: true });
       return;
     }
     const lines = GIF_TIERS[tierIndex].map(name => `• \`.${name}\``);
@@ -286,14 +286,14 @@ export const profileCommand: Command = {
     } else if (message.member) {
       target = message.member as GuildMember;
     } else {
-      await message.reply('❌ Unable to determine target user.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} Unable to determine target user.`);
       return;
     }
 
     // Get user data
     const userData = await getUser(target.user.id);
     if (!userData) {
-      await message.reply('❌ User not found in database.');
+      await message.reply(`${EMOJIS.GLOSSY_RED_CANCEL} User not found in database.`);
       return;
     }
 

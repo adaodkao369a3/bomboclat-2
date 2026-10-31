@@ -1,5 +1,5 @@
 import { Guild, EmbedBuilder } from 'discord.js';
-import { CHANNELS, XP_CONFIG } from '../config/index.js';
+import { CHANNELS, XP_CONFIG, EMOJIS, GIF_CONFIG, GIF_TIER_LEVELS } from '../config/index.js';
 import { getRoleFromLevel, type XPAwardResult } from './xp.js';
 
 function formatRole(role: string): string {
@@ -10,123 +10,69 @@ function isRoleMilestone(level: number): boolean {
   return Object.values(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS).includes(level as any);
 }
 
-export function getUnlockedPerks(role: string): string[] {
-  switch (role) {
-    case 'civilian':
-      return ['🎬 Welcome to the cast! Start your journey.'];
-    case 'sidekick':
-      return ['⭐ Supporting role unlocked - You\'re gaining recognition!'];
-    case 'hero':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '🦸 Hero status - You\'re a recognized member of the cast',
-      ];
-    case 'champion':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🏆 Champion privileges',
-      ];
-    case 'guardian':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🛡️ Guardian status - Trusted cast member',
-      ];
-    case 'superhero':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🦸‍♂️ Superhero privileges',
-        '💎 Rare shop access',
-      ];
-    case 'anti_hero':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🌑 Anti-Hero status - Walk the darker path',
-        '💎 Rare shop access',
-      ];
-    case 'rogue':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🗡️ Rogue privileges',
-        '💎 Rare shop access',
-      ];
-    case 'renegade':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '⚡ Renegade status',
-        '💎 Rare shop access',
-      ];
-    case 'outlaw':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🎯 Outlaw privileges',
-        '💎 Rare shop access',
-      ];
-    case 'villain':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '😈 Villain status - Embrace your role',
-        '💎 Rare shop access',
-      ];
-    case 'mastermind':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🧠 Mastermind privileges',
-        '💎 Rare shop access',
-        '👑 VIP status',
-      ];
-    case 'kingpin':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '👑 Kingpin status - Rule the underworld',
-        '💎 Rare shop access',
-        '👑 VIP status',
-      ];
-    case 'overlord':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '🏰 Overlord privileges',
-        '💎 Rare shop access',
-        '👑 VIP status',
-      ];
-    case 'tyrant':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '⚔️ Tyrant status - Absolute power',
-        '💎 Rare shop access',
-        '👑 VIP status',
-      ];
-    case 'emperor':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '👑 Emperor privileges - Supreme ruler',
-        '💎 Rare shop access',
-        '👑 VIP status',
-      ];
-    case 'saint':
-      return [
-        '<:glossystaremoji:1545004043699626004> Custom GIF search unlocked',
-        '<:star:1545002693368750193> Additional media permissions',
-        '😇 Saint status - Maximum enlightenment',
-        '💎 Rare shop access',
-        '👑 VIP status',
-        '💎 Mythic shop access',
-      ];
-    default:
-      return [];
+// 'anti_hero' / 'antiHero' / 'Anti-Hero' all become 'antihero'
+function normalizeRole(role: string): string {
+  return role.replace(/[^a-z]/gi, '').toLowerCase();
+}
+
+// Headline perk per progression role (custom emojis only)
+const ROLE_HEADLINES: Record<string, { icon: string; text: string }> = {
+  civilian: { icon: EMOJIS.CIVILIAN, text: 'Welcome to the cast! Start your journey.' },
+  sidekick: { icon: EMOJIS.STAR, text: "Supporting role unlocked - You're gaining recognition!" },
+  hero: { icon: EMOJIS.HERO, text: "Hero status - You're a recognized member of the cast" },
+  champion: { icon: EMOJIS.CROWN2, text: 'Champion privileges' },
+  guardian: { icon: EMOJIS.GUARDIAN, text: 'Guardian status - Trusted cast member' },
+  superhero: { icon: EMOJIS.SUPERHERO, text: 'Superhero privileges' },
+  antihero: { icon: EMOJIS.MOON, text: 'Anti-Hero status - Walk the darker path' },
+  rogue: { icon: EMOJIS.FIRE, text: 'Rogue privileges' },
+  renegade: { icon: EMOJIS.RENEGADE, text: 'Renegade status' },
+  outlaw: { icon: EMOJIS.BLOB_SUNGLASSES, text: 'Outlaw privileges' },
+  villain: { icon: EMOJIS.THEATRE, text: 'Villain status - Embrace your role' },
+  mastermind: { icon: EMOJIS.SPARKLES, text: 'Mastermind privileges' },
+  kingpin: { icon: EMOJIS.KINGPIN, text: 'Kingpin status - Rule the underworld' },
+  overlord: { icon: EMOJIS.DCROWN, text: 'Overlord privileges' },
+  tyrant: { icon: EMOJIS.JOLLY, text: 'Tyrant status - Absolute power' },
+  emperor: { icon: EMOJIS.EMPEROR, text: 'Emperor privileges - Supreme ruler' },
+  saint: { icon: EMOJIS.SAINT, text: 'Saint status - Maximum enlightenment' },
+};
+
+const ROLE_ORDER = Object.keys(ROLE_HEADLINES);
+
+function roleMinLevel(roleKey: string): number {
+  for (const [name, level] of Object.entries(XP_CONFIG.ROLE_LEVEL_REQUIREMENTS)) {
+    if (normalizeRole(name) === roleKey) return level as number;
   }
+  return 0;
+}
+
+export function getUnlockedPerks(role: string): string[] {
+  const key = normalizeRole(role);
+  const headline = ROLE_HEADLINES[key];
+  if (!headline) return [];
+
+  const index = ROLE_ORDER.indexOf(key);
+  const level = roleMinLevel(key);
+  const perks: string[] = [];
+
+  // GIF tiers are unlocked by level, custom search (.c) by its own level
+  const unlockedTiers = GIF_TIER_LEVELS.filter(l => l <= level);
+  if (unlockedTiers.length > 0) {
+    perks.push(`${EMOJIS.GLOSSY_STAR} GIF commands unlocked up to level ${unlockedTiers[unlockedTiers.length - 1]}`);
+  }
+  if (level >= GIF_CONFIG.CUSTOM_MIN_LEVEL) {
+    perks.push(`${EMOJIS.GLOSSY_STAR} Custom GIF search (.c) unlocked`);
+  }
+  if (index >= ROLE_ORDER.indexOf('champion')) {
+    perks.push(`${EMOJIS.STAR} Additional media permissions`);
+  }
+
+  perks.push(`${headline.icon} ${headline.text}`);
+
+  if (index >= ROLE_ORDER.indexOf('superhero')) perks.push(`${EMOJIS.STARICON} Rare shop access`);
+  if (index >= ROLE_ORDER.indexOf('mastermind')) perks.push(`${EMOJIS.CROWN} VIP status`);
+  if (key === 'saint') perks.push(`${EMOJIS.STARICON} Mythic shop access`);
+
+  return perks;
 }
 
 export async function sendLevelUpNotification(
@@ -159,7 +105,7 @@ export async function sendLevelUpNotification(
       .addFields(
         { name: 'New Level', value: result.newLevel.toString(), inline: true },
         { name: 'Total XP', value: result.newXP.toLocaleString(), inline: true },
-        { name: '<a:cash:1545126549035024524> Residuals Earned', value: `+${result.levelUpResiduals}`, inline: true },
+        { name: `${EMOJIS.MONEY} Earned`, value: `+${result.levelUpResiduals.toLocaleString()}`, inline: true },
         { name: 'Current Role', value: formatRole(currentRole), inline: true },
         { name: 'Perks Unlocked', value: perksText, inline: false },
       )

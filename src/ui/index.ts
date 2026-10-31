@@ -1,10 +1,11 @@
 import { EmbedBuilder, Message } from 'discord.js';
 
+import { EMOJIS } from '../config/index.js';
 /**
  * Standard cooldown message with hourglass emoji
  */
 export function cooldownMessage(seconds: number): string {
-  return `⏱️ Please wait ${seconds} seconds before using this command again.`;
+  return `${EMOJIS.HOURGLASS} Please wait ${seconds} seconds before using this command again.`;
 }
 
 /**
@@ -50,7 +51,7 @@ export function isMessageExpired(message: Message, maxAgeMs: number): boolean {
 export async function replyExpired(interaction: any, commandName: string): Promise<void> {
   if (interaction.isRepliable()) {
     await interaction.reply({
-      content: `⏱️ This menu expired. Run \`${commandName}\` again.`,
+      content: `${EMOJIS.HOURGLASS} This menu expired. Run \`${commandName}\` again.`,
       ephemeral: true,
     });
   }
