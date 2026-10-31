@@ -1,8 +1,7 @@
 import { getClient } from '../database/client.js';
-import { EMOJIS } from '../config/index.js';
 import { COLORS_CONFIG, RETIRED_COLORS } from '../config/colors.js';
 import { PERSONAS_CONFIG, PERSONA_KEYS } from '../config/archetypes.js';
-import { levelTooLow } from './shopText.js';
+import { levelTooLow, shortOnFunds } from './shopText.js';
 
 export interface ShopArchetype {
   id: number;
@@ -326,7 +325,7 @@ export async function purchaseArchetype(
     // Every persona is level-gated
     if (userLevel < archetype.min_level) {
       await client.query('ROLLBACK');
-      return { success: false, reason: levelTooLow(archetype.min_level) };
+      return { success: false, reason: levelTooLow(archetype.name, archetype.min_level, userLevel) };
     }
 
     // Already owns this persona? (checked before the cap so the message is accurate)
@@ -421,7 +420,7 @@ export async function purchaseArchetype(
 
       if (balanceBefore < netCost) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Not enough ${EMOJIS.MONEY} (need ${netCost}, have ${balanceBefore})` };
+        return { success: false, reason: shortOnFunds(netCost, balanceBefore) };
       }
 
       // Deduct residuals (net cost after refund)
@@ -538,7 +537,7 @@ export async function purchaseColor(
     }
     if (userResult.rows[0].current_level < color.min_level) {
       await client.query('ROLLBACK');
-      return { success: false, reason: levelTooLow(color.min_level) };
+      return { success: false, reason: levelTooLow(color.name, color.min_level, userResult.rows[0].current_level) };
     }
 
     // Check if user already owns this specific color (unique index handles this, but check for better error message)
@@ -563,7 +562,7 @@ export async function purchaseColor(
 
       if (balanceBefore < color.price) {
         await client.query('ROLLBACK');
-        return { success: false, reason: `Not enough ${EMOJIS.MONEY} (need ${color.price}, have ${balanceBefore})` };
+        return { success: false, reason: shortOnFunds(color.price, balanceBefore) };
       }
 
       // Deduct residuals

@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { PERSONAS_CONFIG, PERSONA_KEYS } from '../src/config/archetypes.js';
+import { EMOJIS } from '../src/config/index.js';
 import { getAvailableCommands, getPersonaCommandGroups } from '../src/commands/registry.js';
 import { buildPersonaPage, getPersonaPageCount, clampPersonaPage } from '../src/commands/help.js';
 
@@ -14,8 +15,8 @@ console.log('✓ Persona keys are unique slugs');
 // Groups: low → high tier, all 20 personas present
 const groups = getPersonaCommandGroups();
 assert.strictEqual(groups.length, PERSONAS_CONFIG.length);
-assert.strictEqual(groups[0].tier, 'Special');
-assert.strictEqual(groups[groups.length - 1].tier, 'Legendary');
+assert.strictEqual(groups[0].tier, 'High-status');
+assert.strictEqual(groups[groups.length - 1].tier, 'Special');
 console.log('✓ Persona help is ordered low → high tier');
 
 // Pagination: every persona appears on exactly one page, pages fit in an embed
@@ -46,7 +47,7 @@ console.log('✓ Pagination boundaries (first/last page buttons disabled)');
 
 // Ownership shown
 const owned = buildPersonaPage(0, [groups[0].key], '1').embed.data.description ?? '';
-assert.ok(owned.includes('✅ owned'));
+assert.ok(owned.includes(`${EMOJIS.GREEN_GLOSSY_TICK} owned`));
 console.log('✓ Owned personas are marked');
 
 // Commands available by persona key (profile Commands button uses this)

@@ -4,6 +4,14 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { PERSONA_TIER_SYMBOLS, PERSONA_TIER_BACKGROUNDS } from '../config/archetypes.js';
 import { COLOR_TIER_BACKGROUNDS } from '../config/colors.js';
+import {
+  drawPriceBadge,
+  drawGloss,
+  drawRarityBorder,
+  drawSeasonalDecor,
+  getColorTierFx,
+  type FxTile,
+} from './shopImageFx.js';
 
 export function formatColorName(name: string): string {
   return name.toLowerCase();
@@ -154,46 +162,75 @@ function calculateTileHeight(tileWidth: number): number {
   return Math.max(120, Math.round(tileWidth / TILE_ASPECT_RATIO));
 }
 
+interface GridRect {
+  index: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function paintBackground(ctx: any, background: string | [string, string], height: number): void {
+  // gradient colors go lighter shade (left) to darker shade (right); a plain string is a solid color
+  if (Array.isArray(background)) {
+    const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, 0);
+    gradient.addColorStop(0, background[0]);
+    gradient.addColorStop(1, background[1]);
+    ctx.fillStyle = gradient;
+  } else {
+    ctx.fillStyle = background;
+  }
+  ctx.fillRect(0, 0, CANVAS_WIDTH, height);
+}
+
 /**
  * Builds a category image that fills every row with the items it actually
  * contains. The final row never reserves empty slots for missing items.
- * Artwork tiles are landscape rather than square, and the canvas height is
- * calculated from the actual number of rows.
+ * Tile positions are worked out first so tier effects (like the neon glow)
+ * can be drawn behind all tiles before any tile is painted.
  */
 function renderGridCanvas(
   itemCount: number,
-  renderRow: (ctx: any, row: number, items: number[], tileWidth: number, tileHeight: number, y: number) => void,
-  heightScale: number = 1,
-  backgroundColor: string | [string, string] = BACKGROUND as string,
-  labelHeight: number = 54,
+  options: {
+    heightScale?: number;
+    background: string | [string, string];
+    labelHeight?: number;
+    /** extra space above the first row and below the last one */
+    edgePad?: number;
+    underlay?: (ctx: any, rects: GridRect[], width: number, height: number) => void;
+    drawTile: (ctx: any, rect: GridRect) => void;
+    overlay?: (ctx: any, width: number, height: number) => void;
+  },
 ): Buffer {
+  const heightScale = options.heightScale ?? 1;
+  const labelHeight = options.labelHeight ?? 54;
+  const edgePad = options.edgePad ?? 0;
+
   const columns = Math.min(3, Math.max(1, itemCount));
   const rowIndexes = getRows(Array.from({ length: itemCount }, (_, i) => i), columns);
-  const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
-  const tileHeight = Math.round(calculateTileHeight(tileWidth) * heightScale);
-  const rowHeight = tileHeight + labelHeight;
-  const canvasHeight = OUTER_PADDING * 2 + Math.max(1, rowIndexes.length) * rowHeight + Math.max(0, rowIndexes.length - 1) * ROW_GAP;
+  const baseTileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (columns - 1)) / columns);
+  const rowHeight = Math.round(calculateTileHeight(baseTileWidth) * heightScale) + labelHeight;
+  const canvasHeight =
+    OUTER_PADDING * 2 + edgePad * 2 + Math.max(1, rowIndexes.length) * rowHeight + Math.max(0, rowIndexes.length - 1) * ROW_GAP;
+
+  const rects: GridRect[] = [];
+  rowIndexes.forEach((rowItems, row) => {
+    const tileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (rowItems.length - 1)) / rowItems.length);
+    const tileHeight = Math.round(calculateTileHeight(tileWidth) * heightScale);
+    const y = OUTER_PADDING + edgePad + row * (rowHeight + ROW_GAP);
+    rowItems.forEach((itemIndex, col) => {
+      rects.push({ index: itemIndex, x: OUTER_PADDING + col * (tileWidth + TILE_GAP), y, w: tileWidth, h: tileHeight });
+    });
+  });
 
   const canvas = createCanvas(CANVAS_WIDTH, canvasHeight);
   const ctx = canvas.getContext('2d');
 
-  // Draw gradient background if gradient colors provided (lighter shade to darker shade, left to right), otherwise solid color
-  if (Array.isArray(backgroundColor)) {
-    const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, 0);
-    gradient.addColorStop(0, backgroundColor[0]); // Lighter shade on left
-    gradient.addColorStop(1, backgroundColor[1]); // Darker shade on right
-    ctx.fillStyle = gradient;
-  } else {
-    ctx.fillStyle = backgroundColor;
-  }
-  ctx.fillRect(0, 0, CANVAS_WIDTH, canvasHeight);
-
-  rowIndexes.forEach((rowItems, row) => {
-    const rowTileWidth = Math.floor((CANVAS_WIDTH - OUTER_PADDING * 2 - TILE_GAP * (rowItems.length - 1)) / rowItems.length);
-    const rowTileHeight = Math.round(calculateTileHeight(rowTileWidth) * heightScale);
-    const y = OUTER_PADDING + row * (rowHeight + ROW_GAP);
-    renderRow(ctx, row, rowItems, rowTileWidth, rowTileHeight, y);
-  });
+  paintBackground(ctx, options.background, canvasHeight);
+  options.underlay?.(ctx, rects, CANVAS_WIDTH, canvasHeight);
+  rects.forEach(rect => options.drawTile(ctx, rect));
+  options.overlay?.(ctx, CANVAS_WIDTH, canvasHeight);
+  drawSeasonalDecor(ctx, CANVAS_WIDTH, canvasHeight);
 
   return canvas.toBuffer('image/png');
 }
@@ -203,15 +240,31 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
     throw new Error('[ShopImages] Font not loaded - cannot render image');
   }
 
-  // Get tier-specific background gradient
+  // Tier-specific background and styling (glow, film grain, gold foil, film strip)
   const tier = colors[0]?.tier;
-  const tierBackground = tier ? COLOR_TIER_BACKGROUNDS[tier] : BACKGROUND as string;
+  const tierBackground = tier ? COLOR_TIER_BACKGROUNDS[tier] : (BACKGROUND as string);
+  const fx = getColorTierFx(tier);
+  const radius = 14;
 
-  return renderGridCanvas(colors.length, (ctx, _row, rowItems, tileWidth, tileHeight, y) => {
-    rowItems.forEach((itemIndex, index) => {
-      const color = colors[itemIndex];
-      const x = OUTER_PADDING + index * (tileWidth + TILE_GAP);
-      const radius = 14;
+  const toFxTile = (rect: GridRect): FxTile => ({
+    x: rect.x,
+    y: rect.y,
+    w: rect.w,
+    h: rect.h,
+    r: radius,
+    hex: colors[rect.index].hex,
+  });
+
+  return renderGridCanvas(colors.length, {
+    heightScale: COLOR_HEIGHT_SCALE,
+    background: tierBackground,
+    labelHeight: 0,
+    edgePad: fx.edgePad,
+    underlay: fx.underlay ? (ctx, rects, w, h) => fx.underlay!(ctx, rects.map(toFxTile), w, h) : undefined,
+    overlay: fx.overlay,
+    drawTile: (ctx, rect) => {
+      const color = colors[rect.index];
+      const { x, y, w: tileWidth, h: tileHeight } = rect;
 
       ctx.fillStyle = color.hex;
       ctx.beginPath();
@@ -222,8 +275,11 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      drawGloss(ctx, x, y, tileWidth, tileHeight, radius);
+
       // Name and hex sit inside the swatch, in whichever of white / dark
-      // reads best on that particular color.
+      // reads best on that particular color. They sit a little above center
+      // to leave room for the price badge at the bottom.
       const { text: textColor, dark } = readableTextColor(color.hex);
 
       ctx.save();
@@ -240,7 +296,7 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       const maxTextWidth = tileWidth - 32;
       const nameFontSize = setScaledFont(ctx, plainName, maxTextWidth, 26, 'LEMONMILK');
       const centerX = x + tileWidth / 2;
-      const centerY = y + tileHeight / 2;
+      const centerY = y + tileHeight / 2 - 14;
 
       ctx.font = `${nameFontSize}px LEMONMILK`;
       ctx.fillText(truncateLabel(ctx, plainName, maxTextWidth), centerX, centerY - 13);
@@ -250,8 +306,12 @@ export function generateColorGridImage(colors: ShopColor[]): Buffer {
       ctx.fillText(color.hex.toUpperCase(), centerX, centerY + 17);
 
       ctx.restore();
-    });
-  }, COLOR_HEIGHT_SCALE, tierBackground, 0);
+
+      drawPriceBadge(ctx, x + tileWidth / 2, y + tileHeight - 14, color.price, color.min_level);
+
+      fx.tileOver?.(ctx, toFxTile(rect), rect.index);
+    },
+  });
 }
 
 export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): Promise<Buffer> {
@@ -319,11 +379,11 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
         drawPlaceholderTile(ctx, x, y, rowImageSize, rowImageSize, radius);
       }
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(x, y, rowImageSize, rowImageSize, radius);
-      ctx.stroke();
+      // Rarity border (bronze / silver / gold, holographic for Transcendent)
+      drawRarityBorder(ctx, archetype.tier, x, y, rowImageSize, rowImageSize, radius);
+
+      // price + level badge along the bottom of the artwork
+      drawPriceBadge(ctx, x + rowImageSize / 2, y + rowImageSize - 18, archetype.price, archetype.min_level);
 
       // Name label lives in its own strip below the square artwork (rather
       // than overlaid on top of it), using the same shadowed-text technique
@@ -352,6 +412,8 @@ export async function generateArchetypeGridImage(archetypes: ShopArchetype[]): P
       ctx.restore();
     }
   }
+
+  drawSeasonalDecor(ctx, CANVAS_WIDTH, canvasHeight);
 
   return canvas.toBuffer('image/png');
 }

@@ -23,7 +23,16 @@ import {
 import { generateColorGridImage, generateArchetypeGridImage } from '../services/shopImages.js';
 import { isBotOwner } from '../utils/permissions.js';
 import { Command } from './index.js';
-import { unlockLine } from '../services/shopText.js';
+import {
+  colorTierDescription,
+  colorsIntroDescription,
+  COLORS_INTRO_TITLE,
+  COLORS_INTRO_OLD_TITLE,
+  personaTierDescription,
+  personasIntroDescription,
+  PERSONAS_INTRO_TITLE,
+  PERSONAS_INTRO_OLD_TITLE,
+} from '../services/shopText.js';
 import '../interactions/handlers/shop.js'; // registers the persistent shop button/select handlers
 import { TIER_SYMBOLS, COLOR_TIERS } from '../config/colors.js';
 import { PERSONA_TIER_SYMBOLS, PERSONA_TIERS, PERSONAS_CONFIG } from '../config/archetypes.js';
@@ -329,16 +338,19 @@ async function deleteRetiredColorsWithNoOwners(guild: Guild): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function postColorShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:palette:1545852130517319812> Colors Shop';
+  // Levels and price ranges are built from the config, so this never goes stale.
   const introEmbed = new EmbedBuilder()
-    .setTitle(introTitle)
-    .setDescription('Give your profile some personality with collectible colors.\n\nColors are divided into tiers, each unlocking at a specific level.\n\n**Studio Classics** — Level 20\n**Midnight Cinema** — Level 40\n**Neon Lights** — Level 40\n**Award Season** — Level 60\n\nSelect a category below to browse its colors.')
+    .setTitle(COLORS_INTRO_TITLE)
+    .setDescription(colorsIntroDescription())
     .setColor(0x4900ff);
 
-  // Try to edit existing message, otherwise send new
+  // Try to edit existing message (also the pre-rewrite one), otherwise send new
   const existingMessages = await shopChannel.messages.fetch({ limit: 100 });
   const existing = existingMessages.find(
-    msg => msg.author.id === shopChannel.client.user?.id && msg.embeds.length > 0 && msg.embeds[0].title === introTitle
+    msg =>
+      msg.author.id === shopChannel.client.user?.id &&
+      msg.embeds.length > 0 &&
+      (msg.embeds[0].title === COLORS_INTRO_TITLE || msg.embeds[0].title === COLORS_INTRO_OLD_TITLE)
   );
 
   if (existing) {
@@ -356,7 +368,7 @@ async function postColorShop(shopChannel: TextChannel, colorsByTier: Record<stri
     if (!tierColors || tierColors.length === 0) continue;
 
     const symbol = TIER_SYMBOLS[tier] || '';
-    const title = `${symbol} ${tier}`;
+    const title = `${symbol} ${tier.toUpperCase()}`;
 
     // Split into chunks of max 6 colors per embed
     const chunks: ShopColor[][] = [];
@@ -375,7 +387,7 @@ async function postColorShop(shopChannel: TextChannel, colorsByTier: Record<stri
 
       const embed = new EmbedBuilder()
         .setTitle(chunkTitle)
-        .setDescription(unlockLine(chunk, 'buy or equip'))
+        .setDescription(colorTierDescription(tier, chunk))
         .setColor(0x4900ff)
         .setImage(`attachment://${filename}`);
 
@@ -433,16 +445,19 @@ async function postColorShop(shopChannel: TextChannel, colorsByTier: Record<stri
 // ---------------------------------------------------------------------------
 
 async function postArchetypeShopIntro(shopChannel: TextChannel): Promise<void> {
-  const introTitle = '<:theatre:1558592490662138017> Persona Roles Shop';
+  // Levels and price ranges are built from the config, so this never goes stale.
   const introEmbed = new EmbedBuilder()
-    .setTitle(introTitle)
-    .setDescription('Collect personas to give your profile its own identity.\n\nPersonas climb from rare **Special** ones to prestigious **Transcendent** roles. You need the level to buy them.\n\n🛡️ **High-status** — Level 30+ (2000 residuals)\n⚔️ **Elite** — Level 50+ (3000 residuals)\n👑 **Legendary** — Level 70+ (4000 residuals)\n✨ **Transcendent** — Level 90+ (4500 residuals)\n🎭 **Special** — Level 100+ (5000 residuals)\n\nSelect a category below to browse the collection.')
+    .setTitle(PERSONAS_INTRO_TITLE)
+    .setDescription(personasIntroDescription())
     .setColor(0x4900ff);
 
-  // Try to edit existing message, otherwise send new
+  // Try to edit existing message (also the pre-rewrite one), otherwise send new
   const existingMessages = await shopChannel.messages.fetch({ limit: 100 });
   const existing = existingMessages.find(
-    msg => msg.author.id === shopChannel.client.user?.id && msg.embeds.length > 0 && msg.embeds[0].title === introTitle
+    msg =>
+      msg.author.id === shopChannel.client.user?.id &&
+      msg.embeds.length > 0 &&
+      (msg.embeds[0].title === PERSONAS_INTRO_TITLE || msg.embeds[0].title === PERSONAS_INTRO_OLD_TITLE)
   );
 
   if (existing) {
@@ -460,7 +475,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
     if (!tierArchetypes || tierArchetypes.length === 0) continue;
 
     const symbol = PERSONA_TIER_SYMBOLS[tier] || '';
-    const title = `${symbol} ${tier}`;
+    const title = `${symbol} ${tier.toUpperCase()}`;
 
     // Split into chunks of max 6 roles per embed
     const chunks: (ShopArchetype & { currentHolders: number })[][] = [];
@@ -475,7 +490,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
 
       const embed = new EmbedBuilder()
         .setTitle(chunkTitle)
-        .setDescription(unlockLine(chunk, 'buy'))
+        .setDescription(personaTierDescription(tier, chunk))
         .setColor(0x4900ff);
 
       // Try to load artwork, fall back to plain embed if missing
@@ -492,7 +507,7 @@ async function postArchetypeShop(shopChannel: TextChannel, archetypeTiers: Recor
 
       const selectMenu = new StringSelectMenuBuilder()
         .setCustomId(`shop:pickpersona:${tier.replace(/\s+/g, '_')}:${chunkIndex}`)
-        .setPlaceholder(`Select a ${tier.toLowerCase()} archetype`)
+        .setPlaceholder(`Select a ${tier.toLowerCase()} persona`)
         .setMinValues(1)
         .setMaxValues(1);
 

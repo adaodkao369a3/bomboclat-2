@@ -23,7 +23,7 @@ import {
 import { reconcileShopRoles } from '../../services/shopRoles.js';
 import { PERSONA_KEYS } from '../../config/archetypes.js';
 import { EMOJIS } from '../../config/index.js';
-import { levelTooLow } from '../../services/shopText.js';
+import { levelTooLow, shortOnFunds, balanceLine, formatAmount } from '../../services/shopText.js';
 
 /**
  * Persistent shop interactions. Nothing here lives in memory: every custom ID
@@ -42,7 +42,6 @@ import { levelTooLow } from '../../services/shopText.js';
 
 const EPHEMERAL = MessageFlags.Ephemeral;
 const PERSONA_EMOJI = '<:theatre:1558592490662138017>';
-const COLOR_EMOJI = '<:palette:1545852130517319812>';
 
 /** Discord role names are the plain lowercase item name. */
 const roleName = (name: string): string => name.toLowerCase();
@@ -90,7 +89,7 @@ async function handlePickPersona(interaction: StringSelectMenuInteraction): Prom
 
   // Every persona is level-gated
   if (userData.current_level < persona.min_level) {
-    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${levelTooLow(persona.min_level)} You are level ${userData.current_level}.`, flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.LOCK} ${levelTooLow(persona.name, persona.min_level, userData.current_level)}`, flags: EPHEMERAL });
     return;
   }
 
@@ -118,12 +117,18 @@ async function handlePickPersona(interaction: StringSelectMenuInteraction): Prom
 
   const embed = new EmbedBuilder()
     .setTitle(`${roleName(persona.name)} (${persona.tier})`)
-    .setDescription(owned && !isUnknownEntity ? `${EMOJIS.GREEN_GLOSSY_TICK} You already own this persona!` : `Price: ${EMOJIS.MONEY} ${persona.price}`)
+    .setDescription(
+      owned && !isUnknownEntity
+        ? `${EMOJIS.GREEN_GLOSSY_TICK} **You already own this persona.**`
+        : !canAfford
+          ? `${EMOJIS.GLOSSY_RED_CANCEL} ${shortOnFunds(persona.price, userData.total_residuals_balance)}`
+          : 'Ready to take it home?',
+    )
     .setColor(0x4900ff)
     .addFields([
       { name: 'Tier', value: persona.tier, inline: true },
-      { name: 'Price', value: persona.price.toString(), inline: true },
-      { name: 'Unlocks at', value: `Level ${persona.min_level}`, inline: true },
+      { name: 'Price', value: `${EMOJIS.MONEY} ${formatAmount(persona.price)}`, inline: true },
+      { name: 'Level', value: `${EMOJIS.LOCK} ${persona.min_level}`, inline: true },
       { name: 'Details', value: `${holderText}${monthlyText}${swapNote}`, inline: false },
     ]);
 
@@ -146,13 +151,16 @@ async function handleBuyPersona(interaction: ButtonInteraction, personaId: numbe
   const name = await discordRoleName(member, persona?.role_id ?? null, persona?.name ?? 'persona');
   const hasRole = !!(member && persona?.role_id && member.roles.cache.has(persona.role_id));
 
-  let message = `${EMOJIS.GREEN_GLOSSY_TICK} Persona purchased successfully!`;
+  let message = `${EMOJIS.GREEN_GLOSSY_TICK} **That's a wrap!** **${persona?.name ?? name}** is yours.`;
   if (result.refund && result.refund > 0) {
-    message += `\n${EMOJIS.MONEY} Refunded ${result.refund} (50% of your previous persona)`;
+    message += `\n${EMOJIS.MONEY} Refunded ${formatAmount(result.refund)} (50% of your previous persona)`;
   }
   message += hasRole
     ? `\n${PERSONA_EMOJI} Role assigned: **${name}**`
     : `\n${EMOJIS.WARNING} Purchase saved, but the Discord role could not be assigned.`;
+
+  const fresh = await getUser(userId);
+  if (fresh) message += `\n${balanceLine(fresh.total_residuals_balance, 'See it on your .profile')}`;
 
   await interaction.update({ content: message, embeds: [], components: [] });
 }
@@ -177,7 +185,7 @@ async function handlePickColor(interaction: StringSelectMenuInteraction): Promis
   }
 
   if (userData.current_level < color.min_level) {
-    await interaction.reply({ content: `${EMOJIS.GLOSSY_RED_CANCEL} ${levelTooLow(color.min_level)} You are level ${userData.current_level}.`, flags: EPHEMERAL });
+    await interaction.reply({ content: `${EMOJIS.LOCK} ${levelTooLow(color.name, color.min_level, userData.current_level)}`, flags: EPHEMERAL });
     return;
   }
 
@@ -208,20 +216,25 @@ async function handlePickColor(interaction: StringSelectMenuInteraction): Promis
       .setStyle(ButtonStyle.Danger),
   );
 
+  // One status line, then price / level / hex. The note lives in the footer.
+  const status = active
+    ? `${EMOJIS.GLOSSY_STAR} **Equipped.** Looking good on you.`
+    : owned
+      ? `${EMOJIS.GREEN_GLOSSY_TICK} **In your collection.** Hit Equip to wear it.`
+      : !canAfford
+        ? `${EMOJIS.GLOSSY_RED_CANCEL} ${shortOnFunds(color.price, userData.total_residuals_balance)}`
+        : 'Not in your collection yet. Ready to take it home?';
+
   const embed = new EmbedBuilder()
-    .setTitle(color.name)
-    .setDescription(owned ? (active ? `${EMOJIS.RIGHT_ARROW} Currently equipped` : `${EMOJIS.GREEN_GLOSSY_TICK} Owned (click Equip to use)`) : `Price: ${EMOJIS.MONEY} ${color.price}`)
+    .setTitle(`${EMOJIS.PALETTE} ${color.name.toUpperCase()}`)
+    .setDescription(status)
     .setColor(parseInt(color.hex.replace('#', ''), 16))
     .addFields([
-      { name: 'Tier', value: color.tier, inline: true },
-      { name: 'Price', value: color.price.toString(), inline: true },
-      { name: 'Hex', value: color.hex, inline: true },
-      {
-        name: 'Note',
-        value: "You can own multiple colors at once. Buying a new one doesn't remove your others — use Equip/Unequip here (or `.manage`) to control which color roles are active.",
-        inline: false,
-      },
-    ]);
+      { name: 'Price', value: `${EMOJIS.MONEY} ${formatAmount(color.price)}`, inline: true },
+      { name: 'Level', value: `${EMOJIS.LOCK} ${color.min_level}`, inline: true },
+      { name: 'Hex', value: `${EMOJIS.PUSH_PIN} ${color.hex}`, inline: true },
+    ])
+    .setFooter({ text: `${color.tier} · Own as many as you like. Switch anytime with .manage.` });
 
   await interaction.reply({ embeds: [embed], components: [row], flags: EPHEMERAL });
 }
@@ -238,16 +251,15 @@ async function handleBuyColor(interaction: ButtonInteraction, colorId: number): 
   if (member) await reconcileShopRoles(member);
 
   const color = (await getShopColors()).find(c => c.id === colorId);
-  const name = await discordRoleName(member, color?.role_id ?? null, color?.name ?? 'color');
+  const name = color?.name ?? 'color';
   const hasRole = !!(member && color?.role_id && member.roles.cache.has(color.role_id));
+  const fresh = await getUser(interaction.user.id);
 
-  await interaction.update({
-    content:
-      `${EMOJIS.GREEN_GLOSSY_TICK} Color purchased and equipped!` +
-      (hasRole ? `\n${COLOR_EMOJI} Role assigned: **${name}**` : `\n${EMOJIS.WARNING} Purchase saved, but the Discord role could not be assigned.`),
-    embeds: [],
-    components: [],
-  });
+  let content = `${EMOJIS.GREEN_GLOSSY_TICK} **That's a wrap!** **${name}** is yours${hasRole ? ' and already on your name.' : '.'}`;
+  if (!hasRole) content += `\n${EMOJIS.WARNING} Purchase saved, but the Discord role could not be assigned.`;
+  if (fresh) content += `\n${balanceLine(fresh.total_residuals_balance, 'Switch colors anytime with .manage')}`;
+
+  await interaction.update({ content, embeds: [], components: [] });
 }
 
 async function handleEquipColor(interaction: ButtonInteraction, colorId: number, equip: boolean): Promise<void> {
@@ -261,11 +273,11 @@ async function handleEquipColor(interaction: ButtonInteraction, colorId: number,
   if (member) await reconcileShopRoles(member);
 
   const color = (await getShopColors()).find(c => c.id === colorId);
-  const name = await discordRoleName(member, color?.role_id ?? null, color?.name ?? 'color');
+  const name = color?.name ?? 'color';
   await interaction.update({
     content: equip
-      ? `${EMOJIS.GREEN_GLOSSY_TICK} Color equipped!\n${COLOR_EMOJI} Role confirmed: **${name}**`
-      : `${EMOJIS.GREEN_GLOSSY_TICK} Color unequipped.\n${COLOR_EMOJI} Role removed — the color stays in your collection to re-equip anytime.`,
+      ? `${EMOJIS.GLOSSY_STAR} **Equipped!** **${name}** is back on your name.`
+      : `${EMOJIS.GREEN_GLOSSY_TICK} **${name}** is off your name. It stays in your collection, equip it again anytime.`,
     embeds: [],
     components: [],
   });

@@ -11,7 +11,7 @@ import {
 import { generateColorGridImage, generateArchetypeGridImage } from '../services/shopImages.js';
 import { isBotOwner } from '../utils/permissions.js';
 import { Command } from './index.js';
-import { unlockLine } from '../services/shopText.js';
+import { colorTierDescription, personaTierDescription } from '../services/shopText.js';
 import { TIER_SYMBOLS, COLOR_TIERS } from '../config/colors.js';
 import { PERSONA_TIER_SYMBOLS, PERSONA_TIERS } from '../config/archetypes.js';
 
@@ -67,7 +67,7 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
     if (!tierColors || tierColors.length === 0) continue;
 
     const symbol = TIER_SYMBOLS[tier] || '';
-    const title = `${symbol} ${tier}`;
+    const title = `${symbol} ${tier.toUpperCase()}`;
 
     // Split into chunks of max 6 colors per embed
     const chunks: ShopColor[][] = [];
@@ -86,7 +86,7 @@ async function updateColorShop(shopChannel: TextChannel, colorsByTier: Record<st
 
       const embed = new EmbedBuilder()
         .setTitle(chunkTitle)
-        .setDescription(unlockLine(chunk, 'buy or equip'))
+        .setDescription(colorTierDescription(tier, chunk))
         .setColor(0x4900ff)
         .setImage(`attachment://${filename}`);
 
@@ -140,7 +140,7 @@ async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: R
     if (!tierArchetypes || tierArchetypes.length === 0) continue;
 
     const symbol = PERSONA_TIER_SYMBOLS[tier] || '';
-    const title = `${symbol} ${tier}`;
+    const title = `${symbol} ${tier.toUpperCase()}`;
 
     // Split into chunks of max 6 archetypes per embed
     const chunks: (ShopArchetype & { currentHolders: number })[][] = [];
@@ -159,7 +159,7 @@ async function updateArchetypeShop(shopChannel: TextChannel, archetypesByTier: R
 
       const embed = new EmbedBuilder()
         .setTitle(chunkTitle)
-        .setDescription(unlockLine(chunk, 'buy'))
+        .setDescription(personaTierDescription(tier, chunk))
         .setColor(0x4900ff)
         .setImage(`attachment://${filename}`);
 
